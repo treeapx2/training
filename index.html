@@ -10025,7 +10025,9 @@ function HistoryScreen({
         fontStyle: "italic"
       }
     }, entry.note), /*#__PURE__*/React.createElement("button", {
-      onClick: () => del(entry.id),
+      onClick: () => {
+        if (window.confirm("Delete this session? This can't be undone.")) del(entry.id);
+      },
       style: {
         marginTop: 10,
         padding: "5px 12px",
