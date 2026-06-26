@@ -486,12 +486,17 @@ function saveGroupOrders(orders) {
   } catch {}
 }
 const DRAFT_KEY = "at_session_draft";
-function saveDraft(type, movements, note) {
+function saveDraft(type, movements, note, sessionDate) {
   try {
     const draft = {
       type,
       note,
-      date: new Date().toLocaleDateString("en-US", {
+      sessionDate,
+      date: sessionDate ? new Date(sessionDate + "T12:00:00").toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric"
+      }) : new Date().toLocaleDateString("en-US", {
         month: "short",
         day: "numeric",
         year: "numeric"
@@ -7762,6 +7767,160 @@ const SEED_SESSIONS = [{
       note: "chase 10 reps"
     }]
   }]
+}, {
+  id: 52,
+  type: "legs",
+  label: "Legs",
+  date: "Jun 24, 2026",
+  note: "Leg extension back to 150 cleanly — regression resolved. Goblet squat ready for 50. Calf raise ready for 40. Leg curl 90 held.",
+  movements: [{
+    name: "Leg Press",
+    sets: [{
+      set: 1,
+      weight: "140",
+      reps: "10",
+      rpe: "5",
+      note: ""
+    }, {
+      set: 2,
+      weight: "155",
+      reps: "10",
+      rpe: "6",
+      note: ""
+    }, {
+      set: 3,
+      weight: "155",
+      reps: "10",
+      rpe: "6",
+      note: ""
+    }, {
+      set: 4,
+      weight: "170",
+      reps: "10",
+      rpe: "7",
+      note: ""
+    }, {
+      set: 5,
+      weight: "170",
+      reps: "10",
+      rpe: "8",
+      note: ""
+    }]
+  }, {
+    name: "Leg Extension",
+    sets: [{
+      set: 1,
+      weight: "120",
+      reps: "10",
+      rpe: "5",
+      note: ""
+    }, {
+      set: 2,
+      weight: "135",
+      reps: "10",
+      rpe: "6",
+      note: ""
+    }, {
+      set: 3,
+      weight: "135",
+      reps: "10",
+      rpe: "7",
+      note: ""
+    }, {
+      set: 4,
+      weight: "150",
+      reps: "10",
+      rpe: "7",
+      note: ""
+    }, {
+      set: 5,
+      weight: "150",
+      reps: "10",
+      rpe: "8",
+      note: "150 restored"
+    }]
+  }, {
+    name: "Leg Curl",
+    sets: [{
+      set: 1,
+      weight: "60",
+      reps: "10",
+      rpe: "5",
+      note: ""
+    }, {
+      set: 2,
+      weight: "75",
+      reps: "10",
+      rpe: "6",
+      note: ""
+    }, {
+      set: 3,
+      weight: "75",
+      reps: "10",
+      rpe: "7",
+      note: ""
+    }, {
+      set: 4,
+      weight: "90",
+      reps: "8",
+      rpe: "8",
+      note: ""
+    }, {
+      set: 5,
+      weight: "90",
+      reps: "8",
+      rpe: "8",
+      note: ""
+    }]
+  }, {
+    name: "Goblet Squat",
+    sets: [{
+      set: 1,
+      weight: "45",
+      reps: "10",
+      rpe: "6",
+      note: ""
+    }, {
+      set: 2,
+      weight: "45",
+      reps: "10",
+      rpe: "6",
+      note: ""
+    }, {
+      set: 3,
+      weight: "45",
+      reps: "10",
+      rpe: "7",
+      note: ""
+    }, {
+      set: 4,
+      weight: "45",
+      reps: "10",
+      rpe: "7",
+      note: "test 50 next"
+    }]
+  }, {
+    name: "Calf Raise",
+    sets: [{
+      set: 1,
+      weight: "35",
+      reps: "20",
+      rpe: "6",
+      note: ""
+    }, {
+      set: 2,
+      weight: "35",
+      reps: "20",
+      rpe: "6",
+      note: ""
+    }, {
+      set: 3,
+      weight: "35",
+      reps: "20",
+      rpe: "6",
+      note: "test 40 next"
+    }]
+  }]
 }];
 
 // Single stable storage key — never changes
@@ -8515,10 +8674,30 @@ function MovementRow({
 }) {
   const [open, setOpen] = useState(false);
   // Initialize with planned sets — all editable, none logged yet
-  const [plannedSets, setPlannedSets] = useState(() => buildPlannedSets(mov, sessionType).map(s => ({
-    ...s,
-    logged: false
-  })));
+  const [plannedSets, setPlannedSets] = useState(() => {
+    const planned = buildPlannedSets(mov, sessionType);
+    const prior = mov._loggedSets || [];
+    if (prior.length === 0) return planned.map(s => ({
+      ...s,
+      logged: false
+    }));
+    // Restore logged state from prior sets (draft resume)
+    return planned.map((s, i) => {
+      const match = prior[i];
+      if (!match) return {
+        ...s,
+        logged: false
+      };
+      return {
+        ...s,
+        weight: match.weight || s.weight,
+        reps: match.reps || s.reps,
+        rpe: match.rpe || s.rpe,
+        note: match.note || s.note || "",
+        logged: true
+      };
+    });
+  });
 
   // Sync logged sets back to parent setsRef via effect on close
   // Parent reads plannedSets.filter(logged) via ref
@@ -8681,8 +8860,8 @@ function SessionScreen({
   // Auto-save draft whenever session movements change OR any set is logged (tick)
   useEffect(() => {
     if (!active) return;
-    saveDraft(active, sessionMovements, sessionNote);
-  }, [sessionMovements, sessionNote, active, tick]);
+    saveDraft(active, sessionMovements, sessionNote, sessionDate);
+  }, [sessionMovements, sessionNote, active, tick, sessionDate]);
   const startSession = type => {
     BLOCK.sessions[type].movements.forEach(m => {
       delete m._loggedSets;
@@ -8717,6 +8896,7 @@ function SessionScreen({
     setSessionMovements(restored);
     setActive(draft.type);
     setSessionNote(draft.note || "");
+    if (draft.sessionDate) setSessionDate(draft.sessionDate);
     setDraft(null);
   };
   const discardDraft = () => {
