@@ -337,31 +337,31 @@ const BLOCK = {
       movements: [{
         name: "Leg Press",
         current: "170 lb",
-        target: "Hold — build consistency"
+        target: "Test 185 — clean 10/10 @ RPE ≤8"
       }, {
         name: "Leg Extension",
         current: "150 lb",
-        target: "Hold, build reps"
+        target: "Test 165 — clean 10/10 @ RPE ≤8"
       }, {
         name: "Leg Curl",
-        current: "75 lb",
-        target: "Hold — tightness improving, 2 more sessions"
+        current: "90 lb",
+        target: "HOLD 90 — hamstring flag; clean 10/10 @ RPE ≤7 then 105"
       }, {
         name: "Goblet Squat",
-        current: "40 lb",
-        target: "Hold — consistent, clean"
+        current: "45 lb",
+        target: "Test 50"
       }, {
         name: "RDL",
         current: "20 lb",
-        target: "Form-first, no progression"
+        target: "Dropped — not performable at gym"
       }, {
         name: "Glute Bridge",
         current: "35 lb",
-        target: "Test 40 lb"
+        target: "Dropped — not performable at gym"
       }, {
         name: "Calf Raise",
         current: "35 lb",
-        target: "Test 40 lb next"
+        target: "Test 40"
       }]
     },
     push: {
@@ -371,27 +371,27 @@ const BLOCK = {
       movements: [{
         name: "Chest Press",
         current: "120 lb",
-        target: "Hold — build consistency at 120"
+        target: "Test 135 — plateau broken, clean 10/10 @ RPE 7-8 (7/1)"
       }, {
         name: "Pec Fly",
         current: "120 lb",
-        target: "Hold — build consistency at 120"
+        target: "Test 135 — clean 10/10 @ RPE 8 (7/1)"
       }, {
         name: "Shoulder Press",
-        current: "90 lb",
-        target: "Chase clean 10 reps at 90"
+        current: "75 lb",
+        target: "Build clean 8/8 @ 75 then 90 (corrected from 90)"
       }, {
         name: "Rope Pushdown",
         current: "42.5 lb",
-        target: "Hold — chase clean reps at 42.5"
+        target: "Clean 10/10 @ RPE ≤7 then 47.5 (recovered 7/1)"
       }, {
         name: "Lateral Raise",
         current: "12 lb",
-        target: "Build to RPE 6 across all 4 sets"
+        target: "Own 15x10 then straight 15s (7/1 ran all 12s)"
       }, {
         name: "Skull Crusher",
         current: "15 lb",
-        target: "Replaces OHE — elbows in, flat back"
+        target: "Test 20 — clean 10s @ RPE 6-7 (elbow watch)"
       }]
     },
     pull: {
@@ -400,32 +400,32 @@ const BLOCK = {
       bg: "#EEEDFE",
       movements: [{
         name: "Seated Row",
-        current: "120 lb",
-        target: "Hold — build consistency"
+        current: "135 lb",
+        target: "8/8 clean @ 135 (7/4) — build to 10 or test 140"
       }, {
         name: "Lat Pulldown",
-        current: "120 lb",
-        target: "Hold — build consistency"
+        current: "135 lb",
+        target: "135 working (8/8 @ RPE 8, 7/4) — build 10s then 150"
       }, {
         name: "DB Row",
-        current: "45 lb",
-        target: "Build consistency before 50"
+        current: "50 lb",
+        target: "Clean 8/8 @ 50 then 55 (7/4 light: 40x2, back-half)"
       }, {
         name: "Cable Curl",
-        current: "37.5 lb",
-        target: "Test 40 when W2 hits RPE 7"
+        current: "42.5 lb",
+        target: "Test 47.5 — clean 10/10 @ RPE 6-7 (7/4)"
       }, {
         name: "Reverse Fly",
         current: "15 lb",
-        target: "Hold — build to RPE 6"
+        target: "Log consistently, build to RPE 6, then 20"
       }, {
         name: "Hammer Curl",
         current: "20 lb",
-        target: "Hold — chase 10 reps"
+        target: "Test 25 when fresh — 7/4 back-half fatigued (20x8x3)"
       }, {
         name: "Zottman Curl",
         current: "20 lb",
-        target: "Chase 10 reps from 8 baseline"
+        target: "Chase 10 — still at 6 reps (7/4), slow eccentric"
       }]
     }
   }
@@ -8259,6 +8259,305 @@ const SEED_SESSIONS = [{
       weight: "42.5",
       reps: "8",
       rpe: "8",
+      note: ""
+    }]
+  }]
+}, {
+  id: 55,
+  type: "push",
+  label: "Push",
+  date: "Jul 1, 2026",
+  note: "Chest press BROKE PLATEAU — clean 10/10 at 120 (RPE 7-8), first clean 10s across the plateau stretch, ready to test 135. Pec fly clean 10/10 at 120. Rope pushdown recovered to 42.5. Shoulder press skipped.",
+  movements: [{
+    name: "Chest Press",
+    sets: [{
+      set: 1,
+      weight: "90",
+      reps: "10",
+      rpe: "5",
+      note: ""
+    }, {
+      set: 2,
+      weight: "105",
+      reps: "10",
+      rpe: "6",
+      note: ""
+    }, {
+      set: 3,
+      weight: "105",
+      reps: "10",
+      rpe: "6",
+      note: ""
+    }, {
+      set: 4,
+      weight: "120",
+      reps: "10",
+      rpe: "7",
+      note: "clean"
+    }, {
+      set: 5,
+      weight: "120",
+      reps: "10",
+      rpe: "8",
+      note: "plateau broken"
+    }]
+  }, {
+    name: "Pec Fly",
+    sets: [{
+      set: 1,
+      weight: "90",
+      reps: "10",
+      rpe: "5",
+      note: ""
+    }, {
+      set: 2,
+      weight: "105",
+      reps: "10",
+      rpe: "6",
+      note: ""
+    }, {
+      set: 3,
+      weight: "105",
+      reps: "10",
+      rpe: "7",
+      note: ""
+    }, {
+      set: 4,
+      weight: "120",
+      reps: "10",
+      rpe: "8",
+      note: ""
+    }, {
+      set: 5,
+      weight: "120",
+      reps: "10",
+      rpe: "8",
+      note: ""
+    }]
+  }, {
+    name: "Rope Pushdown",
+    sets: [{
+      set: 1,
+      weight: "32.5",
+      reps: "10",
+      rpe: "5",
+      note: ""
+    }, {
+      set: 2,
+      weight: "37.5",
+      reps: "10",
+      rpe: "6",
+      note: ""
+    }, {
+      set: 3,
+      weight: "37.5",
+      reps: "10",
+      rpe: "6",
+      note: ""
+    }, {
+      set: 4,
+      weight: "42.5",
+      reps: "10",
+      rpe: "7",
+      note: "recovered"
+    }, {
+      set: 5,
+      weight: "42.5",
+      reps: "6",
+      rpe: "8",
+      note: ""
+    }]
+  }, {
+    name: "Lateral Raise",
+    sets: [{
+      set: 1,
+      weight: "12",
+      reps: "10",
+      rpe: "6",
+      note: ""
+    }, {
+      set: 2,
+      weight: "12",
+      reps: "10",
+      rpe: "6",
+      note: ""
+    }, {
+      set: 3,
+      weight: "12",
+      reps: "10",
+      rpe: "7",
+      note: ""
+    }]
+  }, {
+    name: "Skull Crusher",
+    sets: [{
+      set: 1,
+      weight: "15",
+      reps: "10",
+      rpe: "6",
+      note: ""
+    }, {
+      set: 2,
+      weight: "15",
+      reps: "10",
+      rpe: "6",
+      note: ""
+    }, {
+      set: 3,
+      weight: "15",
+      reps: "10",
+      rpe: "7",
+      note: ""
+    }]
+  }]
+}, {
+  id: 56,
+  type: "pull",
+  label: "Pull",
+  date: "Jul 4, 2026",
+  note: "Lat pulldown 135 TEST PASSED — clean 8/8 @ RPE 8, now working weight. Seated row 135 clean 8/8 (up from 4/5/5 on 6/30). Cable curl clean 10/10 @ 42.5, ready for 47.5. Hammer curl held 20 (8/8/8, back-half fatigue), 25 deferred. DB row light (40x2, back-half). Zottman still 6 reps. Reverse fly skipped.",
+  movements: [{
+    name: "Seated Row",
+    sets: [{
+      set: 1,
+      weight: "105",
+      reps: "10",
+      rpe: "5",
+      note: ""
+    }, {
+      set: 2,
+      weight: "120",
+      reps: "10",
+      rpe: "6",
+      note: ""
+    }, {
+      set: 3,
+      weight: "120",
+      reps: "10",
+      rpe: "7",
+      note: ""
+    }, {
+      set: 4,
+      weight: "135",
+      reps: "8",
+      rpe: "8",
+      note: ""
+    }, {
+      set: 5,
+      weight: "135",
+      reps: "8",
+      rpe: "8",
+      note: ""
+    }]
+  }, {
+    name: "Lat Pulldown",
+    sets: [{
+      set: 1,
+      weight: "105",
+      reps: "10",
+      rpe: "6",
+      note: ""
+    }, {
+      set: 2,
+      weight: "120",
+      reps: "10",
+      rpe: "7",
+      note: ""
+    }, {
+      set: 3,
+      weight: "120",
+      reps: "10",
+      rpe: "7",
+      note: ""
+    }, {
+      set: 4,
+      weight: "135",
+      reps: "8",
+      rpe: "8",
+      note: "135 test passed"
+    }, {
+      set: 5,
+      weight: "135",
+      reps: "8",
+      rpe: "8",
+      note: ""
+    }]
+  }, {
+    name: "DB Row",
+    sets: [{
+      set: 1,
+      weight: "40",
+      reps: "10",
+      rpe: "7",
+      note: "back-half, light"
+    }, {
+      set: 2,
+      weight: "40",
+      reps: "10",
+      rpe: "7",
+      note: ""
+    }]
+  }, {
+    name: "Cable Curl",
+    sets: [{
+      set: 1,
+      weight: "37.5",
+      reps: "10",
+      rpe: "6",
+      note: ""
+    }, {
+      set: 2,
+      weight: "42.5",
+      reps: "10",
+      rpe: "6",
+      note: ""
+    }, {
+      set: 3,
+      weight: "42.5",
+      reps: "10",
+      rpe: "7",
+      note: "ready for 47.5"
+    }]
+  }, {
+    name: "Hammer Curl",
+    sets: [{
+      set: 1,
+      weight: "20",
+      reps: "8",
+      rpe: "8",
+      note: ""
+    }, {
+      set: 2,
+      weight: "20",
+      reps: "8",
+      rpe: "8",
+      note: ""
+    }, {
+      set: 3,
+      weight: "20",
+      reps: "8",
+      rpe: "8",
+      note: "back-half fatigue, 25 deferred"
+    }]
+  }, {
+    name: "Zottman Curl",
+    sets: [{
+      set: 1,
+      weight: "20",
+      reps: "6",
+      rpe: "7",
+      note: ""
+    }, {
+      set: 2,
+      weight: "20",
+      reps: "6",
+      rpe: "7",
+      note: ""
+    }, {
+      set: 3,
+      weight: "20",
+      reps: "6",
+      rpe: "7",
       note: ""
     }]
   }]
