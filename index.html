@@ -328,105 +328,54 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
 
 // ── Block State ───────────────────────────────────────────────────────────────
 const BLOCK = {
-  flags: ["Groin soreness (L>R) — daily butterfly stretch + lateral lunge holds", "Left knee below patella (new 4/17) — monitor all squat/hinge patterns", "Hamstring tightness — foam roll before legs + pull; 60 lb leg curl ceiling", "Thumb soreness — shoulder press at 75 lb ceiling, improving", "Elbow tightness — monitor end of pull sessions", "Left knee (prior) — bilateral leg press only, RDL gated on form"],
+  flags: [
+    "ON BLOOD THINNERS (~3 wks, PE precaution) — NO contact/fall-risk activity; NO failure/grinding reps (strains bruise/bleed more); keep RPE \u22648; a 'test' = controlled top set leaving 2+ in reserve. Confirm exertion intensity with care team.",
+    "Hockey SUSPENDED this block — legs unblocked (72-86h spacing constraint lifted); cardio substituted (Z2 bike / elliptical / incline walk).",
+    "Groin soreness (L>R) — daily butterfly stretch + lateral lunge holds.",
+    "Left knee below patella — monitor all squat/hinge; bilateral leg press only, single-leg press off.",
+    "Hamstring — Leg Curl HOLD 90; low-back compensation appeared 7/22; foam roll before legs.",
+    "Thumb — Shoulder Press reached clean 90 (7/5) but keep watching; prior 75 ceiling.",
+    "Elbow — end of pull; Skull Crusher pull/stretch normal, sharp pain = stop."
+  ],
   sessions: {
     legs: {
       label: "Legs",
       color: "#3B6D11",
       bg: "#EAF3DE",
-      movements: [{
-        name: "Leg Press",
-        current: "170 lb",
-        target: "Test 185 — clean 10/10 @ RPE ≤8"
-      }, {
-        name: "Leg Extension",
-        current: "150 lb",
-        target: "Test 165 — clean 10/10 @ RPE ≤8"
-      }, {
-        name: "Leg Curl",
-        current: "90 lb",
-        target: "HOLD 90 — hamstring flag; clean 10/10 @ RPE ≤7 then 105"
-      }, {
-        name: "Goblet Squat",
-        current: "45 lb",
-        target: "Test 50"
-      }, {
-        name: "RDL",
-        current: "20 lb",
-        target: "Dropped — not performable at gym"
-      }, {
-        name: "Glute Bridge",
-        current: "35 lb",
-        target: "Dropped — not performable at gym"
-      }, {
-        name: "Calf Raise",
-        current: "35 lb",
-        target: "Test 40"
-      }]
+      movements: [
+        { name: "Leg Press", current: "170 lb", target: "TEST 185 \u2014 clean 10/10 @ RPE 7-8 across 6/24, 7/8, 7/22. Run FRESH as opener; stop at RPE 8." },
+        { name: "Leg Extension", current: "150 lb", target: "HOLD 150 \u2014 reps slipped to 8 (7/8, 7/22); rebuild clean 10/10 @ RPE \u22648 before 165." },
+        { name: "Leg Curl", current: "90 lb", target: "HOLD 90 \u2014 hamstring flag; dropped to 6 reps w/ low-back compensation (7/22). RPE \u22647, test only when fresh." },
+        { name: "Goblet Squat", current: "45 lb", target: "TEST 50 \u2014 very consistent 10/10 @ RPE 6-7 (7/22)." },
+        { name: "Calf Raise", current: "35 lb", target: "TEST 40 \u2014 clean 20-rep sets @ RPE 6-7." }
+      ]
     },
     push: {
       label: "Push",
       color: "#185FA5",
       bg: "#E6F1FB",
-      movements: [{
-        name: "Chest Press",
-        current: "120 lb",
-        target: "Test 135 — plateau broken, clean 10/10 @ RPE 7-8 (7/1)"
-      }, {
-        name: "Pec Fly",
-        current: "120 lb",
-        target: "Test 135 — clean 10/10 @ RPE 8 (7/1)"
-      }, {
-        name: "Shoulder Press",
-        current: "75 lb",
-        target: "Build clean 8/8 @ 75 then 90 (corrected from 90)"
-      }, {
-        name: "Rope Pushdown",
-        current: "42.5 lb",
-        target: "Clean 10/10 @ RPE ≤7 then 47.5 (recovered 7/1)"
-      }, {
-        name: "Lateral Raise",
-        current: "12 lb",
-        target: "Own 15x10 then straight 15s (7/1 ran all 12s)"
-      }, {
-        name: "Skull Crusher",
-        current: "15 lb",
-        target: "Test 20 — clean 10s @ RPE 6-7 (elbow watch)"
-      }]
+      movements: [
+        { name: "Chest Press", current: "120 lb", target: "Build 2nd clean 10/10 @ RPE \u22648 FRESH, then 135 \u2014 7/1 clean; 7/5 drop logged last (fatigue, discount)." },
+        { name: "Pec Fly", current: "120 lb", target: "Build clean 10/10 then 135 \u2014 7/1 clean 10/10; watch placement fatigue." },
+        { name: "Shoulder Press", current: "90 lb", target: "HOLD 90 \u2014 first clean 10/10 @ RPE 7-8 (7/5); confirm 2nd session (thumb watch) then 105." },
+        { name: "Rope Pushdown", current: "42.5 lb", target: "Confirm 2nd clean 10/10 (7/5 clean @ RPE 8) then 47.5." },
+        { name: "Lateral Raise", current: "15 lb", target: "15 working now \u2014 15x10x2 @ RPE 8 (7/5); build straight 15s." },
+        { name: "Skull Crusher", current: "20 lb", target: "20 CONFIRMED \u2014 10/10 @ RPE 7-8 (7/5). Elbow watch: pull/stretch normal, sharp = stop." }
+      ]
     },
     pull: {
       label: "Pull",
       color: "#3C3489",
       bg: "#EEEDFE",
-      movements: [{
-        name: "Seated Row",
-        current: "135 lb",
-        target: "8/8 clean @ 135 (7/4) — build to 10 or test 140"
-      }, {
-        name: "Lat Pulldown",
-        current: "135 lb",
-        target: "135 working (8/8 @ RPE 8, 7/4) — build 10s then 150"
-      }, {
-        name: "DB Row",
-        current: "50 lb",
-        target: "Clean 8/8 @ 50 then 55 (7/4 light: 40x2, back-half)"
-      }, {
-        name: "Cable Curl",
-        current: "42.5 lb",
-        target: "Test 47.5 — clean 10/10 @ RPE 6-7 (7/4)"
-      }, {
-        name: "Reverse Fly",
-        current: "15 lb",
-        target: "Log consistently, build to RPE 6, then 20"
-      }, {
-        name: "Hammer Curl",
-        current: "20 lb",
-        target: "Test 25 when fresh — 7/4 back-half fatigued (20x8x3)"
-      }, {
-        name: "Zottman Curl",
-        current: "20 lb",
-        target: "Chase 10 — still at 6 reps (7/4), slow eccentric"
-      }]
+      movements: [
+        { name: "Seated Row", current: "135 lb", target: "Build clean 10/10 @ 135 (7/4 8/8, 7/13 6/6 fatigued) then 150. Run fresh." },
+        { name: "Lat Pulldown", current: "135 lb", target: "Confirm 2nd clean 10/10 (7/13 clean 10/10) then 150." },
+        { name: "DB Row", current: "50 lb", target: "Build clean 8/8 @ 50 FRESH \u2014 fatigue-sensitive (7/4, 7/13 dropped when late)." },
+        { name: "Cable Curl", current: "42.5 lb", target: "Confirm 2nd clean 10/10 (7/4 clean @ RPE 6-7) then 47.5." },
+        { name: "Hammer Curl", current: "20 lb", target: "TEST 25 FRESH \u2014 4 clean sets @ 20 (6/30); fatigues late in session." },
+        { name: "Zottman Curl", current: "20 lb", target: "Chase 10 reps @ 20 (stuck at 6), slow eccentric." },
+        { name: "Reverse Fly", current: "15 lb", target: "Log consistently, build to RPE 6 @ 15 then 20." }
+      ]
     }
   }
 };
@@ -468,6 +417,13 @@ const MUSCLE_GROUPS = {
     movements: ["Reverse Fly"]
   }]
 };
+const MOVEMENT_GROUP = {};
+Object.keys(MUSCLE_GROUPS).forEach(t => MUSCLE_GROUPS[t].forEach(g => g.movements.forEach(n => {
+  MOVEMENT_GROUP[n] = g.label;
+})));
+function groupLabelFor(name) {
+  return MOVEMENT_GROUP[name] || "Other";
+}
 const ORDER_KEY = "at_group_order_v2";
 function loadGroupOrders() {
   try {
@@ -8561,7 +8517,12 @@ const SEED_SESSIONS = [{
       note: ""
     }]
   }]
-}];
+},
+{"id": 61, "type": "push", "label": "Push", "date": "Jul 5, 2026", "note": "Skull crusher tested 20lb - 10x2 RPE 7/8 confirmed. Shoulder press 90x10x2 RPE 7/8 - first clean 10s. Lateral raise 15x10x2. Chest press reps dropped at 120.", "movements": [{"name": "Shoulder Press", "sets": [{"set": 1, "weight": "60", "reps": "10", "rpe": "5", "note": ""}, {"set": 2, "weight": "75", "reps": "10", "rpe": "6", "note": ""}, {"set": 3, "weight": "75", "reps": "10", "rpe": "7", "note": ""}, {"set": 4, "weight": "90", "reps": "10", "rpe": "7", "note": "first clean 10s"}, {"set": 5, "weight": "90", "reps": "10", "rpe": "8", "note": ""}]}, {"name": "Lateral Raise", "sets": [{"set": 1, "weight": "12", "reps": "10", "rpe": "6", "note": ""}, {"set": 2, "weight": "12", "reps": "10", "rpe": "7", "note": ""}, {"set": 3, "weight": "15", "reps": "10", "rpe": "8", "note": ""}, {"set": 4, "weight": "15", "reps": "10", "rpe": "8", "note": ""}]}, {"name": "Rope Pushdown", "sets": [{"set": 1, "weight": "32.5", "reps": "10", "rpe": "5", "note": ""}, {"set": 2, "weight": "37.5", "reps": "10", "rpe": "6", "note": ""}, {"set": 3, "weight": "37.5", "reps": "10", "rpe": "7", "note": ""}, {"set": 4, "weight": "42.5", "reps": "10", "rpe": "8", "note": ""}, {"set": 5, "weight": "42.5", "reps": "10", "rpe": "8", "note": ""}]}, {"name": "Skull Crusher", "sets": [{"set": 1, "weight": "15", "reps": "10", "rpe": "5", "note": ""}, {"set": 2, "weight": "15", "reps": "10", "rpe": "6", "note": ""}, {"set": 3, "weight": "20", "reps": "10", "rpe": "7", "note": "tested 20"}, {"set": 4, "weight": "20", "reps": "10", "rpe": "8", "note": "confirmed working weight"}]}, {"name": "Chest Press", "sets": [{"set": 1, "weight": "90", "reps": "10", "rpe": "6", "note": ""}, {"set": 2, "weight": "105", "reps": "10", "rpe": "7", "note": ""}, {"set": 3, "weight": "105", "reps": "10", "rpe": "8", "note": ""}, {"set": 4, "weight": "120", "reps": "6", "rpe": "8", "note": ""}, {"set": 5, "weight": "120", "reps": "6", "rpe": "9", "note": ""}]}, {"name": "Pec Fly", "sets": [{"set": 1, "weight": "90", "reps": "10", "rpe": "6", "note": ""}, {"set": 2, "weight": "105", "reps": "10", "rpe": "7", "note": ""}, {"set": 3, "weight": "105", "reps": "10", "rpe": "7", "note": ""}, {"set": 4, "weight": "120", "reps": "6", "rpe": "8", "note": ""}, {"set": 5, "weight": "120", "reps": "6", "rpe": "8", "note": ""}]}]},
+{"id": 62, "type": "legs", "label": "Legs", "date": "Jul 8, 2026", "note": "Leg curl 90x10x2 - first clean 10s at 90. Leg extension reps dropped at 150. Goblet conservative after gap. Calf raise held - test 40 next.", "movements": [{"name": "Leg Press", "sets": [{"set": 1, "weight": "140", "reps": "10", "rpe": "5", "note": ""}, {"set": 2, "weight": "155", "reps": "10", "rpe": "6", "note": ""}, {"set": 3, "weight": "155", "reps": "10", "rpe": "6", "note": ""}, {"set": 4, "weight": "170", "reps": "10", "rpe": "7", "note": ""}, {"set": 5, "weight": "170", "reps": "10", "rpe": "8", "note": ""}]}, {"name": "Leg Extension", "sets": [{"set": 1, "weight": "120", "reps": "10", "rpe": "6", "note": ""}, {"set": 2, "weight": "135", "reps": "10", "rpe": "7", "note": ""}, {"set": 3, "weight": "135", "reps": "10", "rpe": "7", "note": ""}, {"set": 4, "weight": "150", "reps": "8", "rpe": "8", "note": ""}, {"set": 5, "weight": "150", "reps": "8", "rpe": "8", "note": ""}]}, {"name": "Leg Curl", "sets": [{"set": 1, "weight": "60", "reps": "10", "rpe": "5", "note": ""}, {"set": 2, "weight": "75", "reps": "10", "rpe": "6", "note": ""}, {"set": 3, "weight": "75", "reps": "10", "rpe": "7", "note": ""}, {"set": 4, "weight": "90", "reps": "10", "rpe": "8", "note": "first clean 10s"}, {"set": 5, "weight": "90", "reps": "10", "rpe": "8", "note": ""}]}, {"name": "Goblet Squat", "sets": [{"set": 1, "weight": "40", "reps": "10", "rpe": "6", "note": ""}, {"set": 2, "weight": "40", "reps": "10", "rpe": "6", "note": ""}, {"set": 3, "weight": "45", "reps": "10", "rpe": "7", "note": ""}, {"set": 4, "weight": "45", "reps": "10", "rpe": "7", "note": ""}]}, {"name": "Calf Raise", "sets": [{"set": 1, "weight": "35", "reps": "20", "rpe": "6", "note": ""}, {"set": 2, "weight": "35", "reps": "20", "rpe": "6", "note": ""}, {"set": 3, "weight": "35", "reps": "20", "rpe": "7", "note": "test 40 next"}]}]},
+{"id": 63, "type": "pull", "label": "Pull", "date": "Jul 13, 2026", "note": "Lat pulldown 135x10x2 confirmed. Seated row 135 building (6/6). DB row reps dropped at 45.", "movements": [{"name": "Seated Row", "sets": [{"set": 1, "weight": "105", "reps": "10", "rpe": "5", "note": ""}, {"set": 2, "weight": "120", "reps": "10", "rpe": "6", "note": ""}, {"set": 3, "weight": "120", "reps": "10", "rpe": "7", "note": ""}, {"set": 4, "weight": "135", "reps": "6", "rpe": "8", "note": ""}, {"set": 5, "weight": "135", "reps": "6", "rpe": "8", "note": ""}]}, {"name": "Lat Pulldown", "sets": [{"set": 1, "weight": "105", "reps": "10", "rpe": "6", "note": ""}, {"set": 2, "weight": "120", "reps": "10", "rpe": "7", "note": ""}, {"set": 3, "weight": "120", "reps": "10", "rpe": "8", "note": ""}, {"set": 4, "weight": "135", "reps": "10", "rpe": "8", "note": ""}, {"set": 5, "weight": "135", "reps": "10", "rpe": "8", "note": "confirmed working weight"}]}, {"name": "DB Row", "sets": [{"set": 1, "weight": "35", "reps": "10", "rpe": "6", "note": ""}, {"set": 2, "weight": "35", "reps": "10", "rpe": "7", "note": ""}, {"set": 3, "weight": "45", "reps": "8", "rpe": "8", "note": ""}, {"set": 4, "weight": "45", "reps": "6", "rpe": "8", "note": ""}]}, {"name": "Reverse Fly", "sets": [{"set": 1, "weight": "15", "reps": "8", "rpe": "6", "note": ""}, {"set": 2, "weight": "15", "reps": "8", "rpe": "7", "note": ""}, {"set": 3, "weight": "15", "reps": "8", "rpe": "7", "note": ""}]}, {"name": "Hammer Curl", "sets": [{"set": 1, "weight": "20", "reps": "10", "rpe": "6", "note": ""}, {"set": 2, "weight": "20", "reps": "10", "rpe": "7", "note": ""}, {"set": 3, "weight": "20", "reps": "8", "rpe": "8", "note": ""}]}]},
+{"id": 64, "type": "legs", "label": "Legs", "date": "Jul 22, 2026", "note": "Leg curl reps dropped to 6 at 90 - monitor lower back compensation. Leg extension still 8 reps at 150. Goblet squat very consistent at 45 - test 50 next. No calf raise.", "movements": [{"name": "Leg Press", "sets": [{"set": 1, "weight": "140", "reps": "10", "rpe": "5", "note": ""}, {"set": 2, "weight": "155", "reps": "10", "rpe": "6", "note": ""}, {"set": 3, "weight": "155", "reps": "10", "rpe": "6", "note": ""}, {"set": 4, "weight": "170", "reps": "10", "rpe": "7", "note": ""}, {"set": 5, "weight": "170", "reps": "10", "rpe": "8", "note": ""}]}, {"name": "Leg Extension", "sets": [{"set": 1, "weight": "120", "reps": "10", "rpe": "5", "note": ""}, {"set": 2, "weight": "135", "reps": "10", "rpe": "6", "note": ""}, {"set": 3, "weight": "135", "reps": "10", "rpe": "7", "note": ""}, {"set": 4, "weight": "150", "reps": "8", "rpe": "8", "note": ""}, {"set": 5, "weight": "150", "reps": "8", "rpe": "8", "note": ""}]}, {"name": "Leg Curl", "sets": [{"set": 1, "weight": "60", "reps": "10", "rpe": "5", "note": ""}, {"set": 2, "weight": "75", "reps": "10", "rpe": "6", "note": ""}, {"set": 3, "weight": "75", "reps": "10", "rpe": "7", "note": ""}, {"set": 4, "weight": "90", "reps": "6", "rpe": "8", "note": "reps dropped - monitor lower back"}, {"set": 5, "weight": "90", "reps": "6", "rpe": "8", "note": ""}]}, {"name": "Goblet Squat", "sets": [{"set": 1, "weight": "45", "reps": "10", "rpe": "5", "note": ""}, {"set": 2, "weight": "45", "reps": "10", "rpe": "6", "note": ""}, {"set": 3, "weight": "45", "reps": "10", "rpe": "6", "note": ""}, {"set": 4, "weight": "45", "reps": "10", "rpe": "7", "note": "test 50 next"}]}]}
+];
 
 // Single stable storage key — never changes
 const STORAGE_KEY = "at_workout_stable";
@@ -8614,8 +8575,8 @@ function buildHandoff(history) {
     year: "numeric"
   }));
   lines.push("\nSPLIT: Legs → Push → Pull");
-  lines.push("HOCKEY: Sun / Mon / Thu");
-  lines.push("SESSION STRUCTURE: 1 WU + 2 build + 2 working for Pull/Legs machines. 3 WU + 2 working for Push machines.\n");
+  lines.push("HOCKEY: SUSPENDED (~3 wks, blood-thinner/PE precaution) — legs unblocked, cardio substituted");
+  lines.push("SESSION STRUCTURE: warm-ups + 2 working (3 on emphasis lift). Fresh opener = progression lift, straight sets/full rest; accessories antagonist-supersetted 45-60s to keep HR up. 60-min cap.\n");
   lines.push("CURRENT WORKING WEIGHTS + TARGETS:");
   Object.entries(BLOCK.sessions).forEach(([key, s]) => {
     lines.push(`\n${s.label.toUpperCase()}:`);
@@ -9507,8 +9468,10 @@ function SessionScreen({
     BLOCK.sessions[type].movements.forEach(m => {
       delete m._loggedSets;
     });
-    const go = groupOrders ? groupOrders[type] : MUSCLE_GROUPS[type].map((_, i) => i);
-    const ordered = buildOrderedMovements(type, go, BLOCK.sessions[type].movements);
+    const ordered = BLOCK.sessions[type].movements.map(m => ({
+      ...m,
+      _group: groupLabelFor(m.name)
+    }));
     setSessionMovements(ordered);
     setActive(type);
     setLastFinished(null);
@@ -9543,6 +9506,24 @@ function SessionScreen({
   const discardDraft = () => {
     setDraft(null);
     clearDraft();
+  };
+  const moveMovementUp = idx => {
+    if (idx <= 0) return;
+    setSessionMovements(prev => {
+      const a = [...prev];
+      [a[idx - 1], a[idx]] = [a[idx], a[idx - 1]];
+      return a;
+    });
+    bumpTick();
+  };
+  const moveMovementDown = idx => {
+    setSessionMovements(prev => {
+      if (idx >= prev.length - 1) return prev;
+      const a = [...prev];
+      [a[idx + 1], a[idx]] = [a[idx], a[idx + 1]];
+      return a;
+    });
+    bumpTick();
   };
 
   // Move entire group up/down — find group boundary and swap group blocks
@@ -9950,83 +9931,32 @@ function SessionScreen({
       color: "#999",
       marginTop: 2
     }
-  }, l)))), (() => {
-    const rendered = [];
-    let lastGroup = null;
-    const groups = MUSCLE_GROUPS[active] || [];
-    const go = groupOrders?.[active] || groups.map((_, i) => i);
-    const groupOrder = go.map(i => groups[i]?.label).filter(Boolean);
-    const isFirstInGroup = mov => {
-      const g = mov._group;
-      const firstMov = sessionMovements.find(m => m._group === g);
-      return firstMov?.name === mov.name;
-    };
-    sessionMovements.forEach((mov, idx) => {
-      const group = mov._group || "Other";
-      const isFirst = isFirstInGroup(mov);
-      const groupIdx = groupOrder.indexOf(group);
-      const isFirstGroup = groupIdx === 0;
-      const isLastGroup = groupIdx === groupOrder.length - 1;
-      if (isFirst) {
-        rendered.push(/*#__PURE__*/React.createElement("div", {
-          key: `group-${group}`,
-          style: {
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            margin: "10px 0 4px"
-          }
-        }, /*#__PURE__*/React.createElement("span", {
-          style: {
-            fontSize: 10,
-            fontWeight: 700,
-            color: session.color,
-            textTransform: "uppercase",
-            letterSpacing: "0.08em"
-          }
-        }, group), /*#__PURE__*/React.createElement("div", {
-          style: {
-            flex: 1,
-            height: "0.5px",
-            background: "#e5e5e3"
-          }
-        }), /*#__PURE__*/React.createElement("button", {
-          onClick: () => moveGroupUp(group),
-          disabled: isFirstGroup,
-          style: {
-            background: "none",
-            border: "none",
-            cursor: isFirstGroup ? "default" : "pointer",
-            fontSize: 12,
-            color: isFirstGroup ? "#e5e5e3" : "#bbb",
-            padding: "2px 4px",
-            lineHeight: 1
-          }
-        }, "▲"), /*#__PURE__*/React.createElement("button", {
-          onClick: () => moveGroupDown(group),
-          disabled: isLastGroup,
-          style: {
-            background: "none",
-            border: "none",
-            cursor: isLastGroup ? "default" : "pointer",
-            fontSize: 12,
-            color: isLastGroup ? "#e5e5e3" : "#bbb",
-            padding: "2px 4px",
-            lineHeight: 1
-          }
-        }, "▼")));
-      }
-      rendered.push(/*#__PURE__*/React.createElement(MovementRow, {
-        key: mov.name,
-        mov: mov,
-        sessionColor: session.color,
-        history: history,
-        sessionType: active,
-        onChange: bumpTick
-      }));
-    });
-    return rendered;
-  })(), /*#__PURE__*/React.createElement("div", {
+  }, l)))), sessionMovements.map((mov, idx) => /*#__PURE__*/React.createElement("div", {
+    key: mov.name,
+    style: { marginTop: 10 }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: { display: "flex", alignItems: "center", gap: 8, margin: "0 0 4px" }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: { fontSize: 10, fontWeight: 700, color: session.color, textTransform: "uppercase", letterSpacing: "0.08em", background: session.bg, padding: "2px 6px", borderRadius: 6 }
+  }, mov._group || "Other"), /*#__PURE__*/React.createElement("div", {
+    style: { flex: 1, height: "0.5px", background: "#e5e5e3" }
+  }), /*#__PURE__*/React.createElement("span", {
+    style: { fontSize: 10, color: "#bbb", marginRight: 4, fontWeight: 600 }
+  }, "#", idx + 1), /*#__PURE__*/React.createElement("button", {
+    onClick: () => moveMovementUp(idx),
+    disabled: idx === 0,
+    style: { background: "none", border: "none", cursor: idx === 0 ? "default" : "pointer", fontSize: 12, color: idx === 0 ? "#e5e5e3" : "#bbb", padding: "2px 4px", lineHeight: 1 }
+  }, "\u25B2"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => moveMovementDown(idx),
+    disabled: idx === sessionMovements.length - 1,
+    style: { background: "none", border: "none", cursor: idx === sessionMovements.length - 1 ? "default" : "pointer", fontSize: 12, color: idx === sessionMovements.length - 1 ? "#e5e5e3" : "#bbb", padding: "2px 4px", lineHeight: 1 }
+  }, "\u25BC")), /*#__PURE__*/React.createElement(MovementRow, {
+    mov: mov,
+    sessionColor: session.color,
+    history: history,
+    sessionType: active,
+    onChange: bumpTick
+  }))), /*#__PURE__*/React.createElement("div", {
     style: S.label
   }, "Session note"), /*#__PURE__*/React.createElement("textarea", {
     value: sessionNote,
