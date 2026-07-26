@@ -976,7 +976,7 @@
     "type": "pull",
     "label": "Pull",
     "date": "Jul 4, 2026",
-    "note": "Lat pulldown 135 TEST PASSED — clean 8/8 @ RPE 8, now working weight. Seated row 135 clean 8/8 (up from 4/5/5 on 6/30). Cable curl clean 10/10 @ 42.5, ready for 47.5. Hammer curl held 20 (8/8/8, back-half fatigue), 25 deferred. DB row light (40x2, back-half). Zottman still 6 reps. Reverse fly skipped.",
+    "note": "Lat pulldown 135 TEST PASSED \u2014 clean 8/8 @ RPE 8, now working weight. Seated row 135 clean 8/8 (up from 4/5/5 on 6/30). Cable curl clean 10/10 @ 42.5, ready for 47.5. Hammer curl held 20 (8/8/8, back-half fatigue), 25 deferred. DB row light (40x2, back-half). Zottman still 6 reps. Reverse fly skipped.",
     "movements": [
       {
         "name": "Seated Row",
@@ -1162,7 +1162,7 @@
     "type": "push",
     "label": "Push",
     "date": "Jul 1, 2026",
-    "note": "Chest press BROKE PLATEAU — clean 10/10 at 120 (RPE 7-8), first clean 10s across the plateau stretch, ready to test 135. Pec fly clean 10/10 at 120. Rope pushdown recovered to 42.5. Shoulder press skipped.",
+    "note": "Chest press BROKE PLATEAU \u2014 clean 10/10 at 120 (RPE 7-8), first clean 10s across the plateau stretch, ready to test 135. Pec fly clean 10/10 at 120. Rope pushdown recovered to 42.5. Shoulder press skipped.",
     "movements": [
       {
         "name": "Chest Press",
@@ -1524,7 +1524,7 @@
     "type": "push",
     "label": "Push",
     "date": "Jun 27, 2026",
-    "note": "Chest press plateau confirmed — 120 holding but reps dropping (8/6/6, RPE 8-9). Skull crusher clean at 15 (10/10). Rope pushdown pushed 42.5 again (6/6). Lateral raise 15 lb building. Shoulder press topped at 75x6.",
+    "note": "Chest press plateau confirmed \u2014 120 holding but reps dropping (8/6/6, RPE 8-9). Skull crusher clean at 15 (10/10). Rope pushdown pushed 42.5 again (6/6). Lateral raise 15 lb building. Shoulder press topped at 75x6.",
     "movements": [
       {
         "name": "Chest Press",
@@ -1759,7 +1759,7 @@
     "type": "legs",
     "label": "Legs",
     "date": "Jun 24, 2026",
-    "note": "Leg extension back to 150 cleanly — regression resolved. Goblet squat ready for 50. Calf raise ready for 40. Leg curl 90 held.",
+    "note": "Leg extension back to 150 cleanly \u2014 regression resolved. Goblet squat ready for 50. Calf raise ready for 40. Leg curl 90 held.",
     "movements": [
       {
         "name": "Leg Press",
@@ -1947,7 +1947,7 @@
     "type": "pull",
     "label": "Pull",
     "date": "Jun 21, 2026",
-    "note": "Seated row and lat pulldown both RPE 7/7 at 120 — both ready for 135. Cable curl reps dropped at 47.5 — back to 42.5 working. Zottman reps low at 20.",
+    "note": "Seated row and lat pulldown both RPE 7/7 at 120 \u2014 both ready for 135. Cable curl reps dropped at 47.5 \u2014 back to 42.5 working. Zottman reps low at 20.",
     "movements": [
       {
         "name": "Seated Row",
@@ -2168,7 +2168,7 @@
     "type": "push",
     "label": "Push",
     "date": "Jun 20, 2026",
-    "note": "Lateral raise 12x10x4 RPE 6/6/7/7 — ready to test 15 on S3/S4. Chest press and pec fly holding at 120.",
+    "note": "Lateral raise 12x10x4 RPE 6/6/7/7 \u2014 ready to test 15 on S3/S4. Chest press and pec fly holding at 120.",
     "movements": [
       {
         "name": "Chest Press",
@@ -2577,7 +2577,7 @@
     "type": "push",
     "label": "Push",
     "date": "Jun 13, 2026",
-    "note": "Pec fly reps dropped at 120 — back to 105 working. Skull crusher dropped to 12 lb — elbow adapting. Shoulder press 90x8x2 — holding. Lateral raise 12x10x4 clean.",
+    "note": "Pec fly reps dropped at 120 \u2014 back to 105 working. Skull crusher dropped to 12 lb \u2014 elbow adapting. Shoulder press 90x8x2 \u2014 holding. Lateral raise 12x10x4 clean.",
     "movements": [
       {
         "name": "Chest Press",
@@ -2805,7 +2805,7 @@
     "type": "pull",
     "label": "Pull",
     "date": "Jun 11, 2026",
-    "note": "Lat pulldown ramp skipped — RPE 9 at 120, back to 105 working. DB row ready for 50. Cable curl 47.5 ceiling test. Hammer curl reps dropping late in session.",
+    "note": "Lat pulldown ramp skipped \u2014 RPE 9 at 120, back to 105 working. DB row ready for 50. Cable curl 47.5 ceiling test. Hammer curl reps dropping late in session.",
     "movements": [
       {
         "name": "Seated Row",
@@ -2869,7 +2869,7 @@
             "weight": "120",
             "reps": "10",
             "rpe": "9",
-            "note": "skipped ramp — back to 105 working"
+            "note": "skipped ramp \u2014 back to 105 working"
           }
         ]
       },
@@ -2987,7 +2987,7 @@
             "weight": "20",
             "reps": "8",
             "rpe": "8",
-            "note": "reps down — late in session"
+            "note": "reps down \u2014 late in session"
           }
         ]
       }
@@ -2998,7 +2998,7 @@
     "type": "legs",
     "label": "Legs",
     "date": "Jun 10, 2026",
-    "note": "Leg curl up to 90 lb — R hamstring RPE 7/8, no pain. Leg extension reps dropped at 150 — back to 135 working. Goblet squat 45 hold. Order: curls → goblet → calves → press → extension.",
+    "note": "Leg curl up to 90 lb \u2014 R hamstring RPE 7/8, no pain. Leg extension reps dropped at 150 \u2014 back to 135 working. Goblet squat 45 hold. Order: curls \u2192 goblet \u2192 calves \u2192 press \u2192 extension.",
     "movements": [
       {
         "name": "Leg Curl",
@@ -3036,7 +3036,7 @@
             "weight": "90",
             "reps": "10",
             "rpe": "8",
-            "note": "new ceiling — R hamstring clean"
+            "note": "new ceiling \u2014 R hamstring clean"
           }
         ]
       },
@@ -3193,7 +3193,7 @@
     "type": "push",
     "label": "Push",
     "date": "Jun 7, 2026",
-    "note": "Rope pushdown ready for 47.5. Chest press 120 still ceiling. Lateral raise reps dropping — form or fatigue. Skull crusher skipped. Shoulder press 3 sets only.",
+    "note": "Rope pushdown ready for 47.5. Chest press 120 still ceiling. Lateral raise reps dropping \u2014 form or fatigue. Skull crusher skipped. Shoulder press 3 sets only.",
     "movements": [
       {
         "name": "Chest Press",
@@ -3374,7 +3374,7 @@
     "type": "pull",
     "label": "Pull",
     "date": "Jun 6, 2026",
-    "note": "Lat pulldown ready to test 135. Zottman 20 lb confirmed. Hammer curl jumped to 25 — ceiling not working weight, back to 20. DB row single working set at 45.",
+    "note": "Lat pulldown ready to test 135. Zottman 20 lb confirmed. Hammer curl jumped to 25 \u2014 ceiling not working weight, back to 20. DB row single working set at 45.",
     "movements": [
       {
         "name": "Seated Row",
@@ -3816,7 +3816,7 @@
     "type": "legs",
     "label": "Legs",
     "date": "May 27, 2026",
-    "note": "Goblet squat jumped to 45 — clean. Leg curl 75 RPE improving. Calf raise ready for 40. Pre-vacation session.",
+    "note": "Goblet squat jumped to 45 \u2014 clean. Leg curl 75 RPE improving. Calf raise ready for 40. Pre-vacation session.",
     "movements": [
       {
         "name": "Leg Press",
@@ -4004,7 +4004,7 @@
     "type": "pull",
     "label": "Pull",
     "date": "May 25, 2026",
-    "note": "DB row 50 and cable curl 42.5 both confirmed. Rows/pulldown harder after DB work — rotating order weekly going forward. Reverse fly ready to test 20.",
+    "note": "DB row 50 and cable curl 42.5 both confirmed. Rows/pulldown harder after DB work \u2014 rotating order weekly going forward. Reverse fly ready to test 20.",
     "movements": [
       {
         "name": "Seated Row",
@@ -4237,7 +4237,7 @@
     "type": "push",
     "label": "Push",
     "date": "May 24, 2026",
-    "note": "Chest press 120 confirmed working weight. Rope pushdown 42.5 locked in. Skull crushers new — elbow sensation on final reps, monitor. Lateral raise still dropping reps at 15 straight.",
+    "note": "Chest press 120 confirmed working weight. Rope pushdown 42.5 locked in. Skull crushers new \u2014 elbow sensation on final reps, monitor. Lateral raise still dropping reps at 15 straight.",
     "movements": [
       {
         "name": "Chest Press",
@@ -4407,7 +4407,7 @@
             "weight": "15",
             "reps": "6",
             "rpe": "9",
-            "note": "reps dropping — back to 12/12/15/15"
+            "note": "reps dropping \u2014 back to 12/12/15/15"
           }
         ]
       },
@@ -4433,7 +4433,233 @@
             "weight": "15",
             "reps": "10",
             "rpe": "8",
-            "note": "elbow sensation on final reps — monitor"
+            "note": "elbow sensation on final reps \u2014 monitor"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 39,
+    "type": "pull",
+    "label": "Pull",
+    "date": "May 22, 2026",
+    "note": "Seated row 120 consistent. Lat pulldown 120 RPE 9 on W2 \u2014 one more session. DB row ready to test 50. Zottman back to 15 lb.",
+    "movements": [
+      {
+        "name": "Seated Row",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "90",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "105",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "105",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 4,
+            "weight": "120",
+            "reps": "10",
+            "rpe": "8",
+            "note": ""
+          },
+          {
+            "set": 5,
+            "weight": "120",
+            "reps": "10",
+            "rpe": "8",
+            "note": ""
+          }
+        ]
+      },
+      {
+        "name": "Lat Pulldown",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "90",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "105",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "105",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 4,
+            "weight": "120",
+            "reps": "10",
+            "rpe": "8",
+            "note": ""
+          },
+          {
+            "set": 5,
+            "weight": "120",
+            "reps": "10",
+            "rpe": "9",
+            "note": ""
+          }
+        ]
+      },
+      {
+        "name": "DB Row",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "40",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "40",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "45",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 4,
+            "weight": "45",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          }
+        ]
+      },
+      {
+        "name": "Cable Curl",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "32.5",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "37.5",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "37.5",
+            "reps": "10",
+            "rpe": "8",
+            "note": ""
+          }
+        ]
+      },
+      {
+        "name": "Reverse Fly",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "15",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "15",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "15",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          }
+        ]
+      },
+      {
+        "name": "Hammer Curl",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "20",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "20",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "20",
+            "reps": "10",
+            "rpe": "8",
+            "note": ""
+          }
+        ]
+      },
+      {
+        "name": "Zottman Curl",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "15",
+            "reps": "10",
+            "rpe": "6",
+            "note": "back to 15 from 20"
+          },
+          {
+            "set": 2,
+            "weight": "15",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "15",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
           }
         ]
       }
@@ -4444,7 +4670,7 @@
     "type": "push",
     "label": "Push",
     "date": "May 21, 2026",
-    "note": "Pec fly 120 confirmed as new working weight. Chest press and shoulder press still at ceiling. Lateral raise jumped to 15 — reps dropped on S3. Rope pushdown 5 lb increments.",
+    "note": "Pec fly 120 confirmed as new working weight. Chest press and shoulder press still at ceiling. Lateral raise jumped to 15 \u2014 reps dropped on S3. Rope pushdown 5 lb increments.",
     "movements": [
       {
         "name": "Chest Press",
@@ -4639,7 +4865,7 @@
     "type": "legs",
     "label": "Legs",
     "date": "May 19, 2026",
-    "note": "Leg press tested 170 — strong. Leg extension to 150. Leg curl to 75 — monitor R hamstring. Goblet squat clean at 40.",
+    "note": "Leg press tested 170 \u2014 strong. Leg extension to 150. Leg curl to 75 \u2014 monitor R hamstring. Goblet squat clean at 40.",
     "movements": [
       {
         "name": "Leg Press",
@@ -4827,7 +5053,7 @@
     "type": "pull",
     "label": "Pull",
     "date": "May 16, 2026",
-    "note": "Hammers and Zottmans moved earlier — better quality. Zottman jumped to 20 lb, 8 reps baseline. Lat pulldown close to 120.",
+    "note": "Hammers and Zottmans moved earlier \u2014 better quality. Zottman jumped to 20 lb, 8 reps baseline. Lat pulldown close to 120.",
     "movements": [
       {
         "name": "Seated Row",
@@ -4976,7 +5202,7 @@
             "weight": "20",
             "reps": "8",
             "rpe": "8",
-            "note": "jumped from 15 — form ok, reps suffered"
+            "note": "jumped from 15 \u2014 form ok, reps suffered"
           },
           {
             "set": 2,
@@ -5027,7 +5253,7 @@
     "type": "push",
     "label": "Push",
     "date": "May 15, 2026",
-    "note": "Tested 120 on chest press and pec fly — ceiling, not working weight. Shoulder press done on DBs at 70 lb — harder than machine, track separately. OHE dropped — back discomfort. Rope pushdown at 42.5 looking close.",
+    "note": "Tested 120 on chest press and pec fly \u2014 ceiling, not working weight. Shoulder press done on DBs at 70 lb \u2014 harder than machine, track separately. OHE dropped \u2014 back discomfort. Rope pushdown at 42.5 looking close.",
     "movements": [
       {
         "name": "Chest Press",
@@ -5131,7 +5357,7 @@
             "weight": "70",
             "reps": "10",
             "rpe": "7",
-            "note": "DBs today — harder than machine"
+            "note": "DBs today \u2014 harder than machine"
           },
           {
             "set": 2,
@@ -5243,7 +5469,7 @@
     "type": "legs",
     "label": "Legs",
     "date": "May 13, 2026",
-    "note": "Sore from hockey but clean session. Low back monitored — no issues. Goblet squat best yet — RPE 6/6, no flags.",
+    "note": "Sore from hockey but clean session. Low back monitored \u2014 no issues. Goblet squat best yet \u2014 RPE 6/6, no flags.",
     "movements": [
       {
         "name": "Leg Press",
@@ -5424,7 +5650,7 @@
     "type": "pull",
     "label": "Pull",
     "date": "May 10, 2026",
-    "note": "Seated row 120 confirmed. Lat pulldown 120 not ready — back to 105 working. DB row 45 clean baseline. Time-crunched, reverse fly/hammers/zottmans dropped.",
+    "note": "Seated row 120 confirmed. Lat pulldown 120 not ready \u2014 back to 105 working. DB row 45 clean baseline. Time-crunched, reverse fly/hammers/zottmans dropped.",
     "movements": [
       {
         "name": "Seated Row",
@@ -5572,7 +5798,7 @@
     "type": "push",
     "label": "Push",
     "date": "May 9, 2026",
-    "note": "Shoulder press 90x6x2 RPE 9 — ceiling test, not working weight yet. Back discomfort on shoulder press — brace cue needed. Rope pushdown 42.5 also at ceiling, back to 37.5 working.",
+    "note": "Shoulder press 90x6x2 RPE 9 \u2014 ceiling test, not working weight yet. Back discomfort on shoulder press \u2014 brace cue needed. Rope pushdown 42.5 also at ceiling, back to 37.5 working.",
     "movements": [
       {
         "name": "Chest Press",
@@ -5690,7 +5916,7 @@
             "weight": "90",
             "reps": "6",
             "rpe": "9",
-            "note": "back discomfort — brace cue"
+            "note": "back discomfort \u2014 brace cue"
           }
         ]
       },
@@ -5800,7 +6026,7 @@
     "type": "legs",
     "label": "Legs",
     "date": "May 8, 2026",
-    "note": "Knee and groin clean. R hamstring pain at 75 lb final set — drop back to 60 lb ceiling. Goblet squat 4x solid.",
+    "note": "Knee and groin clean. R hamstring pain at 75 lb final set \u2014 drop back to 60 lb ceiling. Goblet squat 4x solid.",
     "movements": [
       {
         "name": "Leg Press",
@@ -5918,7 +6144,7 @@
             "weight": "75",
             "reps": "10",
             "rpe": "8",
-            "note": "R hamstring pain final reps — drop back to 60 ceiling"
+            "note": "R hamstring pain final reps \u2014 drop back to 60 ceiling"
           }
         ]
       },
@@ -5995,7 +6221,7 @@
     "type": "pull",
     "label": "Pull",
     "date": "May 3, 2026",
-    "note": "No 45s available for DB Row. Zottmans dropped — biceps cooked after cables and hammers.",
+    "note": "No 45s available for DB Row. Zottmans dropped \u2014 biceps cooked after cables and hammers.",
     "movements": [
       {
         "name": "Seated Row",
@@ -6209,7 +6435,7 @@
     "type": "push",
     "label": "Push",
     "date": "May 2, 2026",
-    "note": "Rope unavailable. Chest press ceiling confirmed at 105 — needs clean 3×10 before progression. No 80 lb on shoulder press — next jump is 90.",
+    "note": "Rope unavailable. Chest press ceiling confirmed at 105 \u2014 needs clean 3\u00d710 before progression. No 80 lb on shoulder press \u2014 next jump is 90.",
     "movements": [
       {
         "name": "Chest Press",
@@ -6390,7 +6616,7 @@
     "type": "legs",
     "label": "Legs",
     "date": "May 1, 2026",
-    "note": "Conservative start — time crunch. Knee and groin clean. Skipped RDL and glute bridge.",
+    "note": "Conservative start \u2014 time crunch. Knee and groin clean. Skipped RDL and glute bridge.",
     "movements": [
       {
         "name": "Leg Press",
@@ -6571,7 +6797,7 @@
     "type": "pull",
     "label": "Pull",
     "date": "Apr 26, 2026",
-    "note": "New ramp structure: 1 WU + 2 build + 2 working. DB Row 50 lb at RPE 9 — tempo likely broke down.",
+    "note": "New ramp structure: 1 WU + 2 build + 2 working. DB Row 50 lb at RPE 9 \u2014 tempo likely broke down.",
     "movements": [
       {
         "name": "Seated Row",
@@ -6734,7 +6960,7 @@
             "weight": "15",
             "reps": "10",
             "rpe": "6",
-            "note": "confirmed — up from 10"
+            "note": "confirmed \u2014 up from 10"
           },
           {
             "set": 2,
@@ -6974,7 +7200,7 @@
             "weight": "20",
             "reps": "10",
             "rpe": "6",
-            "note": "back sensation — elbow flare"
+            "note": "back sensation \u2014 elbow flare"
           },
           {
             "set": 2,
@@ -6999,7 +7225,7 @@
     "type": "legs",
     "label": "Legs",
     "date": "Apr 24, 2026",
-    "note": "Leg press clean. Groin tightness in goblet squats settled by end. Knee tightness in RDL — likely fatigue.",
+    "note": "Leg press clean. Groin tightness in goblet squats settled by end. Knee tightness in RDL \u2014 likely fatigue.",
     "movements": [
       {
         "name": "Leg Press",
@@ -7404,7 +7630,7 @@
     "type": "legs",
     "label": "Legs",
     "date": "Apr 17, 2026",
-    "note": "New flags — groin soreness (L>R) and left knee below patella (new sensation).",
+    "note": "New flags \u2014 groin soreness (L>R) and left knee below patella (new sensation).",
     "movements": [
       {
         "name": "Leg Press",
@@ -7884,7 +8110,7 @@
     "type": "pull",
     "label": "Pull",
     "date": "Apr 10, 2026",
-    "note": "Fatigued — skipped home portion. Elbow tightness reappeared at end under load.",
+    "note": "Fatigued \u2014 skipped home portion. Elbow tightness reappeared at end under load.",
     "movements": [
       {
         "name": "Lat Pulldown",
@@ -8324,7 +8550,7 @@
     "type": "pull",
     "label": "Pull",
     "date": "Apr 5, 2026",
-    "note": "Elbow good throughout. Wrist pressure on cable curl straight bar — try EZ bar.",
+    "note": "Elbow good throughout. Wrist pressure on cable curl straight bar \u2014 try EZ bar.",
     "movements": [
       {
         "name": "DB Row",
@@ -8859,7 +9085,7 @@
     "type": "pull",
     "label": "Pull",
     "date": "Mar 30, 2026",
-    "note": "Hamstrings still tight from 3/28. Elbow tightness appeared at end — monitor.",
+    "note": "Hamstrings still tight from 3/28. Elbow tightness appeared at end \u2014 monitor.",
     "movements": [
       {
         "name": "DB Row",
@@ -9208,7 +9434,7 @@
             "weight": "60",
             "reps": "12",
             "rpe": "8",
-            "note": "full-range hamstring tightness — do not use 60 as working weight"
+            "note": "full-range hamstring tightness \u2014 do not use 60 as working weight"
           }
         ]
       },
@@ -9271,7 +9497,7 @@
     "type": "legs",
     "label": "Legs",
     "date": "Mar 23, 2026",
-    "note": "Left knee snap on single leg press at 60 lb — do not progress single leg. Right knee taking more load than left.",
+    "note": "Left knee snap on single leg press at 60 lb \u2014 do not progress single leg. Right knee taking more load than left.",
     "movements": [
       {
         "name": "Leg Press",
@@ -9384,7 +9610,7 @@
     "type": "pull",
     "label": "Pull",
     "date": "Mar 22, 2026",
-    "note": "50 lb row baseline established. First leg press session. Left knee snap on single leg — flagged.",
+    "note": "50 lb row baseline established. First leg press session. Left knee snap on single leg \u2014 flagged.",
     "movements": [
       {
         "name": "DB Row",
