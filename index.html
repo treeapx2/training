@@ -329,13 +329,16 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
 // ── Block State ───────────────────────────────────────────────────────────────
 const BLOCK = {
   flags: [
-    "ON BLOOD THINNERS (~3 wks, PE precaution) — NO contact/fall-risk activity; NO failure/grinding reps (strains bruise/bleed more); keep RPE \u22648; a 'test' = controlled top set leaving 2+ in reserve. Confirm exertion intensity with care team.",
-    "Hockey SUSPENDED this block — legs unblocked (72-86h spacing constraint lifted); cardio substituted (Z2 bike / elliptical / incline walk).",
+    "ON BLOOD THINNERS (~3 wks, PE precaution) — NO contact/fall-risk activity; NO failure/grinding reps; keep RPE \u22648; a 'test' = controlled top set leaving 2+ in reserve. Confirm exertion intensity with care team.",
+    "Hockey SUSPENDED — legs unblocked; cardio substituted (Z2 bike / elliptical / incline walk / rower). Aerobic work stays conversational pace, no intervals until cleared.",
+    "Legs run as A (heavy 8-10) and B (higher-rep 12-15) — keep \u226548h apart. Legs B: drop Leg Press to ~140-155, Leg Curl ~75, add 8-10 min Z2 bike finisher.",
+    "PROGRESSION VALIDITY: run the target lift FRESH as movement #1. Reps logged late in a session are fatigue artifacts, not regressions.",
     "Groin soreness (L>R) — daily butterfly stretch + lateral lunge holds.",
-    "Left knee below patella — monitor all squat/hinge; bilateral leg press only, single-leg press off.",
-    "Hamstring — Leg Curl HOLD 90; low-back compensation appeared 7/22; foam roll before legs.",
-    "Thumb — Shoulder Press reached clean 90 (7/5) but keep watching; prior 75 ceiling.",
-    "Elbow — end of pull; Skull Crusher pull/stretch normal, sharp pain = stop."
+    "Left knee below patella — monitor squat/hinge; bilateral leg press only, single-leg press off.",
+    "Hamstring — Leg Curl HOLD 90 @ RPE \u22647; low-back compensation appeared 7/22, stop set if back takes over.",
+    "Thumb — Shoulder Press clean at 90 (7/5); keep watching.",
+    "Elbow — Skull Crusher pull/stretch normal, sharp pain = stop.",
+    "Core stack on cardio days (dead bug, bird dog, side plank, Pallof, RKC) — targets the low-back compensation + groin asymmetry."
   ],
   sessions: {
     legs: {
@@ -343,11 +346,11 @@ const BLOCK = {
       color: "#3B6D11",
       bg: "#EAF3DE",
       movements: [
-        { name: "Leg Press", current: "170 lb", target: "TEST 185 \u2014 clean 10/10 @ RPE 7-8 across 6/24, 7/8, 7/22. Run FRESH as opener; stop at RPE 8." },
-        { name: "Leg Extension", current: "150 lb", target: "HOLD 150 \u2014 reps slipped to 8 (7/8, 7/22); rebuild clean 10/10 @ RPE \u22648 before 165." },
-        { name: "Leg Curl", current: "90 lb", target: "HOLD 90 \u2014 hamstring flag; dropped to 6 reps w/ low-back compensation (7/22). RPE \u22647, test only when fresh." },
-        { name: "Goblet Squat", current: "45 lb", target: "TEST 50 \u2014 very consistent 10/10 @ RPE 6-7 (7/22)." },
-        { name: "Calf Raise", current: "35 lb", target: "TEST 40 \u2014 clean 20-rep sets @ RPE 6-7." }
+        { name: "Leg Press", current: "170 lb", workSets: 3, reps: 10, target: "TEST 185 \u2014 clean 10/10 @ RPE 7-8 across 6/24, 7/8, 7/22. FRESH opener, straight sets, stop RPE 8. Knee bites \u2192 stay 170." },
+        { name: "Leg Extension", current: "150 lb", workSets: 2, reps: 10, target: "HOLD 150 \u2014 stuck at 8 reps (7/8, 7/22). Rebuild clean 10/10 @ RPE \u22648 before 165." },
+        { name: "Leg Curl", current: "90 lb", workSets: 2, reps: 10, target: "HOLD 90 \u2014 RPE \u22647. Dropped to 6 w/ low-back compensation (7/22). Stop set if back takes over." },
+        { name: "Goblet Squat", current: "45 lb", workSets: 2, reps: 10, target: "TEST 50 \u2014 consistent 10/10 @ RPE 6-7 (7/22). Controlled depth, knee-monitor." },
+        { name: "Calf Raise", current: "35 lb", workSets: 3, reps: 15, target: "TEST 40 \u2014 clean 20-rep sets @ RPE 6-7. Superset w/ Leg Extension." }
       ]
     },
     push: {
@@ -355,12 +358,12 @@ const BLOCK = {
       color: "#185FA5",
       bg: "#E6F1FB",
       movements: [
-        { name: "Chest Press", current: "120 lb", target: "Build 2nd clean 10/10 @ RPE \u22648 FRESH, then 135 \u2014 7/1 clean; 7/5 drop logged last (fatigue, discount)." },
-        { name: "Pec Fly", current: "120 lb", target: "Build clean 10/10 then 135 \u2014 7/1 clean 10/10; watch placement fatigue." },
-        { name: "Shoulder Press", current: "90 lb", target: "HOLD 90 \u2014 first clean 10/10 @ RPE 7-8 (7/5); confirm 2nd session (thumb watch) then 105." },
-        { name: "Rope Pushdown", current: "42.5 lb", target: "Confirm 2nd clean 10/10 (7/5 clean @ RPE 8) then 47.5." },
-        { name: "Lateral Raise", current: "15 lb", target: "15 working now \u2014 15x10x2 @ RPE 8 (7/5); build straight 15s." },
-        { name: "Skull Crusher", current: "20 lb", target: "20 CONFIRMED \u2014 10/10 @ RPE 7-8 (7/5). Elbow watch: pull/stretch normal, sharp = stop." }
+        { name: "Chest Press", current: "120 lb", workSets: 2, reps: 10, target: "Build 2nd clean 10/10 @ RPE \u22648 FRESH \u2192 then TEST 135. 7/1 clean; 7/5 drop logged 5th (fatigue, discounted)." },
+        { name: "Shoulder Press", current: "90 lb", workSets: 2, reps: 10, target: "HOLD 90 \u2014 first clean 10/10 @ RPE 7-8 (7/5). Confirm 2nd session (thumb watch) \u2192 105." },
+        { name: "Pec Fly", current: "120 lb", workSets: 2, reps: 10, target: "Build clean 10/10 \u2192 135. Superset w/ Lateral Raise." },
+        { name: "Rope Pushdown", current: "42.5 lb", workSets: 2, reps: 10, target: "Confirm 2nd clean 10/10 (7/5 clean @ RPE 8) \u2192 47.5. Superset w/ Skull Crusher." },
+        { name: "Lateral Raise", current: "15 lb", workSets: 2, reps: 12, target: "Build straight 15s \u2014 15x10x2 @ RPE 8 (7/5)." },
+        { name: "Skull Crusher", current: "20 lb", workSets: 2, reps: 10, target: "HOLD 20 \u2014 confirmed 10/10 @ RPE 7-8 (7/5). Sharp elbow pain = stop." }
       ]
     },
     pull: {
@@ -368,13 +371,13 @@ const BLOCK = {
       color: "#3C3489",
       bg: "#EEEDFE",
       movements: [
-        { name: "Seated Row", current: "135 lb", target: "Build clean 10/10 @ 135 (7/4 8/8, 7/13 6/6 fatigued) then 150. Run fresh." },
-        { name: "Lat Pulldown", current: "135 lb", target: "Confirm 2nd clean 10/10 (7/13 clean 10/10) then 150." },
-        { name: "DB Row", current: "50 lb", target: "Build clean 8/8 @ 50 FRESH \u2014 fatigue-sensitive (7/4, 7/13 dropped when late)." },
-        { name: "Cable Curl", current: "42.5 lb", target: "Confirm 2nd clean 10/10 (7/4 clean @ RPE 6-7) then 47.5." },
-        { name: "Hammer Curl", current: "20 lb", target: "TEST 25 FRESH \u2014 4 clean sets @ 20 (6/30); fatigues late in session." },
-        { name: "Zottman Curl", current: "20 lb", target: "Chase 10 reps @ 20 (stuck at 6), slow eccentric." },
-        { name: "Reverse Fly", current: "15 lb", target: "Log consistently, build to RPE 6 @ 15 then 20." }
+        { name: "Seated Row", current: "135 lb", workSets: 2, reps: 10, target: "Back to 135 \u2014 build clean 10/10 \u2192 150. (7/25 deliberately deloaded to 120x10x2 @ RPE 7 on upper re-entry.)" },
+        { name: "Lat Pulldown", current: "135 lb", workSets: 2, reps: 10, target: "Back to 135 \u2014 confirm 2nd clean 10/10 (7/13 clean) \u2192 150." },
+        { name: "DB Row", current: "50 lb", workSets: 2, reps: 10, target: "Build 8-10 @ 50 \u2014 45x10 @ RPE 7 clean as FRESH opener (7/25), best log to date. Keep leading with this." },
+        { name: "Cable Curl", current: "42.5 lb", workSets: 2, reps: 10, target: "TEST 47.5 \u2014 two clean sessions at 42.5 (7/4, 7/25 4x10 @ RPE 6-7)." },
+        { name: "Hammer Curl", current: "20 lb", workSets: 2, reps: 10, target: "HOLD 20 \u2014 read heavy cold (7/25, 20x8 @ RPE 8). TEST 25 only when leading the session fresh." },
+        { name: "Zottman Curl", current: "20 lb", workSets: 2, reps: 10, target: "Chase 10 reps @ 20 (stuck at 6) \u2014 slow eccentric." },
+        { name: "Reverse Fly", current: "15 lb", workSets: 2, reps: 12, target: "TEST 20 for 8s \u2014 15x10x3 all @ RPE 6 (7/25) clears the consistency gate." }
       ]
     }
   }
@@ -8521,10 +8524,68 @@ const SEED_SESSIONS = [{
 {"id": 61, "type": "push", "label": "Push", "date": "Jul 5, 2026", "note": "Skull crusher tested 20lb - 10x2 RPE 7/8 confirmed. Shoulder press 90x10x2 RPE 7/8 - first clean 10s. Lateral raise 15x10x2. Chest press reps dropped at 120.", "movements": [{"name": "Shoulder Press", "sets": [{"set": 1, "weight": "60", "reps": "10", "rpe": "5", "note": ""}, {"set": 2, "weight": "75", "reps": "10", "rpe": "6", "note": ""}, {"set": 3, "weight": "75", "reps": "10", "rpe": "7", "note": ""}, {"set": 4, "weight": "90", "reps": "10", "rpe": "7", "note": "first clean 10s"}, {"set": 5, "weight": "90", "reps": "10", "rpe": "8", "note": ""}]}, {"name": "Lateral Raise", "sets": [{"set": 1, "weight": "12", "reps": "10", "rpe": "6", "note": ""}, {"set": 2, "weight": "12", "reps": "10", "rpe": "7", "note": ""}, {"set": 3, "weight": "15", "reps": "10", "rpe": "8", "note": ""}, {"set": 4, "weight": "15", "reps": "10", "rpe": "8", "note": ""}]}, {"name": "Rope Pushdown", "sets": [{"set": 1, "weight": "32.5", "reps": "10", "rpe": "5", "note": ""}, {"set": 2, "weight": "37.5", "reps": "10", "rpe": "6", "note": ""}, {"set": 3, "weight": "37.5", "reps": "10", "rpe": "7", "note": ""}, {"set": 4, "weight": "42.5", "reps": "10", "rpe": "8", "note": ""}, {"set": 5, "weight": "42.5", "reps": "10", "rpe": "8", "note": ""}]}, {"name": "Skull Crusher", "sets": [{"set": 1, "weight": "15", "reps": "10", "rpe": "5", "note": ""}, {"set": 2, "weight": "15", "reps": "10", "rpe": "6", "note": ""}, {"set": 3, "weight": "20", "reps": "10", "rpe": "7", "note": "tested 20"}, {"set": 4, "weight": "20", "reps": "10", "rpe": "8", "note": "confirmed working weight"}]}, {"name": "Chest Press", "sets": [{"set": 1, "weight": "90", "reps": "10", "rpe": "6", "note": ""}, {"set": 2, "weight": "105", "reps": "10", "rpe": "7", "note": ""}, {"set": 3, "weight": "105", "reps": "10", "rpe": "8", "note": ""}, {"set": 4, "weight": "120", "reps": "6", "rpe": "8", "note": ""}, {"set": 5, "weight": "120", "reps": "6", "rpe": "9", "note": ""}]}, {"name": "Pec Fly", "sets": [{"set": 1, "weight": "90", "reps": "10", "rpe": "6", "note": ""}, {"set": 2, "weight": "105", "reps": "10", "rpe": "7", "note": ""}, {"set": 3, "weight": "105", "reps": "10", "rpe": "7", "note": ""}, {"set": 4, "weight": "120", "reps": "6", "rpe": "8", "note": ""}, {"set": 5, "weight": "120", "reps": "6", "rpe": "8", "note": ""}]}]},
 {"id": 62, "type": "legs", "label": "Legs", "date": "Jul 8, 2026", "note": "Leg curl 90x10x2 - first clean 10s at 90. Leg extension reps dropped at 150. Goblet conservative after gap. Calf raise held - test 40 next.", "movements": [{"name": "Leg Press", "sets": [{"set": 1, "weight": "140", "reps": "10", "rpe": "5", "note": ""}, {"set": 2, "weight": "155", "reps": "10", "rpe": "6", "note": ""}, {"set": 3, "weight": "155", "reps": "10", "rpe": "6", "note": ""}, {"set": 4, "weight": "170", "reps": "10", "rpe": "7", "note": ""}, {"set": 5, "weight": "170", "reps": "10", "rpe": "8", "note": ""}]}, {"name": "Leg Extension", "sets": [{"set": 1, "weight": "120", "reps": "10", "rpe": "6", "note": ""}, {"set": 2, "weight": "135", "reps": "10", "rpe": "7", "note": ""}, {"set": 3, "weight": "135", "reps": "10", "rpe": "7", "note": ""}, {"set": 4, "weight": "150", "reps": "8", "rpe": "8", "note": ""}, {"set": 5, "weight": "150", "reps": "8", "rpe": "8", "note": ""}]}, {"name": "Leg Curl", "sets": [{"set": 1, "weight": "60", "reps": "10", "rpe": "5", "note": ""}, {"set": 2, "weight": "75", "reps": "10", "rpe": "6", "note": ""}, {"set": 3, "weight": "75", "reps": "10", "rpe": "7", "note": ""}, {"set": 4, "weight": "90", "reps": "10", "rpe": "8", "note": "first clean 10s"}, {"set": 5, "weight": "90", "reps": "10", "rpe": "8", "note": ""}]}, {"name": "Goblet Squat", "sets": [{"set": 1, "weight": "40", "reps": "10", "rpe": "6", "note": ""}, {"set": 2, "weight": "40", "reps": "10", "rpe": "6", "note": ""}, {"set": 3, "weight": "45", "reps": "10", "rpe": "7", "note": ""}, {"set": 4, "weight": "45", "reps": "10", "rpe": "7", "note": ""}]}, {"name": "Calf Raise", "sets": [{"set": 1, "weight": "35", "reps": "20", "rpe": "6", "note": ""}, {"set": 2, "weight": "35", "reps": "20", "rpe": "6", "note": ""}, {"set": 3, "weight": "35", "reps": "20", "rpe": "7", "note": "test 40 next"}]}]},
 {"id": 63, "type": "pull", "label": "Pull", "date": "Jul 13, 2026", "note": "Lat pulldown 135x10x2 confirmed. Seated row 135 building (6/6). DB row reps dropped at 45.", "movements": [{"name": "Seated Row", "sets": [{"set": 1, "weight": "105", "reps": "10", "rpe": "5", "note": ""}, {"set": 2, "weight": "120", "reps": "10", "rpe": "6", "note": ""}, {"set": 3, "weight": "120", "reps": "10", "rpe": "7", "note": ""}, {"set": 4, "weight": "135", "reps": "6", "rpe": "8", "note": ""}, {"set": 5, "weight": "135", "reps": "6", "rpe": "8", "note": ""}]}, {"name": "Lat Pulldown", "sets": [{"set": 1, "weight": "105", "reps": "10", "rpe": "6", "note": ""}, {"set": 2, "weight": "120", "reps": "10", "rpe": "7", "note": ""}, {"set": 3, "weight": "120", "reps": "10", "rpe": "8", "note": ""}, {"set": 4, "weight": "135", "reps": "10", "rpe": "8", "note": ""}, {"set": 5, "weight": "135", "reps": "10", "rpe": "8", "note": "confirmed working weight"}]}, {"name": "DB Row", "sets": [{"set": 1, "weight": "35", "reps": "10", "rpe": "6", "note": ""}, {"set": 2, "weight": "35", "reps": "10", "rpe": "7", "note": ""}, {"set": 3, "weight": "45", "reps": "8", "rpe": "8", "note": ""}, {"set": 4, "weight": "45", "reps": "6", "rpe": "8", "note": ""}]}, {"name": "Reverse Fly", "sets": [{"set": 1, "weight": "15", "reps": "8", "rpe": "6", "note": ""}, {"set": 2, "weight": "15", "reps": "8", "rpe": "7", "note": ""}, {"set": 3, "weight": "15", "reps": "8", "rpe": "7", "note": ""}]}, {"name": "Hammer Curl", "sets": [{"set": 1, "weight": "20", "reps": "10", "rpe": "6", "note": ""}, {"set": 2, "weight": "20", "reps": "10", "rpe": "7", "note": ""}, {"set": 3, "weight": "20", "reps": "8", "rpe": "8", "note": ""}]}]},
-{"id": 64, "type": "legs", "label": "Legs", "date": "Jul 22, 2026", "note": "Leg curl reps dropped to 6 at 90 - monitor lower back compensation. Leg extension still 8 reps at 150. Goblet squat very consistent at 45 - test 50 next. No calf raise.", "movements": [{"name": "Leg Press", "sets": [{"set": 1, "weight": "140", "reps": "10", "rpe": "5", "note": ""}, {"set": 2, "weight": "155", "reps": "10", "rpe": "6", "note": ""}, {"set": 3, "weight": "155", "reps": "10", "rpe": "6", "note": ""}, {"set": 4, "weight": "170", "reps": "10", "rpe": "7", "note": ""}, {"set": 5, "weight": "170", "reps": "10", "rpe": "8", "note": ""}]}, {"name": "Leg Extension", "sets": [{"set": 1, "weight": "120", "reps": "10", "rpe": "5", "note": ""}, {"set": 2, "weight": "135", "reps": "10", "rpe": "6", "note": ""}, {"set": 3, "weight": "135", "reps": "10", "rpe": "7", "note": ""}, {"set": 4, "weight": "150", "reps": "8", "rpe": "8", "note": ""}, {"set": 5, "weight": "150", "reps": "8", "rpe": "8", "note": ""}]}, {"name": "Leg Curl", "sets": [{"set": 1, "weight": "60", "reps": "10", "rpe": "5", "note": ""}, {"set": 2, "weight": "75", "reps": "10", "rpe": "6", "note": ""}, {"set": 3, "weight": "75", "reps": "10", "rpe": "7", "note": ""}, {"set": 4, "weight": "90", "reps": "6", "rpe": "8", "note": "reps dropped - monitor lower back"}, {"set": 5, "weight": "90", "reps": "6", "rpe": "8", "note": ""}]}, {"name": "Goblet Squat", "sets": [{"set": 1, "weight": "45", "reps": "10", "rpe": "5", "note": ""}, {"set": 2, "weight": "45", "reps": "10", "rpe": "6", "note": ""}, {"set": 3, "weight": "45", "reps": "10", "rpe": "6", "note": ""}, {"set": 4, "weight": "45", "reps": "10", "rpe": "7", "note": "test 50 next"}]}]}
+{"id": 64, "type": "legs", "label": "Legs", "date": "Jul 22, 2026", "note": "Leg curl reps dropped to 6 at 90 - monitor lower back compensation. Leg extension still 8 reps at 150. Goblet squat very consistent at 45 - test 50 next. No calf raise.", "movements": [{"name": "Leg Press", "sets": [{"set": 1, "weight": "140", "reps": "10", "rpe": "5", "note": ""}, {"set": 2, "weight": "155", "reps": "10", "rpe": "6", "note": ""}, {"set": 3, "weight": "155", "reps": "10", "rpe": "6", "note": ""}, {"set": 4, "weight": "170", "reps": "10", "rpe": "7", "note": ""}, {"set": 5, "weight": "170", "reps": "10", "rpe": "8", "note": ""}]}, {"name": "Leg Extension", "sets": [{"set": 1, "weight": "120", "reps": "10", "rpe": "5", "note": ""}, {"set": 2, "weight": "135", "reps": "10", "rpe": "6", "note": ""}, {"set": 3, "weight": "135", "reps": "10", "rpe": "7", "note": ""}, {"set": 4, "weight": "150", "reps": "8", "rpe": "8", "note": ""}, {"set": 5, "weight": "150", "reps": "8", "rpe": "8", "note": ""}]}, {"name": "Leg Curl", "sets": [{"set": 1, "weight": "60", "reps": "10", "rpe": "5", "note": ""}, {"set": 2, "weight": "75", "reps": "10", "rpe": "6", "note": ""}, {"set": 3, "weight": "75", "reps": "10", "rpe": "7", "note": ""}, {"set": 4, "weight": "90", "reps": "6", "rpe": "8", "note": "reps dropped - monitor lower back"}, {"set": 5, "weight": "90", "reps": "6", "rpe": "8", "note": ""}]}, {"name": "Goblet Squat", "sets": [{"set": 1, "weight": "45", "reps": "10", "rpe": "5", "note": ""}, {"set": 2, "weight": "45", "reps": "10", "rpe": "6", "note": ""}, {"set": 3, "weight": "45", "reps": "10", "rpe": "6", "note": ""}, {"set": 4, "weight": "45", "reps": "10", "rpe": "7", "note": "test 50 next"}]}]},
+{"id": 65, "type": "pull", "label": "Pull", "date": "Jul 25, 2026", "note": "Upper-body re-entry after layoff — deliberately light. DB Row LED the session: 45x10 @ RPE 7 clean, best DB row log to date (fresh placement worked). Seated row + lat pulldown held at 120x10x2 @ RPE 7 (chosen deload, not regression). Cable curl 42.5x10x4 @ RPE 6-7 — second clean session, 47.5 next. Reverse fly 15x10x3 all @ RPE 6 — ready for 20. Hammer curl 20 read heavy cold (8 @ RPE 8), dropped to 15 and finished clean.", "movements": [{"name": "DB Row", "sets": [{"set": 1, "weight": "35", "reps": "10", "rpe": "5", "note": ""}, {"set": 2, "weight": "40", "reps": "10", "rpe": "6", "note": ""}, {"set": 3, "weight": "40", "reps": "10", "rpe": "6", "note": ""}, {"set": 4, "weight": "45", "reps": "10", "rpe": "7", "note": ""}]}, {"name": "Seated Row", "sets": [{"set": 1, "weight": "90", "reps": "10", "rpe": "5", "note": ""}, {"set": 2, "weight": "105", "reps": "10", "rpe": "6", "note": ""}, {"set": 3, "weight": "105", "reps": "10", "rpe": "6", "note": ""}, {"set": 4, "weight": "120", "reps": "10", "rpe": "7", "note": ""}, {"set": 5, "weight": "120", "reps": "10", "rpe": "7", "note": ""}]}, {"name": "Lat Pulldown", "sets": [{"set": 1, "weight": "90", "reps": "10", "rpe": "5", "note": ""}, {"set": 2, "weight": "105", "reps": "10", "rpe": "6", "note": ""}, {"set": 3, "weight": "105", "reps": "10", "rpe": "6", "note": ""}, {"set": 4, "weight": "120", "reps": "10", "rpe": "7", "note": ""}, {"set": 5, "weight": "120", "reps": "10", "rpe": "7", "note": ""}]}, {"name": "Cable Curl", "sets": [{"set": 1, "weight": "42.5", "reps": "10", "rpe": "6", "note": ""}, {"set": 2, "weight": "42.5", "reps": "10", "rpe": "6", "note": ""}, {"set": 3, "weight": "42.5", "reps": "10", "rpe": "7", "note": ""}, {"set": 4, "weight": "42.5", "reps": "10", "rpe": "7", "note": ""}]}, {"name": "Hammer Curl", "sets": [{"set": 1, "weight": "20", "reps": "8", "rpe": "8", "note": "read heavy cold"}, {"set": 2, "weight": "15", "reps": "10", "rpe": "6", "note": ""}, {"set": 3, "weight": "15", "reps": "10", "rpe": "7", "note": ""}]}, {"name": "Reverse Fly", "sets": [{"set": 1, "weight": "15", "reps": "10", "rpe": "6", "note": ""}, {"set": 2, "weight": "15", "reps": "10", "rpe": "6", "note": ""}, {"set": 3, "weight": "15", "reps": "10", "rpe": "6", "note": ""}]}]}
 ];
 
 // Single stable storage key — never changes
+const SYNC_KEY = "at_sync_cfg_v1";
+const SYNC_DEFAULTS = { token: "", repo: "treeapx2/training", path: "data/sessions.json", branch: "main", auto: true };
+function loadSyncCfg() {
+  try {
+    const raw = localStorage.getItem(SYNC_KEY);
+    return raw ? { ...SYNC_DEFAULTS, ...JSON.parse(raw) } : { ...SYNC_DEFAULTS };
+  } catch (e) { return { ...SYNC_DEFAULTS }; }
+}
+function saveSyncCfg(cfg) {
+  try { localStorage.setItem(SYNC_KEY, JSON.stringify(cfg)); return true; } catch (e) { return false; }
+}
+function b64encode(str) { return btoa(unescape(encodeURIComponent(str))); }
+function mergeSessions(a, b) {
+  const out = []; const seenId = new Set(); const seenKey = new Set();
+  [...(a || []), ...(b || [])].forEach(r => {
+    if (!r || !r.type || !r.date) return;
+    const key = r.type + "|" + r.date;
+    if (r.id != null && seenId.has(r.id)) return;
+    if (seenKey.has(key)) return;
+    if (r.id != null) seenId.add(r.id);
+    seenKey.add(key);
+    out.push(r);
+  });
+  out.sort((x, y) => new Date(y.date) - new Date(x.date));
+  return out;
+}
+async function syncPull(cfg) {
+  if (!cfg || !cfg.repo || !cfg.path) return { ok: false, err: "not configured" };
+  const url = "https://raw.githubusercontent.com/" + cfg.repo + "/" + cfg.branch + "/" + cfg.path + "?t=" + Date.now();
+  try {
+    const r = await fetch(url, { cache: "no-store" });
+    if (r.status === 404) return { ok: true, sessions: [], note: "no remote file yet" };
+    if (!r.ok) return { ok: false, err: "HTTP " + r.status };
+    const j = await r.json();
+    return { ok: true, sessions: Array.isArray(j) ? j : j.sessions || [] };
+  } catch (e) { return { ok: false, err: String(e.message || e) }; }
+}
+async function syncPush(cfg, sessions) {
+  if (!cfg || !cfg.token) return { ok: false, err: "no token configured" };
+  const api = "https://api.github.com/repos/" + cfg.repo + "/contents/" + cfg.path;
+  const H = { Authorization: "Bearer " + cfg.token, Accept: "application/vnd.github+json" };
+  try {
+    let sha = null;
+    const g = await fetch(api + "?ref=" + cfg.branch, { headers: H });
+    if (g.ok) { const gj = await g.json(); sha = gj.sha || null; }
+    else if (g.status === 401 || g.status === 403) return { ok: false, err: "auth failed (" + g.status + ") - check token scope/expiry" };
+    const body = {
+      message: "sync: " + sessions.length + " sessions @ " + new Date().toISOString(),
+      content: b64encode(JSON.stringify(sessions, null, 2)),
+      branch: cfg.branch
+    };
+    if (sha) body.sha = sha;
+    const put = await fetch(api, { method: "PUT", headers: { ...H, "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    if (!put.ok) { const t = await put.text(); return { ok: false, err: "HTTP " + put.status + " " + t.slice(0, 160) }; }
+    return { ok: true, count: sessions.length };
+  } catch (e) { return { ok: false, err: String(e.message || e) }; }
+}
 const STORAGE_KEY = "at_workout_stable";
 function loadData() {
   try {
@@ -8901,6 +8962,21 @@ function machineInc(name) {
 
 // Generate planned sets — ramp by fixed increments, not percentages
 function buildPlannedSets(mov, sessionType) {
+  const base = buildPlannedSetsBase(mov, sessionType);
+  if (!base.length) return base;
+  let out = base;
+  const want = parseInt(mov.workSets, 10);
+  if (want && want > 0) {
+    const w = base.filter(x => x.type === "W");
+    const nonW = base.filter(x => x.type !== "W");
+    const ws = w.slice(0, want);
+    while (ws.length < want && w.length) ws.push({ ...w[w.length - 1] });
+    out = [...nonW, ...ws];
+  }
+  if (mov.reps) out = out.map(x => x.type === "W" ? { ...x, reps: String(mov.reps) } : x);
+  return out;
+}
+function buildPlannedSetsBase(mov, sessionType) {
   const working = parseFloat(parseCurrentWeight(mov.current));
   if (!working) return [];
   const name = mov.name;
@@ -9596,6 +9672,14 @@ function SessionScreen({
     const updated = [entry, ...history];
     setHistory(updated);
     const saved = saveData(updated);
+    (() => {
+      const cfg = loadSyncCfg();
+      if (cfg.auto && cfg.token) {
+        syncPush(cfg, updated).then(r => {
+          try { localStorage.setItem("at_sync_last", JSON.stringify({ at: new Date().toISOString(), ok: r.ok, err: r.err || "" })); } catch (e) {}
+        });
+      }
+    })();
     // Save this session order as the new default for this type
     saveCurrentOrder();
     const setsForSummary = {};
@@ -10530,7 +10614,8 @@ function WeekCard({
   })));
 }
 function ProgressScreen({
-  history
+  history,
+  setHistory
 }) {
   const [showHandoff, setShowHandoff] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -10655,7 +10740,70 @@ function ProgressScreen({
       cursor: "pointer",
       transition: "background .2s"
     }
-  }, copied ? "✓ copied to clipboard" : "copy handoff summary")));
+  }, copied ? "✓ copied to clipboard" : "copy handoff summary")), /*#__PURE__*/React.createElement(SyncPanel, {
+    history: history,
+    setHistory: setHistory
+  }));
+}
+function SyncPanel({ history, setHistory }) {
+  const [cfg, setCfg] = useState(() => loadSyncCfg());
+  const [status, setStatus] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [show, setShow] = useState(false);
+  const upd = (k, v) => { const next = { ...cfg, [k]: v }; setCfg(next); saveSyncCfg(next); };
+  const doPush = async () => {
+    setBusy(true); setStatus("pushing...");
+    const r = await syncPush(cfg, history);
+    setStatus(r.ok ? "✓ pushed " + r.count + " sessions" : "✗ " + r.err);
+    setBusy(false);
+  };
+  const doPull = async () => {
+    setBusy(true); setStatus("pulling...");
+    const r = await syncPull(cfg);
+    if (!r.ok) { setStatus("✗ " + r.err); setBusy(false); return; }
+    const merged = mergeSessions(history, r.sessions);
+    const added = merged.length - history.length;
+    setHistory(merged); saveData(merged);
+    setStatus("✓ pulled " + r.sessions.length + ", merged +" + added);
+    setBusy(false);
+  };
+  const inp = { width: "100%", padding: "8px 10px", border: "0.5px solid #ddd", borderRadius: 8, fontSize: 16, color: "#111", background: "#fff", outline: "none", marginBottom: 6 };
+  const btn = extra => ({ flex: 1, padding: "10px 12px", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, color: "#fff", cursor: busy ? "default" : "pointer", opacity: busy ? 0.6 : 1, ...extra });
+  return /*#__PURE__*/React.createElement("div", {
+    style: { border: "0.5px solid #e5e5e3", borderRadius: 12, padding: 12, marginTop: 12, background: "#fafafa" }
+  }, /*#__PURE__*/React.createElement("div", {
+    onClick: () => setShow(v => !v),
+    style: { display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: { fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#666" }
+  }, "Sync · GitHub"), /*#__PURE__*/React.createElement("span", {
+    style: { fontSize: 12, color: "#999" }
+  }, show ? "▲" : "▼")), show && /*#__PURE__*/React.createElement("div", {
+    style: { marginTop: 10 }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: { fontSize: 11, color: "#888", marginBottom: 8, lineHeight: 1.4 }
+  }, "Fine-grained PAT, Contents: read+write, this repo only. Stored on this device only - never committed."), /*#__PURE__*/React.createElement("input", {
+    type: "password", value: cfg.token, placeholder: "github_pat_...",
+    onChange: e => upd("token", e.target.value.trim()), style: inp
+  }), /*#__PURE__*/React.createElement("input", {
+    value: cfg.repo, placeholder: "owner/repo", onChange: e => upd("repo", e.target.value.trim()), style: inp
+  }), /*#__PURE__*/React.createElement("input", {
+    value: cfg.path, placeholder: "data/sessions.json", onChange: e => upd("path", e.target.value.trim()), style: inp
+  }), /*#__PURE__*/React.createElement("input", {
+    value: cfg.branch, placeholder: "main", onChange: e => upd("branch", e.target.value.trim()), style: inp
+  }), /*#__PURE__*/React.createElement("label", {
+    style: { display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "#555", margin: "4px 0 10px" }
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "checkbox", checked: !!cfg.auto, onChange: e => upd("auto", e.target.checked)
+  }), "Auto-push when a session is finished"), /*#__PURE__*/React.createElement("div", {
+    style: { display: "flex", gap: 8 }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: doPush, disabled: busy, style: btn({ background: "#111" })
+  }, "push now"), /*#__PURE__*/React.createElement("button", {
+    onClick: doPull, disabled: busy, style: btn({ background: "#555" })
+  }, "pull + merge")), status && /*#__PURE__*/React.createElement("div", {
+    style: { fontSize: 12, marginTop: 8, color: status.indexOf("✗") === 0 ? "#B91C1C" : "#3B6D11", wordBreak: "break-word" }
+  }, status)));
 }
 function HistoryScreen({
   history,
@@ -10803,6 +10951,15 @@ function App() {
     const saved = loadData();
     setHistory(saved);
     setLoaded(true);
+    const cfg = loadSyncCfg();
+    if (cfg.repo && cfg.path) {
+      syncPull(cfg).then(r => {
+        if (r.ok && r.sessions && r.sessions.length) {
+          const merged = mergeSessions(saved, r.sessions);
+          if (merged.length !== saved.length) { setHistory(merged); saveData(merged); }
+        }
+      });
+    }
   }, []);
   if (!loaded) return /*#__PURE__*/React.createElement("div", {
     style: {
@@ -10852,7 +11009,8 @@ function App() {
   }), tab === "block" && /*#__PURE__*/React.createElement(BlockScreen, {
     history: history
   }), tab === "progress" && /*#__PURE__*/React.createElement(ProgressScreen, {
-    history: history
+    history: history,
+    setHistory: setHistory
   }), tab === "history" && /*#__PURE__*/React.createElement(HistoryScreen, {
     history: history,
     setHistory: setHistory
