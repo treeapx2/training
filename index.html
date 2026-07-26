@@ -8542,15 +8542,24 @@ function saveSyncCfg(cfg) {
 }
 function b64encode(str) { return btoa(unescape(encodeURIComponent(str))); }
 function mergeSessions(a, b) {
-  const out = []; const seenId = new Set(); const seenKey = new Set();
+  const out = []; const seenKey = new Set(); const seenId = new Set();
   [...(a || []), ...(b || [])].forEach(r => {
-    if (!r || !r.type || !r.date) return;
-    const key = r.type + "|" + r.date;
-    if (r.id != null && seenId.has(r.id)) return;
-    if (seenKey.has(key)) return;
-    if (r.id != null) seenId.add(r.id);
-    seenKey.add(key);
-    out.push(r);
+    if (!r) return;
+    if (r.type && r.date) {
+      // Primary key: type+date. Never dedup on id alone — legacy data has id
+      // collisions across genuinely different sessions, which would drop data.
+      const key = r.type + "|" + r.date;
+      if (seenKey.has(key)) return;
+      seenKey.add(key);
+      out.push(r);
+      return;
+    }
+    // Fallback only for malformed records missing type or date
+    if (r.id != null) {
+      if (seenId.has(r.id)) return;
+      seenId.add(r.id);
+      out.push(r);
+    }
   });
   out.sort((x, y) => new Date(y.date) - new Date(x.date));
   return out;
@@ -10814,8 +10823,15 @@ function HistoryScreen({
     ...o,
     [id]: !o[id]
   }));
-  const del = id => {
-    const updated = history.filter(h => h.id !== id);
+  const del = target => {
+    // Match the exact record (id collisions exist in legacy data, so id alone is unsafe)
+    let removed = false;
+    const updated = history.filter(h => {
+      if (removed) return true;
+      const same = h === target || (h.id === target.id && h.type === target.type && h.date === target.date);
+      if (same) { removed = true; return false; }
+      return true;
+    });
     setHistory(updated);
     saveData(updated);
   };
@@ -10925,7 +10941,7 @@ function HistoryScreen({
       }
     }, entry.note), /*#__PURE__*/React.createElement("button", {
       onClick: () => {
-        if (window.confirm("Delete this session? This can't be undone.")) del(entry.id);
+        if (window.confirm("Delete this session? This can't be undone.")) del(entry);
       },
       style: {
         marginTop: 10,
