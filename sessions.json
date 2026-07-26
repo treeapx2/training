@@ -1,10 +1,10 @@
 [
   {
-    "id": 65,
+    "id": 1784992532009,
     "type": "pull",
     "label": "Pull",
     "date": "Jul 25, 2026",
-    "note": "Upper-body re-entry after layoff — deliberately light. DB Row LED the session: 45x10 @ RPE 7 clean, best DB row log to date (fresh placement worked). Seated row + lat pulldown held at 120x10x2 @ RPE 7 (chosen deload, not regression). Cable curl 42.5x10x4 @ RPE 6-7 — second clean session, 47.5 next. Reverse fly 15x10x3 all @ RPE 6 — ready for 20. Hammer curl 20 read heavy cold (8 @ RPE 8), dropped to 15 and finished clean.",
+    "note": "keeping it light for this one",
     "movements": [
       {
         "name": "DB Row",
@@ -37,7 +37,8 @@
             "rpe": "7",
             "note": ""
           }
-        ]
+        ],
+        "order": 0
       },
       {
         "name": "Seated Row",
@@ -77,7 +78,8 @@
             "rpe": "7",
             "note": ""
           }
-        ]
+        ],
+        "order": 1
       },
       {
         "name": "Lat Pulldown",
@@ -117,7 +119,8 @@
             "rpe": "7",
             "note": ""
           }
-        ]
+        ],
+        "order": 2
       },
       {
         "name": "Cable Curl",
@@ -150,7 +153,8 @@
             "rpe": "7",
             "note": ""
           }
-        ]
+        ],
+        "order": 3
       },
       {
         "name": "Hammer Curl",
@@ -160,7 +164,7 @@
             "weight": "20",
             "reps": "8",
             "rpe": "8",
-            "note": "read heavy cold"
+            "note": ""
           },
           {
             "set": 2,
@@ -176,7 +180,8 @@
             "rpe": "7",
             "note": ""
           }
-        ]
+        ],
+        "order": 4
       },
       {
         "name": "Reverse Fly",
@@ -202,7 +207,8 @@
             "rpe": "6",
             "note": ""
           }
-        ]
+        ],
+        "order": 6
       }
     ]
   },
