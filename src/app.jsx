@@ -1,18 +1,36 @@
 const { useState, useEffect, useRef } = React;
 
+// Stamped by scripts/build.js at build time (string-replaced post-compile —
+// see build.js) so a stale cached build is identifiable on the device
+// instead of silently running fixed-but-not-yet-deployed code.
+const BUILD_INFO = { sha: "__BUILD_SHA__", builtAt: "__BUILD_TIME__" };
+function formatBuildStamp() {
+  const d = new Date(BUILD_INFO.builtAt);
+  const when = isNaN(d.getTime())
+    ? BUILD_INFO.builtAt
+    : d.toLocaleString("en-US", {
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+      });
+  return "build " + BUILD_INFO.sha + " · " + when;
+}
+
 // ── Block State ───────────────────────────────────────────────────────────────
 const BLOCK = {
   flags: [
-    "ON BLOOD THINNERS (~3 wks, PE precaution) — NO contact/fall-risk activity; NO failure/grinding reps; keep RPE \u22648; a 'test' = controlled top set leaving 2+ in reserve. Confirm exertion intensity with care team.",
-    "Hockey SUSPENDED — legs unblocked; cardio substituted (Z2 bike / elliptical / incline walk / rower). Aerobic work stays conversational pace, no intervals until cleared.",
-    "Legs run as A (heavy 8-10) and B (higher-rep 12-15) — keep \u226548h apart. Legs B: drop Leg Press to ~140-155, Leg Curl ~75, add 8-10 min Z2 bike finisher.",
-    "PROGRESSION VALIDITY: run the target lift FRESH as movement #1. Reps logged late in a session are fatigue artifacts, not regressions.",
-    "Groin soreness (L>R) — daily butterfly stretch + lateral lunge holds.",
-    "Left knee below patella — monitor squat/hinge; bilateral leg press only, single-leg press off.",
-    "Hamstring — Leg Curl HOLD 90 @ RPE \u22647; low-back compensation appeared 7/22, stop set if back takes over.",
-    "Thumb — Shoulder Press clean at 90 (7/5); keep watching.",
-    "Elbow — Skull Crusher pull/stretch normal, sharp pain = stop.",
-    "Core stack on cardio days (dead bug, bird dog, side plank, Pallof, RKC) — targets the low-back compensation + groin asymmetry.",
+    "ON BLOOD THINNERS (PE precaution, likely false positive) — NO contact or fall-risk activity. No failure/grinding reps: strains bruise and bleed more. Keep working sets RPE \u22648; a 'test' is a controlled top set leaving 2+ in reserve. No restriction on aerobic conditioning.",
+    "Hockey SUSPENDED. Weekly TENNIS is the skating-prep substitute (repeated-sprint + lateral movement). Ease in — 60 min hitting, not hard competitive singles.",
+    "LEGS A/B: A = heavy 8-10, quad emphasis. B = higher-rep 12-15, posterior emphasis (Leg Press ~140-155, Leg Curl ~75). Keep \u226548h apart.",
+    "STAIRMASTER FINISHER on every session. Hard on push/pull days (12-15 min, L4-5 steady). EASY on legs days (8-10 min, L2-3) — don't tax what you just trained. Build duration before level. Change ONE variable at a time.",
+    "PROGRESSION VALIDITY: run the lift you want to advance FIRST, while fresh. Reps logged late in a session are fatigue artifacts, not regressions. Confirmed repeatedly: shoulder press 90\u219275 and lateral raise RPE 8 both came from queue position, not loss of strength.",
+    "Groin asymmetry (L>R) — daily butterfly + lateral lunge holds. Extra relevant now that tennis is in: adductor strain is the classic first-week-back injury.",
+    "Left knee below patella — monitor all squat/hinge. Bilateral leg press only. Bail on Leg Press or Goblet if it bites.",
+    "Hamstring / low back — RESOLVED, keep monitoring. Leg Curl 90 collapsed to 6 reps with low-back compensation on 7/22, then hit clean 10s on both 7/26 and 7/29. Keep foam rolling before legs; stop the set if the back starts taking over.",
+    "Thumb — watch on Shoulder Press; prior 75 ceiling, now clean at 90.",
+    "Elbow — Skull Crusher pull/stretch is normal adaptation; sharp pain is a stop signal.",
+    "Core stack on any non-lifting day: dead bug, bird dog, side plank, Pallof press, RKC plank."
   ],
   sessions: {
     legs: {
@@ -20,164 +38,41 @@ const BLOCK = {
       color: "#3B6D11",
       bg: "#EAF3DE",
       movements: [
-        {
-          name: "Leg Press",
-          current: "170 lb",
-          workSets: 3,
-          reps: 10,
-          target:
-            "TEST 185 \u2014 clean 10/10 @ RPE 7-8 across 6/24, 7/8, 7/22. FRESH opener, straight sets, stop RPE 8. Knee bites \u2192 stay 170.",
-        },
-        {
-          name: "Leg Extension",
-          current: "150 lb",
-          workSets: 2,
-          reps: 10,
-          target:
-            "HOLD 150 \u2014 stuck at 8 reps (7/8, 7/22). Rebuild clean 10/10 @ RPE \u22648 before 165.",
-        },
-        {
-          name: "Leg Curl",
-          current: "90 lb",
-          workSets: 2,
-          reps: 10,
-          target:
-            "HOLD 90 \u2014 RPE \u22647. Dropped to 6 w/ low-back compensation (7/22). Stop set if back takes over.",
-        },
-        {
-          name: "Goblet Squat",
-          current: "45 lb",
-          workSets: 2,
-          reps: 10,
-          target:
-            "TEST 50 \u2014 consistent 10/10 @ RPE 6-7 (7/22). Controlled depth, knee-monitor.",
-        },
-        {
-          name: "Calf Raise",
-          current: "35 lb",
-          workSets: 3,
-          reps: 15,
-          target:
-            "TEST 40 \u2014 clean 20-rep sets @ RPE 6-7. Superset w/ Leg Extension.",
-        },
-      ],
+        { name: "Leg Press", current: "185 lb", workSets: 3, reps: 10, target: "BANK 185 at RPE 7 \u2014 test passed 7/29 (185x10x2 @ RPE 8) but that's the rep ceiling. Two clean sessions at RPE 7, then TEST 200. Fresh opener, straight sets, 2-2.5 min rest." },
+        { name: "Leg Extension", current: "150 lb", workSets: 2, reps: 10, target: "TEST 165 \u2014 broke the 8-rep wall: 150x10x2 @ RPE 8 (7/26) then @ RPE 7 (7/29). The old plateau was fatigue placement, not a ceiling." },
+        { name: "Leg Curl", current: "90 lb", workSets: 2, reps: 10, target: "One more clean 10x10 @ 90, RPE \u22647, then TEST 105. Low-back compensation resolved (clean 7/26 and 7/29). Stop the set if the back takes over." },
+        { name: "Goblet Squat", current: "50 lb", workSets: 2, reps: 10, target: "Two clean sessions at 50 (10 @ RPE 7 then 8 on 7/29), then 55. Controlled depth, knee-monitor." },
+        { name: "Calf Raise", current: "40 lb", workSets: 3, reps: 15, target: "TEST 45 \u2014 40x20x3 @ RPE 6-7 (7/29) was the easiest pass of the day. Superset with Leg Extension." }
+      ]
     },
     push: {
       label: "Push",
       color: "#185FA5",
       bg: "#E6F1FB",
       movements: [
-        {
-          name: "Chest Press",
-          current: "120 lb",
-          workSets: 2,
-          reps: 10,
-          target:
-            "Build 2nd clean 10/10 @ RPE \u22648 FRESH \u2192 then TEST 135. 7/1 clean; 7/5 drop logged 5th (fatigue, discounted).",
-        },
-        {
-          name: "Shoulder Press",
-          current: "90 lb",
-          workSets: 2,
-          reps: 10,
-          target:
-            "HOLD 90 \u2014 first clean 10/10 @ RPE 7-8 (7/5). Confirm 2nd session (thumb watch) \u2192 105.",
-        },
-        {
-          name: "Pec Fly",
-          current: "120 lb",
-          workSets: 2,
-          reps: 10,
-          target: "Build clean 10/10 \u2192 135. Superset w/ Lateral Raise.",
-        },
-        {
-          name: "Rope Pushdown",
-          current: "42.5 lb",
-          workSets: 2,
-          reps: 10,
-          target:
-            "Confirm 2nd clean 10/10 (7/5 clean @ RPE 8) \u2192 47.5. Superset w/ Skull Crusher.",
-        },
-        {
-          name: "Lateral Raise",
-          current: "15 lb",
-          workSets: 2,
-          reps: 12,
-          target: "Build straight 15s \u2014 15x10x2 @ RPE 8 (7/5).",
-        },
-        {
-          name: "Skull Crusher",
-          current: "20 lb",
-          workSets: 2,
-          reps: 10,
-          target:
-            "HOLD 20 \u2014 confirmed 10/10 @ RPE 7-8 (7/5). Sharp elbow pain = stop.",
-        },
-      ],
+        { name: "Chest Press", current: "120 lb", workSets: 2, reps: 10, target: "TEST 135 \u2014 second clean 10/10 @ RPE 7-8 as fresh opener (7/28). Run this FIRST." },
+        { name: "Shoulder Press", current: "90 lb", workSets: 2, reps: 10, target: "HOLD 90 \u2014 needs a FRESH lead to confirm. Hit 90x10x2 when run first (7/5), dropped to 75x8 @ RPE 8 when run second (7/28). Confirm then 105. Thumb watch." },
+        { name: "Pec Fly", current: "120 lb", workSets: 2, reps: 10, target: "TEST 135 \u2014 120x10x2 @ RPE 7 (7/28), room to spare. Superset with Lateral Raise." },
+        { name: "Rope Pushdown", current: "42.5 lb", workSets: 2, reps: 10, target: "Confirm 2nd clean 10/10 @ 42.5 then 47.5. Skipped 7/28 (machine in use). Superset with Skull Crusher." },
+        { name: "Lateral Raise", current: "15 lb", workSets: 2, reps: 12, target: "Back to 15 and run EARLIER \u2014 12x10x4 reached RPE 8 at position #4 (7/28). 15x10x2 already done 7/5." },
+        { name: "Skull Crusher", current: "20 lb", workSets: 2, reps: 10, target: "TEST 25 \u2014 20x10x4 @ RPE 6-7 (7/28), elbow quiet. Sharp pain = stop." }
+      ]
     },
     pull: {
       label: "Pull",
       color: "#3C3489",
       bg: "#EEEDFE",
       movements: [
-        {
-          name: "Seated Row",
-          current: "135 lb",
-          workSets: 2,
-          reps: 10,
-          target:
-            "Back to 135 \u2014 build clean 10/10 \u2192 150. (7/25 deliberately deloaded to 120x10x2 @ RPE 7 on upper re-entry.)",
-        },
-        {
-          name: "Lat Pulldown",
-          current: "135 lb",
-          workSets: 2,
-          reps: 10,
-          target:
-            "Back to 135 \u2014 confirm 2nd clean 10/10 (7/13 clean) \u2192 150.",
-        },
-        {
-          name: "DB Row",
-          current: "50 lb",
-          workSets: 2,
-          reps: 10,
-          target:
-            "Build 8-10 @ 50 \u2014 45x10 @ RPE 7 clean as FRESH opener (7/25), best log to date. Keep leading with this.",
-        },
-        {
-          name: "Cable Curl",
-          current: "42.5 lb",
-          workSets: 2,
-          reps: 10,
-          target:
-            "TEST 47.5 \u2014 two clean sessions at 42.5 (7/4, 7/25 4x10 @ RPE 6-7).",
-        },
-        {
-          name: "Hammer Curl",
-          current: "20 lb",
-          workSets: 2,
-          reps: 10,
-          target:
-            "HOLD 20 \u2014 read heavy cold (7/25, 20x8 @ RPE 8). TEST 25 only when leading the session fresh.",
-        },
-        {
-          name: "Zottman Curl",
-          current: "20 lb",
-          workSets: 2,
-          reps: 10,
-          target: "Chase 10 reps @ 20 (stuck at 6) \u2014 slow eccentric.",
-        },
-        {
-          name: "Reverse Fly",
-          current: "15 lb",
-          workSets: 2,
-          reps: 12,
-          target:
-            "TEST 20 for 8s \u2014 15x10x3 all @ RPE 6 (7/25) clears the consistency gate.",
-        },
-      ],
-    },
-  },
+        { name: "DB Row", current: "50 lb", workSets: 2, reps: 10, target: "Build 8-10 @ 50 \u2014 45x10 @ RPE 7 as fresh opener (7/25), best DB Row log to date. Keep LEADING the session with this; it's fatigue-sensitive." },
+        { name: "Seated Row", current: "135 lb", workSets: 2, reps: 10, target: "Back to 135 \u2014 build clean 10/10 then 150. (7/25 was a deliberate deload to 120x10x2 @ RPE 7 on upper re-entry, not a regression.)" },
+        { name: "Lat Pulldown", current: "135 lb", workSets: 2, reps: 10, target: "Confirm 2nd clean 10/10 @ 135 (7/13 clean) then 150." },
+        { name: "Cable Curl", current: "42.5 lb", workSets: 2, reps: 10, target: "TEST 47.5 \u2014 two clean sessions at 42.5 (7/4, and 7/25 4x10 @ RPE 6-7). Superset with Reverse Fly." },
+        { name: "Hammer Curl", current: "20 lb", workSets: 2, reps: 10, target: "HOLD 20 \u2014 read heavy cold (7/25: 20x8 @ RPE 8, dropped to 15). TEST 25 only on a day this LEADS the session." },
+        { name: "Zottman Curl", current: "20 lb", workSets: 2, reps: 10, target: "Chase 10 reps @ 20 (stuck at 6) \u2014 slow eccentric." },
+        { name: "Reverse Fly", current: "15 lb", workSets: 2, reps: 12, target: "TEST 20 for 8s \u2014 15x10x3 all @ RPE 6 (7/25) clears the consistency gate." }
+      ]
+    }
+  }
 };
 
 // ── Legs A/B variants ─────────────────────────────────────────────────────────
@@ -4180,6 +4075,16 @@ function App() {
           setHistory={setHistory}
         />
       )}
+      <div
+        style={{
+          textAlign: "center",
+          fontSize: 10,
+          color: "#ccc",
+          marginTop: 24,
+        }}
+      >
+        {formatBuildStamp()}
+      </div>
     </div>
   );
 }

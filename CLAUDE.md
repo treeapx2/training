@@ -11,7 +11,7 @@ this repo as JSON.
 
 | | |
 |---|---|
-| Live app | `index.html` (repo root, `main`) — ~377 KB, compiled |
+| Live app | `index.html` (repo root, `main`) — ~248 KB, compiled |
 | Session data | `sessions.json` (repo root, `main`) — 64 sessions, Feb 28–Jul 29 2026 |
 | Branch | `main` only. `master` was deleted; `raw.githubusercontent.com` may still serve stale cached copies of it — do not trust those |
 | Build | `npm run build` (Babel 8, classic JSX runtime) — see **Build system**, below |
@@ -47,6 +47,9 @@ Learned the hard way in Safari and Firefox. Non-negotiable:
 3. Wraps everything in the HTML shell (`src/shell.head.html` /
    `src/shell.tail.html`) and writes the single self-contained `index.html`
    at the repo root.
+4. String-replaces the `BUILD_INFO` placeholders (`__BUILD_SHA__` /
+   `__BUILD_TIME__`) in the compiled output with the actual short git sha
+   and an ISO build timestamp — see **Version stamp**, below.
 
 Toolchain is pinned to **Babel 8** (`@babel/core`, `@babel/preset-react`,
 `@babel/generator`, `@babel/parser`, `@babel/types`, all `^8.x`).
@@ -122,11 +125,17 @@ BLOCK = {
 
 ```js
 { id, type: "legs"|"push"|"pull", label, date: "Mon D, YYYY", note,
+  variant: "A"|"B"|undefined,           // legs only, see Legs A/B variants
+  cardio: { machine, duration, level, effort }|undefined,  // see Cardio finisher fields
   movements: [ { name, sets: [ { set, weight, reps, rpe, note } ] } ] }
 ```
 
 `date` is a **display-formatted string**, not ISO. Parsing uses `new Date(str)`.
 Do not silently migrate this format — the whole history and the dedup key depend on it.
+
+`label` already has the variant baked in for legs sessions (`"Legs A"` /
+`"Legs B"`) so history/handoff/PR displays need no extra branching — `variant`
+is there for anyone who needs to filter/query by it specifically.
 
 ### Dedup rule — IMPORTANT
 
@@ -140,6 +149,15 @@ after the first hit.
 
 Live records use 13-digit `Date.now()` ids; seed records use small ints. They
 coexist; the `type+date` key collapses duplicates across both.
+
+**Legs A/B caveat:** `type` stays `"legs"` for both variants (see below), so
+the dedup key does **not** distinguish A from B. Logging a Legs A and a Legs B
+session on the *same calendar date* would collide on `"legs|<date>"` and one
+would be dropped by `mergeSessions`/`del()`. `BLOCK.flags` already prescribes
+keeping A and B ≥48h apart, so this shouldn't occur in normal use — it's a
+known, accepted edge case, not something to "fix" by keying on variant too
+(that would fragment the `type+date` contract this whole dedup rule exists to
+protect).
 
 ### Movement ordering
 
@@ -155,29 +173,84 @@ Note: `MUSCLE_GROUPS`, `ORDER_KEY` (`at_group_order_v2`) and
 the source for group labels, the rest is dead weight from the blocked design.
 Clean up carefully.
 
+### Legs A/B variants
+
+`LEGS_VARIANTS` (near `BLOCK` in `src/app.jsx`) is a per-movement
+`{ workSets, reps }` prescription overlay for the two Legs variants, plus
+`rest`/`finisher` guidance text — **not** a separate session type and **not**
+part of `BLOCK` itself. Session `type` stays `"legs"`; only today's working
+set count/rep target differ. This is deliberate: `LEGS_VARIANTS`' movement
+keys ("Leg Press", "Leg Curl", ...) match `BLOCK.sessions.legs.movements`
+names exactly, so progression history (`getMovementHistory`/`getMovementPR`,
+both keyed by movement name across all history regardless of type or variant)
+and `current` weights are fully shared between A and B by construction — there
+is no separate "A history" vs "B history" to keep in sync.
+
+The variant is threaded through `startSession(type, variant)` →
+`sessionMovements` (workSets/reps overridden at session-start time, never on
+the shared `BLOCK.sessions.legs.movements` objects themselves) → the draft
+autosave/resume round-trip (`saveDraft`/`loadDraft` carry a `variant` field
+so a resumed draft reapplies the same overlay) → `finish()`, which records
+`entry.variant` and bakes it into `entry.label`.
+
+Numbers in `LEGS_VARIANTS` came directly from TARGETS.md's "Legs A/B note for
+whoever implements the toggle" table — treat them as authored prescription
+content (like `BLOCK.flags`/`current`/`target`), not code to redesign.
+
+### Cardio finisher fields
+
+`cardio: { machine, duration, level, effort }` on a session record, entered
+via SessionScreen's "Cardio finisher" section (below the movement list, above
+the session note). `effort` is a closed `easy|moderate|hard` enum
+(`CARDIO_EFFORT_OPTIONS`); `machine`/`duration`/`level` are free text/number
+so any machine from `BLOCK.flags` (Stairmaster, Z2 bike, elliptical, incline
+walk, rower) fits without a fixed dropdown.
+
+`hasCardioData(cardio)` gates every read/write site — a session with no
+cardio fields filled in gets no `cardio` key at all, not an empty-string
+object. `formatCardio(cardio)` is the single formatter shared by
+`HistoryScreen`, `buildHandoff`, and `buildCoachSummary`; add new display
+sites through it rather than reformatting inline. Persists through the same
+draft autosave/resume path as the Legs A/B variant.
+
 ### Sync layer
 
 - Config in `localStorage` under `at_sync_cfg_v1`:
-  `{ token, repo, path, branch, auto }`
+  `{ token, repo, path, branch, auto }`. `SYNC_DEFAULTS.path` is
+  `"sessions.json"` (repo root) and `branch` is `"main"` — these now match
+  the actual deployed location; they used to default to the wrong
+  `"data/sessions.json"`, silently relying on every device having a manually
+  corrected local config.
 - **Read:** `syncPull()` → `raw.githubusercontent.com/{repo}/{branch}/{path}?t={Date.now()}`,
   `cache: "no-store"`. 404 is treated as "no remote file yet", not an error.
-- **Write:** `syncPush()` → GitHub contents API `PUT`, GETs the blob `sha` first,
-  includes it for updates.
+  `sessions.json` is the **single source of truth for history** — there is no
+  embedded seed data in `src/app.jsx` anymore; on first load with empty
+  `localStorage` and a remote configured, the app holds the loading state
+  until this pull resolves (success or failure) instead of flashing an empty
+  history.
+- **Write:** `syncPush()` → GitHub contents API `PUT`, GETs the blob `sha`
+  first, includes it for updates. On HTTP 409 (stale `sha` — auto-push racing
+  a manual "push now", or vice versa) it refetches the `sha` and retries
+  **exactly once** before giving up.
 - Auto-push fires on **session finish only** (not on delete). Result cached to
-  `at_sync_last`.
-- `mergeSessions(a, b)` is **additive only** — it never deletes.
-
-**Live config values differ from the code defaults:** `SYNC_DEFAULTS.path` is
-`data/sessions.json`, but the actual deployed file is **`sessions.json` at the
-repo root** and the device is configured to match. Reconcile the default to
-reality.
+  `at_sync_last`, and a failure now also surfaces as a warning banner on the
+  post-finish "Session saved" screen (`SessionScreen`'s `autoPushStatus`
+  state) — it used to be silent beyond that localStorage write.
+- `mergeSessions(a, b)` is **additive only** — it never deletes. To recover
+  from a local delete that a plain pull can't undo, `SyncPanel` has
+  "replace local from remote" — destructive, confirmed via `window.confirm`,
+  overwrites `localStorage` with `sessions.json` as pulled.
+- `SyncPanel` now lives on the **Session tab**, below the recent-sessions
+  list (not Progress), and is expanded by default until a token is
+  configured (`useState(() => !loadSyncCfg().token)`), collapsed by default
+  once one exists.
 
 ### localStorage keys
 
 | Key | Purpose |
 |---|---|
-| `at_workout_stable` | session history (source of truth on device) |
-| `at_session_draft` | in-progress session autosave |
+| `at_workout_stable` | device-local history cache, merged with `sessions.json` on load — see Sync layer |
+| `at_session_draft` | in-progress session autosave, incl. `variant`/`cardio` |
 | `at_sync_cfg_v1` | sync config incl. PAT |
 | `at_sync_last` | last auto-push result |
 | `at_group_order_v2` | **retired** — vestigial group ordering |
@@ -189,50 +262,86 @@ It is **never committed** — GitHub secret-scans public repos and auto-revokes
 PATs found in code. Never write the token into a source file, a config file, or
 a test fixture. Fine-grained, `Contents: read+write`, this repo only.
 
+### Version stamp
+
+`BUILD_INFO` (top of `src/app.jsx`) holds `{ sha: "__BUILD_SHA__", builtAt:
+"__BUILD_TIME__" }` placeholders. `scripts/build.js` string-replaces them
+with the real short git sha (`git rev-parse --short HEAD`) and an ISO
+timestamp *after* Babel compiles, so `src/app.jsx` itself stays valid,
+buildable source with sane literal defaults. Rendered via `formatBuildStamp()`
+as a small "build `<sha>` · `<date>`" line at the bottom of every tab.
+
+Because `npm run build` runs **before** the commit that ships its output, the
+embedded sha is HEAD's parent at commit time, not a literal self-reference —
+treat it as "which commit this build's source came from," and lean on the
+timestamp as the more precise staleness signal. This exists specifically
+because there's no service worker — the PWA relies on plain HTTP caching, so
+a pushed fix can take a refresh or two to reach the device, and a stale cached
+build once executed an already-fixed delete bug and destroyed a session. The
+version stamp makes a stale build identifiable instead of silently re-running
+already-fixed code.
+
+## Claude Code session hygiene
+
+`.claude/settings.json` (committed) scopes tool permissions into three tiers
+so permission prompts actually mean something instead of ~60-per-session
+rubber-stamping:
+
+- **deny** — `git push`, `sudo`, `rm -rf`: irreversible or reaches outside the machine.
+- **ask** — edits/writes to `index.html` or `sessions.json`, `git commit`: the
+  live app and the training data, worth a real look every time.
+- **allow** — `npm`/`npx`/`node`, routine read/list/grep/diff commands, and
+  writes/edits under `src/`, `scripts/`, `vendor/`, `build_tmp/`: build noise.
+
+First match wins, deny beats ask beats allow. `.claude/settings.local.json`
+(gitignored, auto-managed by the CLI) accumulates additional per-session
+allowances on top of this — don't hand-edit it or treat it as the source of
+truth for what *should* be allowed.
+
+Two habits this config assumes but can't enforce on its own:
+
+1. **Checkpoint-commit before starting a session** (`git add -A && git commit
+   -m "checkpoint"`) so a session always starts from a clean, known tree —
+   this is the actual safety net, not the permission config.
+2. **Review `git diff`/`git status` at the end of a session**, not
+   command-by-command — one diff is realistic to actually read; 60 shell
+   commands flying past isn't.
+
+Caveat: `Bash(node:*)` is allowed, and a Node process can write anywhere on
+disk — the `Edit`/`Write` path-scoped rules above don't bind shell commands.
+There's no config-only fix for that without going back to prompt fatigue,
+which is exactly why the checkpoint commit matters more than the permission
+list does.
+
 ## Known issues / queued work
 
-Priority order.
+Nothing queued right now. Everything tracked in the previous revision of this
+list is complete — kept here as a changelog for anyone picking this back up,
+with pointers to where each is actually documented:
 
-**Done:** the original items 1–2 here (reconstruct a real JSX source; add a
-build step) are complete — see **Build system**, above. `src/app.jsx` is the
-real source, verified AST-equivalent and jsdom-render-equivalent to the
-previously shipped `index.html`. Never hand-patch `index.html` again; edit
-`src/app.jsx` and run `npm run build`.
+1. **Real JSX source + build step.** `src/app.jsx` reconstructed from the
+   previously hand-patched `index.html`, `npm run build`/`npm test` added.
+   See **Build system**, above.
+2. **Single source of truth.** `SEED_SESSIONS` removed; `sessions.json` (via
+   `syncPull`, merged with `localStorage`) is now the only source of history.
+   `SYNC_DEFAULTS.path`/`branch` fixed to match the real deployed location.
+   See **Sync layer**, above.
+3. **Sync robustness.** `syncPush` 409 retry, auto-push failures surfaced in
+   the UI, "replace local from remote" destructive recovery action. See
+   **Sync layer**, above.
+4. **Sync panel moved** to the Session tab below the recent-sessions list,
+   expanded by default until a token is configured. See **Sync layer**, above.
+5. **Legs A/B** implemented as a prescription overlay (`LEGS_VARIANTS`), not a
+   new session type. See **Legs A/B variants**, above.
+6. **Cardio finisher fields** added as first-class session fields. See
+   **Cardio finisher fields**, above.
+7. **Version stamp** visible in the UI so a stale cached build is
+   identifiable. See **Version stamp**, above.
+8. **Claude Code session hygiene** — `.claude/settings.json` permission
+   tiers, checkpoint-commit-before-session and end-of-session-diff-review
+   habits. See **Claude Code session hygiene**, above.
 
-1. **Session data is duplicated.** `SEED_SESSIONS` embeds **62 records inside
-   `index.html`** (now `src/app.jsx`) while `sessions.json` holds 64. The
-   embedded copy has drifted twice already and required manual surgery both
-   times. Make `sessions.json` the single source of truth and remove the
-   embedded seed (or generate it at build time).
-2. **`syncPush` has no 409 retry.** A stale `sha` returns HTTP 409 and the push
-   just fails. Reproduces reliably when auto-push (on finish) races a manual
-   "push now". Refetch the sha and retry once.
-3. **No "replace local from remote".** `mergeSessions` is additive, so a local
-   delete is unrecoverable from the repo — a deleted session cannot be restored
-   by pulling. This caused real data loss requiring manual JSON repair. Add a
-   destructive-but-confirmed "remote wins" action.
-4. **Legs A/B not modeled.** Only `legs|push|pull` exist. Programming now uses
-   two distinct leg days (A = heavy 8–10 quad emphasis, B = higher-rep 12–15
-   posterior). Add a fourth session type.
-5. **No cardio/finisher fields.** Stairmaster finishers (duration, level,
-   perceived effort) are currently typed into the freeform session note. Add
-   first-class fields.
-6. **Sync panel is collapsed by default** and easy to miss entirely. Default it
-   to expanded until a token is configured.
-7. **Cache/staleness footgun.** No service worker; the PWA relies on plain HTTP
-   caching, so a pushed fix can take a refresh or two to reach the device. A
-   stale build once executed an already-fixed delete bug and destroyed a
-   session. Consider a version stamp visible in the UI so the running build is
-   identifiable.
-8. **No Claude Code session hygiene configured.** No project
-   `.claude/settings.json` permission allowlist, no habit of
-   checkpoint-committing before a session starts, no end-of-session `git diff`
-   review. Adopt: (a) a project `.claude/settings.json` that scopes tool
-   permissions instead of relying on ad hoc prompts; (b) commit or stash any
-   dirty working tree before starting a new Claude Code session, so
-   in-progress work is never ambiguous when a session begins; (c) review
-   `git diff`/`git status` at the end of every session before deciding what to
-   commit, rather than committing mid-session on trust.
+Add new items here as they come up.
 
 ## Deploy
 

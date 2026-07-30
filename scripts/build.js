@@ -6,10 +6,30 @@
 // automatic JSX runtime.
 const fs = require("fs");
 const path = require("path");
+const { execFileSync } = require("child_process");
 const babel = require("@babel/core");
 
 const repoRoot = path.resolve(__dirname, "..");
 const read = (p) => fs.readFileSync(path.join(repoRoot, p), "utf8");
+
+// Version stamp (see CLAUDE.md "Known issues" — cache/staleness footgun):
+// visible in the UI so a stale cached build on the device is identifiable.
+// The sha is HEAD at build time — since build runs before the commit that
+// ships it, treat it as "built from this parent commit", not a literal
+// self-reference; the timestamp is the more precise staleness signal.
+function gitShaShort() {
+  try {
+    return execFileSync("git", ["rev-parse", "--short", "HEAD"], {
+      cwd: repoRoot,
+    })
+      .toString()
+      .trim();
+  } catch (e) {
+    return "unknown";
+  }
+}
+const buildSha = gitShaShort();
+const buildTime = new Date().toISOString();
 
 const shellHead = read("src/shell.head.html");
 const shellTail = read("src/shell.tail.html");
@@ -25,7 +45,10 @@ if (!compiled || !compiled.code) {
   throw new Error("Babel produced no output for src/app.jsx");
 }
 
-const appSrc = compiled.code + "\n";
+const appSrc =
+  compiled.code
+    .replace(/__BUILD_SHA__/g, buildSha)
+    .replace(/__BUILD_TIME__/g, buildTime) + "\n";
 
 const output =
   shellHead +

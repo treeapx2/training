@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(git push:*)",
+      "Bash(sudo:*)",
+      "Bash(rm -rf:*)"
+    ],
+    "ask": [
+      "Edit(index.html)",
+      "Write(index.html)",
+      "Edit(sessions.json)",
+      "Write(sessions.json)",
+      "Bash(git commit:*)"
+    ],
+    "allow": [
+      "Read",
+      "Bash(npm:*)", "Bash(npx:*)", "Bash(node:*)",
+      "Bash(ls:*)", "Bash(mkdir:*)", "Bash(cat:*)",
+      "Bash(wc:*)", "Bash(grep:*)", "Bash(sed:*)", "Bash(diff:*)",
+      "Bash(git status:*)", "Bash(git diff:*)", "Bash(git log:*)",
+      "Write(src/**)", "Write(scripts/**)", "Write(vendor/**)", "Write(build_tmp/**)",
+      "Edit(src/**)", "Edit(scripts/**)"
+    ]
+  }
+}
