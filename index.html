@@ -328,57 +328,133 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
 
 // ── Block State ───────────────────────────────────────────────────────────────
 const BLOCK = {
-  flags: [
-    "ON BLOOD THINNERS (~3 wks, PE precaution) — NO contact/fall-risk activity; NO failure/grinding reps; keep RPE \u22648; a 'test' = controlled top set leaving 2+ in reserve. Confirm exertion intensity with care team.",
-    "Hockey SUSPENDED — legs unblocked; cardio substituted (Z2 bike / elliptical / incline walk / rower). Aerobic work stays conversational pace, no intervals until cleared.",
-    "Legs run as A (heavy 8-10) and B (higher-rep 12-15) — keep \u226548h apart. Legs B: drop Leg Press to ~140-155, Leg Curl ~75, add 8-10 min Z2 bike finisher.",
-    "PROGRESSION VALIDITY: run the target lift FRESH as movement #1. Reps logged late in a session are fatigue artifacts, not regressions.",
-    "Groin soreness (L>R) — daily butterfly stretch + lateral lunge holds.",
-    "Left knee below patella — monitor squat/hinge; bilateral leg press only, single-leg press off.",
-    "Hamstring — Leg Curl HOLD 90 @ RPE \u22647; low-back compensation appeared 7/22, stop set if back takes over.",
-    "Thumb — Shoulder Press clean at 90 (7/5); keep watching.",
-    "Elbow — Skull Crusher pull/stretch normal, sharp pain = stop.",
-    "Core stack on cardio days (dead bug, bird dog, side plank, Pallof, RKC) — targets the low-back compensation + groin asymmetry."
-  ],
+  flags: ["ON BLOOD THINNERS (~3 wks, PE precaution) — NO contact/fall-risk activity; NO failure/grinding reps; keep RPE \u22648; a 'test' = controlled top set leaving 2+ in reserve. Confirm exertion intensity with care team.", "Hockey SUSPENDED — legs unblocked; cardio substituted (Z2 bike / elliptical / incline walk / rower). Aerobic work stays conversational pace, no intervals until cleared.", "Legs run as A (heavy 8-10) and B (higher-rep 12-15) — keep \u226548h apart. Legs B: drop Leg Press to ~140-155, Leg Curl ~75, add 8-10 min Z2 bike finisher.", "PROGRESSION VALIDITY: run the target lift FRESH as movement #1. Reps logged late in a session are fatigue artifacts, not regressions.", "Groin soreness (L>R) — daily butterfly stretch + lateral lunge holds.", "Left knee below patella — monitor squat/hinge; bilateral leg press only, single-leg press off.", "Hamstring — Leg Curl HOLD 90 @ RPE \u22647; low-back compensation appeared 7/22, stop set if back takes over.", "Thumb — Shoulder Press clean at 90 (7/5); keep watching.", "Elbow — Skull Crusher pull/stretch normal, sharp pain = stop.", "Core stack on cardio days (dead bug, bird dog, side plank, Pallof, RKC) — targets the low-back compensation + groin asymmetry."],
   sessions: {
     legs: {
       label: "Legs",
       color: "#3B6D11",
       bg: "#EAF3DE",
-      movements: [
-        { name: "Leg Press", current: "170 lb", workSets: 3, reps: 10, target: "TEST 185 \u2014 clean 10/10 @ RPE 7-8 across 6/24, 7/8, 7/22. FRESH opener, straight sets, stop RPE 8. Knee bites \u2192 stay 170." },
-        { name: "Leg Extension", current: "150 lb", workSets: 2, reps: 10, target: "HOLD 150 \u2014 stuck at 8 reps (7/8, 7/22). Rebuild clean 10/10 @ RPE \u22648 before 165." },
-        { name: "Leg Curl", current: "90 lb", workSets: 2, reps: 10, target: "HOLD 90 \u2014 RPE \u22647. Dropped to 6 w/ low-back compensation (7/22). Stop set if back takes over." },
-        { name: "Goblet Squat", current: "45 lb", workSets: 2, reps: 10, target: "TEST 50 \u2014 consistent 10/10 @ RPE 6-7 (7/22). Controlled depth, knee-monitor." },
-        { name: "Calf Raise", current: "35 lb", workSets: 3, reps: 15, target: "TEST 40 \u2014 clean 20-rep sets @ RPE 6-7. Superset w/ Leg Extension." }
-      ]
+      movements: [{
+        name: "Leg Press",
+        current: "170 lb",
+        workSets: 3,
+        reps: 10,
+        target: "TEST 185 \u2014 clean 10/10 @ RPE 7-8 across 6/24, 7/8, 7/22. FRESH opener, straight sets, stop RPE 8. Knee bites \u2192 stay 170."
+      }, {
+        name: "Leg Extension",
+        current: "150 lb",
+        workSets: 2,
+        reps: 10,
+        target: "HOLD 150 \u2014 stuck at 8 reps (7/8, 7/22). Rebuild clean 10/10 @ RPE \u22648 before 165."
+      }, {
+        name: "Leg Curl",
+        current: "90 lb",
+        workSets: 2,
+        reps: 10,
+        target: "HOLD 90 \u2014 RPE \u22647. Dropped to 6 w/ low-back compensation (7/22). Stop set if back takes over."
+      }, {
+        name: "Goblet Squat",
+        current: "45 lb",
+        workSets: 2,
+        reps: 10,
+        target: "TEST 50 \u2014 consistent 10/10 @ RPE 6-7 (7/22). Controlled depth, knee-monitor."
+      }, {
+        name: "Calf Raise",
+        current: "35 lb",
+        workSets: 3,
+        reps: 15,
+        target: "TEST 40 \u2014 clean 20-rep sets @ RPE 6-7. Superset w/ Leg Extension."
+      }]
     },
     push: {
       label: "Push",
       color: "#185FA5",
       bg: "#E6F1FB",
-      movements: [
-        { name: "Chest Press", current: "120 lb", workSets: 2, reps: 10, target: "Build 2nd clean 10/10 @ RPE \u22648 FRESH \u2192 then TEST 135. 7/1 clean; 7/5 drop logged 5th (fatigue, discounted)." },
-        { name: "Shoulder Press", current: "90 lb", workSets: 2, reps: 10, target: "HOLD 90 \u2014 first clean 10/10 @ RPE 7-8 (7/5). Confirm 2nd session (thumb watch) \u2192 105." },
-        { name: "Pec Fly", current: "120 lb", workSets: 2, reps: 10, target: "Build clean 10/10 \u2192 135. Superset w/ Lateral Raise." },
-        { name: "Rope Pushdown", current: "42.5 lb", workSets: 2, reps: 10, target: "Confirm 2nd clean 10/10 (7/5 clean @ RPE 8) \u2192 47.5. Superset w/ Skull Crusher." },
-        { name: "Lateral Raise", current: "15 lb", workSets: 2, reps: 12, target: "Build straight 15s \u2014 15x10x2 @ RPE 8 (7/5)." },
-        { name: "Skull Crusher", current: "20 lb", workSets: 2, reps: 10, target: "HOLD 20 \u2014 confirmed 10/10 @ RPE 7-8 (7/5). Sharp elbow pain = stop." }
-      ]
+      movements: [{
+        name: "Chest Press",
+        current: "120 lb",
+        workSets: 2,
+        reps: 10,
+        target: "Build 2nd clean 10/10 @ RPE \u22648 FRESH \u2192 then TEST 135. 7/1 clean; 7/5 drop logged 5th (fatigue, discounted)."
+      }, {
+        name: "Shoulder Press",
+        current: "90 lb",
+        workSets: 2,
+        reps: 10,
+        target: "HOLD 90 \u2014 first clean 10/10 @ RPE 7-8 (7/5). Confirm 2nd session (thumb watch) \u2192 105."
+      }, {
+        name: "Pec Fly",
+        current: "120 lb",
+        workSets: 2,
+        reps: 10,
+        target: "Build clean 10/10 \u2192 135. Superset w/ Lateral Raise."
+      }, {
+        name: "Rope Pushdown",
+        current: "42.5 lb",
+        workSets: 2,
+        reps: 10,
+        target: "Confirm 2nd clean 10/10 (7/5 clean @ RPE 8) \u2192 47.5. Superset w/ Skull Crusher."
+      }, {
+        name: "Lateral Raise",
+        current: "15 lb",
+        workSets: 2,
+        reps: 12,
+        target: "Build straight 15s \u2014 15x10x2 @ RPE 8 (7/5)."
+      }, {
+        name: "Skull Crusher",
+        current: "20 lb",
+        workSets: 2,
+        reps: 10,
+        target: "HOLD 20 \u2014 confirmed 10/10 @ RPE 7-8 (7/5). Sharp elbow pain = stop."
+      }]
     },
     pull: {
       label: "Pull",
       color: "#3C3489",
       bg: "#EEEDFE",
-      movements: [
-        { name: "Seated Row", current: "135 lb", workSets: 2, reps: 10, target: "Back to 135 \u2014 build clean 10/10 \u2192 150. (7/25 deliberately deloaded to 120x10x2 @ RPE 7 on upper re-entry.)" },
-        { name: "Lat Pulldown", current: "135 lb", workSets: 2, reps: 10, target: "Back to 135 \u2014 confirm 2nd clean 10/10 (7/13 clean) \u2192 150." },
-        { name: "DB Row", current: "50 lb", workSets: 2, reps: 10, target: "Build 8-10 @ 50 \u2014 45x10 @ RPE 7 clean as FRESH opener (7/25), best log to date. Keep leading with this." },
-        { name: "Cable Curl", current: "42.5 lb", workSets: 2, reps: 10, target: "TEST 47.5 \u2014 two clean sessions at 42.5 (7/4, 7/25 4x10 @ RPE 6-7)." },
-        { name: "Hammer Curl", current: "20 lb", workSets: 2, reps: 10, target: "HOLD 20 \u2014 read heavy cold (7/25, 20x8 @ RPE 8). TEST 25 only when leading the session fresh." },
-        { name: "Zottman Curl", current: "20 lb", workSets: 2, reps: 10, target: "Chase 10 reps @ 20 (stuck at 6) \u2014 slow eccentric." },
-        { name: "Reverse Fly", current: "15 lb", workSets: 2, reps: 12, target: "TEST 20 for 8s \u2014 15x10x3 all @ RPE 6 (7/25) clears the consistency gate." }
-      ]
+      movements: [{
+        name: "Seated Row",
+        current: "135 lb",
+        workSets: 2,
+        reps: 10,
+        target: "Back to 135 \u2014 build clean 10/10 \u2192 150. (7/25 deliberately deloaded to 120x10x2 @ RPE 7 on upper re-entry.)"
+      }, {
+        name: "Lat Pulldown",
+        current: "135 lb",
+        workSets: 2,
+        reps: 10,
+        target: "Back to 135 \u2014 confirm 2nd clean 10/10 (7/13 clean) \u2192 150."
+      }, {
+        name: "DB Row",
+        current: "50 lb",
+        workSets: 2,
+        reps: 10,
+        target: "Build 8-10 @ 50 \u2014 45x10 @ RPE 7 clean as FRESH opener (7/25), best log to date. Keep leading with this."
+      }, {
+        name: "Cable Curl",
+        current: "42.5 lb",
+        workSets: 2,
+        reps: 10,
+        target: "TEST 47.5 \u2014 two clean sessions at 42.5 (7/4, 7/25 4x10 @ RPE 6-7)."
+      }, {
+        name: "Hammer Curl",
+        current: "20 lb",
+        workSets: 2,
+        reps: 10,
+        target: "HOLD 20 \u2014 read heavy cold (7/25, 20x8 @ RPE 8). TEST 25 only when leading the session fresh."
+      }, {
+        name: "Zottman Curl",
+        current: "20 lb",
+        workSets: 2,
+        reps: 10,
+        target: "Chase 10 reps @ 20 (stuck at 6) \u2014 slow eccentric."
+      }, {
+        name: "Reverse Fly",
+        current: "15 lb",
+        workSets: 2,
+        reps: 12,
+        target: "TEST 20 for 8s \u2014 15x10x3 all @ RPE 6 (7/25) clears the consistency gate."
+      }]
     }
   }
 };
@@ -8520,29 +8596,838 @@ const SEED_SESSIONS = [{
       note: ""
     }]
   }]
-},
-{"id": 61, "type": "push", "label": "Push", "date": "Jul 5, 2026", "note": "Skull crusher tested 20lb - 10x2 RPE 7/8 confirmed. Shoulder press 90x10x2 RPE 7/8 - first clean 10s. Lateral raise 15x10x2. Chest press reps dropped at 120.", "movements": [{"name": "Shoulder Press", "sets": [{"set": 1, "weight": "60", "reps": "10", "rpe": "5", "note": ""}, {"set": 2, "weight": "75", "reps": "10", "rpe": "6", "note": ""}, {"set": 3, "weight": "75", "reps": "10", "rpe": "7", "note": ""}, {"set": 4, "weight": "90", "reps": "10", "rpe": "7", "note": "first clean 10s"}, {"set": 5, "weight": "90", "reps": "10", "rpe": "8", "note": ""}]}, {"name": "Lateral Raise", "sets": [{"set": 1, "weight": "12", "reps": "10", "rpe": "6", "note": ""}, {"set": 2, "weight": "12", "reps": "10", "rpe": "7", "note": ""}, {"set": 3, "weight": "15", "reps": "10", "rpe": "8", "note": ""}, {"set": 4, "weight": "15", "reps": "10", "rpe": "8", "note": ""}]}, {"name": "Rope Pushdown", "sets": [{"set": 1, "weight": "32.5", "reps": "10", "rpe": "5", "note": ""}, {"set": 2, "weight": "37.5", "reps": "10", "rpe": "6", "note": ""}, {"set": 3, "weight": "37.5", "reps": "10", "rpe": "7", "note": ""}, {"set": 4, "weight": "42.5", "reps": "10", "rpe": "8", "note": ""}, {"set": 5, "weight": "42.5", "reps": "10", "rpe": "8", "note": ""}]}, {"name": "Skull Crusher", "sets": [{"set": 1, "weight": "15", "reps": "10", "rpe": "5", "note": ""}, {"set": 2, "weight": "15", "reps": "10", "rpe": "6", "note": ""}, {"set": 3, "weight": "20", "reps": "10", "rpe": "7", "note": "tested 20"}, {"set": 4, "weight": "20", "reps": "10", "rpe": "8", "note": "confirmed working weight"}]}, {"name": "Chest Press", "sets": [{"set": 1, "weight": "90", "reps": "10", "rpe": "6", "note": ""}, {"set": 2, "weight": "105", "reps": "10", "rpe": "7", "note": ""}, {"set": 3, "weight": "105", "reps": "10", "rpe": "8", "note": ""}, {"set": 4, "weight": "120", "reps": "6", "rpe": "8", "note": ""}, {"set": 5, "weight": "120", "reps": "6", "rpe": "9", "note": ""}]}, {"name": "Pec Fly", "sets": [{"set": 1, "weight": "90", "reps": "10", "rpe": "6", "note": ""}, {"set": 2, "weight": "105", "reps": "10", "rpe": "7", "note": ""}, {"set": 3, "weight": "105", "reps": "10", "rpe": "7", "note": ""}, {"set": 4, "weight": "120", "reps": "6", "rpe": "8", "note": ""}, {"set": 5, "weight": "120", "reps": "6", "rpe": "8", "note": ""}]}]},
-{"id": 62, "type": "legs", "label": "Legs", "date": "Jul 8, 2026", "note": "Leg curl 90x10x2 - first clean 10s at 90. Leg extension reps dropped at 150. Goblet conservative after gap. Calf raise held - test 40 next.", "movements": [{"name": "Leg Press", "sets": [{"set": 1, "weight": "140", "reps": "10", "rpe": "5", "note": ""}, {"set": 2, "weight": "155", "reps": "10", "rpe": "6", "note": ""}, {"set": 3, "weight": "155", "reps": "10", "rpe": "6", "note": ""}, {"set": 4, "weight": "170", "reps": "10", "rpe": "7", "note": ""}, {"set": 5, "weight": "170", "reps": "10", "rpe": "8", "note": ""}]}, {"name": "Leg Extension", "sets": [{"set": 1, "weight": "120", "reps": "10", "rpe": "6", "note": ""}, {"set": 2, "weight": "135", "reps": "10", "rpe": "7", "note": ""}, {"set": 3, "weight": "135", "reps": "10", "rpe": "7", "note": ""}, {"set": 4, "weight": "150", "reps": "8", "rpe": "8", "note": ""}, {"set": 5, "weight": "150", "reps": "8", "rpe": "8", "note": ""}]}, {"name": "Leg Curl", "sets": [{"set": 1, "weight": "60", "reps": "10", "rpe": "5", "note": ""}, {"set": 2, "weight": "75", "reps": "10", "rpe": "6", "note": ""}, {"set": 3, "weight": "75", "reps": "10", "rpe": "7", "note": ""}, {"set": 4, "weight": "90", "reps": "10", "rpe": "8", "note": "first clean 10s"}, {"set": 5, "weight": "90", "reps": "10", "rpe": "8", "note": ""}]}, {"name": "Goblet Squat", "sets": [{"set": 1, "weight": "40", "reps": "10", "rpe": "6", "note": ""}, {"set": 2, "weight": "40", "reps": "10", "rpe": "6", "note": ""}, {"set": 3, "weight": "45", "reps": "10", "rpe": "7", "note": ""}, {"set": 4, "weight": "45", "reps": "10", "rpe": "7", "note": ""}]}, {"name": "Calf Raise", "sets": [{"set": 1, "weight": "35", "reps": "20", "rpe": "6", "note": ""}, {"set": 2, "weight": "35", "reps": "20", "rpe": "6", "note": ""}, {"set": 3, "weight": "35", "reps": "20", "rpe": "7", "note": "test 40 next"}]}]},
-{"id": 63, "type": "pull", "label": "Pull", "date": "Jul 13, 2026", "note": "Lat pulldown 135x10x2 confirmed. Seated row 135 building (6/6). DB row reps dropped at 45.", "movements": [{"name": "Seated Row", "sets": [{"set": 1, "weight": "105", "reps": "10", "rpe": "5", "note": ""}, {"set": 2, "weight": "120", "reps": "10", "rpe": "6", "note": ""}, {"set": 3, "weight": "120", "reps": "10", "rpe": "7", "note": ""}, {"set": 4, "weight": "135", "reps": "6", "rpe": "8", "note": ""}, {"set": 5, "weight": "135", "reps": "6", "rpe": "8", "note": ""}]}, {"name": "Lat Pulldown", "sets": [{"set": 1, "weight": "105", "reps": "10", "rpe": "6", "note": ""}, {"set": 2, "weight": "120", "reps": "10", "rpe": "7", "note": ""}, {"set": 3, "weight": "120", "reps": "10", "rpe": "8", "note": ""}, {"set": 4, "weight": "135", "reps": "10", "rpe": "8", "note": ""}, {"set": 5, "weight": "135", "reps": "10", "rpe": "8", "note": "confirmed working weight"}]}, {"name": "DB Row", "sets": [{"set": 1, "weight": "35", "reps": "10", "rpe": "6", "note": ""}, {"set": 2, "weight": "35", "reps": "10", "rpe": "7", "note": ""}, {"set": 3, "weight": "45", "reps": "8", "rpe": "8", "note": ""}, {"set": 4, "weight": "45", "reps": "6", "rpe": "8", "note": ""}]}, {"name": "Reverse Fly", "sets": [{"set": 1, "weight": "15", "reps": "8", "rpe": "6", "note": ""}, {"set": 2, "weight": "15", "reps": "8", "rpe": "7", "note": ""}, {"set": 3, "weight": "15", "reps": "8", "rpe": "7", "note": ""}]}, {"name": "Hammer Curl", "sets": [{"set": 1, "weight": "20", "reps": "10", "rpe": "6", "note": ""}, {"set": 2, "weight": "20", "reps": "10", "rpe": "7", "note": ""}, {"set": 3, "weight": "20", "reps": "8", "rpe": "8", "note": ""}]}]},
-{"id": 64, "type": "legs", "label": "Legs", "date": "Jul 22, 2026", "note": "Leg curl reps dropped to 6 at 90 - monitor lower back compensation. Leg extension still 8 reps at 150. Goblet squat very consistent at 45 - test 50 next. No calf raise.", "movements": [{"name": "Leg Press", "sets": [{"set": 1, "weight": "140", "reps": "10", "rpe": "5", "note": ""}, {"set": 2, "weight": "155", "reps": "10", "rpe": "6", "note": ""}, {"set": 3, "weight": "155", "reps": "10", "rpe": "6", "note": ""}, {"set": 4, "weight": "170", "reps": "10", "rpe": "7", "note": ""}, {"set": 5, "weight": "170", "reps": "10", "rpe": "8", "note": ""}]}, {"name": "Leg Extension", "sets": [{"set": 1, "weight": "120", "reps": "10", "rpe": "5", "note": ""}, {"set": 2, "weight": "135", "reps": "10", "rpe": "6", "note": ""}, {"set": 3, "weight": "135", "reps": "10", "rpe": "7", "note": ""}, {"set": 4, "weight": "150", "reps": "8", "rpe": "8", "note": ""}, {"set": 5, "weight": "150", "reps": "8", "rpe": "8", "note": ""}]}, {"name": "Leg Curl", "sets": [{"set": 1, "weight": "60", "reps": "10", "rpe": "5", "note": ""}, {"set": 2, "weight": "75", "reps": "10", "rpe": "6", "note": ""}, {"set": 3, "weight": "75", "reps": "10", "rpe": "7", "note": ""}, {"set": 4, "weight": "90", "reps": "6", "rpe": "8", "note": "reps dropped - monitor lower back"}, {"set": 5, "weight": "90", "reps": "6", "rpe": "8", "note": ""}]}, {"name": "Goblet Squat", "sets": [{"set": 1, "weight": "45", "reps": "10", "rpe": "5", "note": ""}, {"set": 2, "weight": "45", "reps": "10", "rpe": "6", "note": ""}, {"set": 3, "weight": "45", "reps": "10", "rpe": "6", "note": ""}, {"set": 4, "weight": "45", "reps": "10", "rpe": "7", "note": "test 50 next"}]}]},
-{"id": 65, "type": "pull", "label": "Pull", "date": "Jul 25, 2026", "note": "Upper-body re-entry after layoff — deliberately light. DB Row LED the session: 45x10 @ RPE 7 clean, best DB row log to date (fresh placement worked). Seated row + lat pulldown held at 120x10x2 @ RPE 7 (chosen deload, not regression). Cable curl 42.5x10x4 @ RPE 6-7 — second clean session, 47.5 next. Reverse fly 15x10x3 all @ RPE 6 — ready for 20. Hammer curl 20 read heavy cold (8 @ RPE 8), dropped to 15 and finished clean.", "movements": [{"name": "DB Row", "sets": [{"set": 1, "weight": "35", "reps": "10", "rpe": "5", "note": ""}, {"set": 2, "weight": "40", "reps": "10", "rpe": "6", "note": ""}, {"set": 3, "weight": "40", "reps": "10", "rpe": "6", "note": ""}, {"set": 4, "weight": "45", "reps": "10", "rpe": "7", "note": ""}]}, {"name": "Seated Row", "sets": [{"set": 1, "weight": "90", "reps": "10", "rpe": "5", "note": ""}, {"set": 2, "weight": "105", "reps": "10", "rpe": "6", "note": ""}, {"set": 3, "weight": "105", "reps": "10", "rpe": "6", "note": ""}, {"set": 4, "weight": "120", "reps": "10", "rpe": "7", "note": ""}, {"set": 5, "weight": "120", "reps": "10", "rpe": "7", "note": ""}]}, {"name": "Lat Pulldown", "sets": [{"set": 1, "weight": "90", "reps": "10", "rpe": "5", "note": ""}, {"set": 2, "weight": "105", "reps": "10", "rpe": "6", "note": ""}, {"set": 3, "weight": "105", "reps": "10", "rpe": "6", "note": ""}, {"set": 4, "weight": "120", "reps": "10", "rpe": "7", "note": ""}, {"set": 5, "weight": "120", "reps": "10", "rpe": "7", "note": ""}]}, {"name": "Cable Curl", "sets": [{"set": 1, "weight": "42.5", "reps": "10", "rpe": "6", "note": ""}, {"set": 2, "weight": "42.5", "reps": "10", "rpe": "6", "note": ""}, {"set": 3, "weight": "42.5", "reps": "10", "rpe": "7", "note": ""}, {"set": 4, "weight": "42.5", "reps": "10", "rpe": "7", "note": ""}]}, {"name": "Hammer Curl", "sets": [{"set": 1, "weight": "20", "reps": "8", "rpe": "8", "note": "read heavy cold"}, {"set": 2, "weight": "15", "reps": "10", "rpe": "6", "note": ""}, {"set": 3, "weight": "15", "reps": "10", "rpe": "7", "note": ""}]}, {"name": "Reverse Fly", "sets": [{"set": 1, "weight": "15", "reps": "10", "rpe": "6", "note": ""}, {"set": 2, "weight": "15", "reps": "10", "rpe": "6", "note": ""}, {"set": 3, "weight": "15", "reps": "10", "rpe": "6", "note": ""}]}]}
-];
+}, {
+  id: 61,
+  type: "push",
+  label: "Push",
+  date: "Jul 5, 2026",
+  note: "Skull crusher tested 20lb - 10x2 RPE 7/8 confirmed. Shoulder press 90x10x2 RPE 7/8 - first clean 10s. Lateral raise 15x10x2. Chest press reps dropped at 120.",
+  movements: [{
+    name: "Shoulder Press",
+    sets: [{
+      set: 1,
+      weight: "60",
+      reps: "10",
+      rpe: "5",
+      note: ""
+    }, {
+      set: 2,
+      weight: "75",
+      reps: "10",
+      rpe: "6",
+      note: ""
+    }, {
+      set: 3,
+      weight: "75",
+      reps: "10",
+      rpe: "7",
+      note: ""
+    }, {
+      set: 4,
+      weight: "90",
+      reps: "10",
+      rpe: "7",
+      note: "first clean 10s"
+    }, {
+      set: 5,
+      weight: "90",
+      reps: "10",
+      rpe: "8",
+      note: ""
+    }]
+  }, {
+    name: "Lateral Raise",
+    sets: [{
+      set: 1,
+      weight: "12",
+      reps: "10",
+      rpe: "6",
+      note: ""
+    }, {
+      set: 2,
+      weight: "12",
+      reps: "10",
+      rpe: "7",
+      note: ""
+    }, {
+      set: 3,
+      weight: "15",
+      reps: "10",
+      rpe: "8",
+      note: ""
+    }, {
+      set: 4,
+      weight: "15",
+      reps: "10",
+      rpe: "8",
+      note: ""
+    }]
+  }, {
+    name: "Rope Pushdown",
+    sets: [{
+      set: 1,
+      weight: "32.5",
+      reps: "10",
+      rpe: "5",
+      note: ""
+    }, {
+      set: 2,
+      weight: "37.5",
+      reps: "10",
+      rpe: "6",
+      note: ""
+    }, {
+      set: 3,
+      weight: "37.5",
+      reps: "10",
+      rpe: "7",
+      note: ""
+    }, {
+      set: 4,
+      weight: "42.5",
+      reps: "10",
+      rpe: "8",
+      note: ""
+    }, {
+      set: 5,
+      weight: "42.5",
+      reps: "10",
+      rpe: "8",
+      note: ""
+    }]
+  }, {
+    name: "Skull Crusher",
+    sets: [{
+      set: 1,
+      weight: "15",
+      reps: "10",
+      rpe: "5",
+      note: ""
+    }, {
+      set: 2,
+      weight: "15",
+      reps: "10",
+      rpe: "6",
+      note: ""
+    }, {
+      set: 3,
+      weight: "20",
+      reps: "10",
+      rpe: "7",
+      note: "tested 20"
+    }, {
+      set: 4,
+      weight: "20",
+      reps: "10",
+      rpe: "8",
+      note: "confirmed working weight"
+    }]
+  }, {
+    name: "Chest Press",
+    sets: [{
+      set: 1,
+      weight: "90",
+      reps: "10",
+      rpe: "6",
+      note: ""
+    }, {
+      set: 2,
+      weight: "105",
+      reps: "10",
+      rpe: "7",
+      note: ""
+    }, {
+      set: 3,
+      weight: "105",
+      reps: "10",
+      rpe: "8",
+      note: ""
+    }, {
+      set: 4,
+      weight: "120",
+      reps: "6",
+      rpe: "8",
+      note: ""
+    }, {
+      set: 5,
+      weight: "120",
+      reps: "6",
+      rpe: "9",
+      note: ""
+    }]
+  }, {
+    name: "Pec Fly",
+    sets: [{
+      set: 1,
+      weight: "90",
+      reps: "10",
+      rpe: "6",
+      note: ""
+    }, {
+      set: 2,
+      weight: "105",
+      reps: "10",
+      rpe: "7",
+      note: ""
+    }, {
+      set: 3,
+      weight: "105",
+      reps: "10",
+      rpe: "7",
+      note: ""
+    }, {
+      set: 4,
+      weight: "120",
+      reps: "6",
+      rpe: "8",
+      note: ""
+    }, {
+      set: 5,
+      weight: "120",
+      reps: "6",
+      rpe: "8",
+      note: ""
+    }]
+  }]
+}, {
+  id: 62,
+  type: "legs",
+  label: "Legs",
+  date: "Jul 8, 2026",
+  note: "Leg curl 90x10x2 - first clean 10s at 90. Leg extension reps dropped at 150. Goblet conservative after gap. Calf raise held - test 40 next.",
+  movements: [{
+    name: "Leg Press",
+    sets: [{
+      set: 1,
+      weight: "140",
+      reps: "10",
+      rpe: "5",
+      note: ""
+    }, {
+      set: 2,
+      weight: "155",
+      reps: "10",
+      rpe: "6",
+      note: ""
+    }, {
+      set: 3,
+      weight: "155",
+      reps: "10",
+      rpe: "6",
+      note: ""
+    }, {
+      set: 4,
+      weight: "170",
+      reps: "10",
+      rpe: "7",
+      note: ""
+    }, {
+      set: 5,
+      weight: "170",
+      reps: "10",
+      rpe: "8",
+      note: ""
+    }]
+  }, {
+    name: "Leg Extension",
+    sets: [{
+      set: 1,
+      weight: "120",
+      reps: "10",
+      rpe: "6",
+      note: ""
+    }, {
+      set: 2,
+      weight: "135",
+      reps: "10",
+      rpe: "7",
+      note: ""
+    }, {
+      set: 3,
+      weight: "135",
+      reps: "10",
+      rpe: "7",
+      note: ""
+    }, {
+      set: 4,
+      weight: "150",
+      reps: "8",
+      rpe: "8",
+      note: ""
+    }, {
+      set: 5,
+      weight: "150",
+      reps: "8",
+      rpe: "8",
+      note: ""
+    }]
+  }, {
+    name: "Leg Curl",
+    sets: [{
+      set: 1,
+      weight: "60",
+      reps: "10",
+      rpe: "5",
+      note: ""
+    }, {
+      set: 2,
+      weight: "75",
+      reps: "10",
+      rpe: "6",
+      note: ""
+    }, {
+      set: 3,
+      weight: "75",
+      reps: "10",
+      rpe: "7",
+      note: ""
+    }, {
+      set: 4,
+      weight: "90",
+      reps: "10",
+      rpe: "8",
+      note: "first clean 10s"
+    }, {
+      set: 5,
+      weight: "90",
+      reps: "10",
+      rpe: "8",
+      note: ""
+    }]
+  }, {
+    name: "Goblet Squat",
+    sets: [{
+      set: 1,
+      weight: "40",
+      reps: "10",
+      rpe: "6",
+      note: ""
+    }, {
+      set: 2,
+      weight: "40",
+      reps: "10",
+      rpe: "6",
+      note: ""
+    }, {
+      set: 3,
+      weight: "45",
+      reps: "10",
+      rpe: "7",
+      note: ""
+    }, {
+      set: 4,
+      weight: "45",
+      reps: "10",
+      rpe: "7",
+      note: ""
+    }]
+  }, {
+    name: "Calf Raise",
+    sets: [{
+      set: 1,
+      weight: "35",
+      reps: "20",
+      rpe: "6",
+      note: ""
+    }, {
+      set: 2,
+      weight: "35",
+      reps: "20",
+      rpe: "6",
+      note: ""
+    }, {
+      set: 3,
+      weight: "35",
+      reps: "20",
+      rpe: "7",
+      note: "test 40 next"
+    }]
+  }]
+}, {
+  id: 63,
+  type: "pull",
+  label: "Pull",
+  date: "Jul 13, 2026",
+  note: "Lat pulldown 135x10x2 confirmed. Seated row 135 building (6/6). DB row reps dropped at 45.",
+  movements: [{
+    name: "Seated Row",
+    sets: [{
+      set: 1,
+      weight: "105",
+      reps: "10",
+      rpe: "5",
+      note: ""
+    }, {
+      set: 2,
+      weight: "120",
+      reps: "10",
+      rpe: "6",
+      note: ""
+    }, {
+      set: 3,
+      weight: "120",
+      reps: "10",
+      rpe: "7",
+      note: ""
+    }, {
+      set: 4,
+      weight: "135",
+      reps: "6",
+      rpe: "8",
+      note: ""
+    }, {
+      set: 5,
+      weight: "135",
+      reps: "6",
+      rpe: "8",
+      note: ""
+    }]
+  }, {
+    name: "Lat Pulldown",
+    sets: [{
+      set: 1,
+      weight: "105",
+      reps: "10",
+      rpe: "6",
+      note: ""
+    }, {
+      set: 2,
+      weight: "120",
+      reps: "10",
+      rpe: "7",
+      note: ""
+    }, {
+      set: 3,
+      weight: "120",
+      reps: "10",
+      rpe: "8",
+      note: ""
+    }, {
+      set: 4,
+      weight: "135",
+      reps: "10",
+      rpe: "8",
+      note: ""
+    }, {
+      set: 5,
+      weight: "135",
+      reps: "10",
+      rpe: "8",
+      note: "confirmed working weight"
+    }]
+  }, {
+    name: "DB Row",
+    sets: [{
+      set: 1,
+      weight: "35",
+      reps: "10",
+      rpe: "6",
+      note: ""
+    }, {
+      set: 2,
+      weight: "35",
+      reps: "10",
+      rpe: "7",
+      note: ""
+    }, {
+      set: 3,
+      weight: "45",
+      reps: "8",
+      rpe: "8",
+      note: ""
+    }, {
+      set: 4,
+      weight: "45",
+      reps: "6",
+      rpe: "8",
+      note: ""
+    }]
+  }, {
+    name: "Reverse Fly",
+    sets: [{
+      set: 1,
+      weight: "15",
+      reps: "8",
+      rpe: "6",
+      note: ""
+    }, {
+      set: 2,
+      weight: "15",
+      reps: "8",
+      rpe: "7",
+      note: ""
+    }, {
+      set: 3,
+      weight: "15",
+      reps: "8",
+      rpe: "7",
+      note: ""
+    }]
+  }, {
+    name: "Hammer Curl",
+    sets: [{
+      set: 1,
+      weight: "20",
+      reps: "10",
+      rpe: "6",
+      note: ""
+    }, {
+      set: 2,
+      weight: "20",
+      reps: "10",
+      rpe: "7",
+      note: ""
+    }, {
+      set: 3,
+      weight: "20",
+      reps: "8",
+      rpe: "8",
+      note: ""
+    }]
+  }]
+}, {
+  id: 64,
+  type: "legs",
+  label: "Legs",
+  date: "Jul 22, 2026",
+  note: "Leg curl reps dropped to 6 at 90 - monitor lower back compensation. Leg extension still 8 reps at 150. Goblet squat very consistent at 45 - test 50 next. No calf raise.",
+  movements: [{
+    name: "Leg Press",
+    sets: [{
+      set: 1,
+      weight: "140",
+      reps: "10",
+      rpe: "5",
+      note: ""
+    }, {
+      set: 2,
+      weight: "155",
+      reps: "10",
+      rpe: "6",
+      note: ""
+    }, {
+      set: 3,
+      weight: "155",
+      reps: "10",
+      rpe: "6",
+      note: ""
+    }, {
+      set: 4,
+      weight: "170",
+      reps: "10",
+      rpe: "7",
+      note: ""
+    }, {
+      set: 5,
+      weight: "170",
+      reps: "10",
+      rpe: "8",
+      note: ""
+    }]
+  }, {
+    name: "Leg Extension",
+    sets: [{
+      set: 1,
+      weight: "120",
+      reps: "10",
+      rpe: "5",
+      note: ""
+    }, {
+      set: 2,
+      weight: "135",
+      reps: "10",
+      rpe: "6",
+      note: ""
+    }, {
+      set: 3,
+      weight: "135",
+      reps: "10",
+      rpe: "7",
+      note: ""
+    }, {
+      set: 4,
+      weight: "150",
+      reps: "8",
+      rpe: "8",
+      note: ""
+    }, {
+      set: 5,
+      weight: "150",
+      reps: "8",
+      rpe: "8",
+      note: ""
+    }]
+  }, {
+    name: "Leg Curl",
+    sets: [{
+      set: 1,
+      weight: "60",
+      reps: "10",
+      rpe: "5",
+      note: ""
+    }, {
+      set: 2,
+      weight: "75",
+      reps: "10",
+      rpe: "6",
+      note: ""
+    }, {
+      set: 3,
+      weight: "75",
+      reps: "10",
+      rpe: "7",
+      note: ""
+    }, {
+      set: 4,
+      weight: "90",
+      reps: "6",
+      rpe: "8",
+      note: "reps dropped - monitor lower back"
+    }, {
+      set: 5,
+      weight: "90",
+      reps: "6",
+      rpe: "8",
+      note: ""
+    }]
+  }, {
+    name: "Goblet Squat",
+    sets: [{
+      set: 1,
+      weight: "45",
+      reps: "10",
+      rpe: "5",
+      note: ""
+    }, {
+      set: 2,
+      weight: "45",
+      reps: "10",
+      rpe: "6",
+      note: ""
+    }, {
+      set: 3,
+      weight: "45",
+      reps: "10",
+      rpe: "6",
+      note: ""
+    }, {
+      set: 4,
+      weight: "45",
+      reps: "10",
+      rpe: "7",
+      note: "test 50 next"
+    }]
+  }]
+}, {
+  id: 65,
+  type: "pull",
+  label: "Pull",
+  date: "Jul 25, 2026",
+  note: "Upper-body re-entry after layoff — deliberately light. DB Row LED the session: 45x10 @ RPE 7 clean, best DB row log to date (fresh placement worked). Seated row + lat pulldown held at 120x10x2 @ RPE 7 (chosen deload, not regression). Cable curl 42.5x10x4 @ RPE 6-7 — second clean session, 47.5 next. Reverse fly 15x10x3 all @ RPE 6 — ready for 20. Hammer curl 20 read heavy cold (8 @ RPE 8), dropped to 15 and finished clean.",
+  movements: [{
+    name: "DB Row",
+    sets: [{
+      set: 1,
+      weight: "35",
+      reps: "10",
+      rpe: "5",
+      note: ""
+    }, {
+      set: 2,
+      weight: "40",
+      reps: "10",
+      rpe: "6",
+      note: ""
+    }, {
+      set: 3,
+      weight: "40",
+      reps: "10",
+      rpe: "6",
+      note: ""
+    }, {
+      set: 4,
+      weight: "45",
+      reps: "10",
+      rpe: "7",
+      note: ""
+    }]
+  }, {
+    name: "Seated Row",
+    sets: [{
+      set: 1,
+      weight: "90",
+      reps: "10",
+      rpe: "5",
+      note: ""
+    }, {
+      set: 2,
+      weight: "105",
+      reps: "10",
+      rpe: "6",
+      note: ""
+    }, {
+      set: 3,
+      weight: "105",
+      reps: "10",
+      rpe: "6",
+      note: ""
+    }, {
+      set: 4,
+      weight: "120",
+      reps: "10",
+      rpe: "7",
+      note: ""
+    }, {
+      set: 5,
+      weight: "120",
+      reps: "10",
+      rpe: "7",
+      note: ""
+    }]
+  }, {
+    name: "Lat Pulldown",
+    sets: [{
+      set: 1,
+      weight: "90",
+      reps: "10",
+      rpe: "5",
+      note: ""
+    }, {
+      set: 2,
+      weight: "105",
+      reps: "10",
+      rpe: "6",
+      note: ""
+    }, {
+      set: 3,
+      weight: "105",
+      reps: "10",
+      rpe: "6",
+      note: ""
+    }, {
+      set: 4,
+      weight: "120",
+      reps: "10",
+      rpe: "7",
+      note: ""
+    }, {
+      set: 5,
+      weight: "120",
+      reps: "10",
+      rpe: "7",
+      note: ""
+    }]
+  }, {
+    name: "Cable Curl",
+    sets: [{
+      set: 1,
+      weight: "42.5",
+      reps: "10",
+      rpe: "6",
+      note: ""
+    }, {
+      set: 2,
+      weight: "42.5",
+      reps: "10",
+      rpe: "6",
+      note: ""
+    }, {
+      set: 3,
+      weight: "42.5",
+      reps: "10",
+      rpe: "7",
+      note: ""
+    }, {
+      set: 4,
+      weight: "42.5",
+      reps: "10",
+      rpe: "7",
+      note: ""
+    }]
+  }, {
+    name: "Hammer Curl",
+    sets: [{
+      set: 1,
+      weight: "20",
+      reps: "8",
+      rpe: "8",
+      note: "read heavy cold"
+    }, {
+      set: 2,
+      weight: "15",
+      reps: "10",
+      rpe: "6",
+      note: ""
+    }, {
+      set: 3,
+      weight: "15",
+      reps: "10",
+      rpe: "7",
+      note: ""
+    }]
+  }, {
+    name: "Reverse Fly",
+    sets: [{
+      set: 1,
+      weight: "15",
+      reps: "10",
+      rpe: "6",
+      note: ""
+    }, {
+      set: 2,
+      weight: "15",
+      reps: "10",
+      rpe: "6",
+      note: ""
+    }, {
+      set: 3,
+      weight: "15",
+      reps: "10",
+      rpe: "6",
+      note: ""
+    }]
+  }]
+}];
 
 // Single stable storage key — never changes
 const SYNC_KEY = "at_sync_cfg_v1";
-const SYNC_DEFAULTS = { token: "", repo: "treeapx2/training", path: "data/sessions.json", branch: "main", auto: true };
+const SYNC_DEFAULTS = {
+  token: "",
+  repo: "treeapx2/training",
+  path: "data/sessions.json",
+  branch: "main",
+  auto: true
+};
 function loadSyncCfg() {
   try {
     const raw = localStorage.getItem(SYNC_KEY);
-    return raw ? { ...SYNC_DEFAULTS, ...JSON.parse(raw) } : { ...SYNC_DEFAULTS };
-  } catch (e) { return { ...SYNC_DEFAULTS }; }
+    return raw ? {
+      ...SYNC_DEFAULTS,
+      ...JSON.parse(raw)
+    } : {
+      ...SYNC_DEFAULTS
+    };
+  } catch (e) {
+    return {
+      ...SYNC_DEFAULTS
+    };
+  }
 }
 function saveSyncCfg(cfg) {
-  try { localStorage.setItem(SYNC_KEY, JSON.stringify(cfg)); return true; } catch (e) { return false; }
+  try {
+    localStorage.setItem(SYNC_KEY, JSON.stringify(cfg));
+    return true;
+  } catch (e) {
+    return false;
+  }
 }
-function b64encode(str) { return btoa(unescape(encodeURIComponent(str))); }
+function b64encode(str) {
+  return btoa(unescape(encodeURIComponent(str)));
+}
 function mergeSessions(a, b) {
-  const out = []; const seenKey = new Set(); const seenId = new Set();
+  const out = [];
+  const seenKey = new Set();
+  const seenId = new Set();
   [...(a || []), ...(b || [])].forEach(r => {
     if (!r) return;
     if (r.type && r.date) {
@@ -8565,35 +9450,89 @@ function mergeSessions(a, b) {
   return out;
 }
 async function syncPull(cfg) {
-  if (!cfg || !cfg.repo || !cfg.path) return { ok: false, err: "not configured" };
+  if (!cfg || !cfg.repo || !cfg.path) return {
+    ok: false,
+    err: "not configured"
+  };
   const url = "https://raw.githubusercontent.com/" + cfg.repo + "/" + cfg.branch + "/" + cfg.path + "?t=" + Date.now();
   try {
-    const r = await fetch(url, { cache: "no-store" });
-    if (r.status === 404) return { ok: true, sessions: [], note: "no remote file yet" };
-    if (!r.ok) return { ok: false, err: "HTTP " + r.status };
+    const r = await fetch(url, {
+      cache: "no-store"
+    });
+    if (r.status === 404) return {
+      ok: true,
+      sessions: [],
+      note: "no remote file yet"
+    };
+    if (!r.ok) return {
+      ok: false,
+      err: "HTTP " + r.status
+    };
     const j = await r.json();
-    return { ok: true, sessions: Array.isArray(j) ? j : j.sessions || [] };
-  } catch (e) { return { ok: false, err: String(e.message || e) }; }
+    return {
+      ok: true,
+      sessions: Array.isArray(j) ? j : j.sessions || []
+    };
+  } catch (e) {
+    return {
+      ok: false,
+      err: String(e.message || e)
+    };
+  }
 }
 async function syncPush(cfg, sessions) {
-  if (!cfg || !cfg.token) return { ok: false, err: "no token configured" };
+  if (!cfg || !cfg.token) return {
+    ok: false,
+    err: "no token configured"
+  };
   const api = "https://api.github.com/repos/" + cfg.repo + "/contents/" + cfg.path;
-  const H = { Authorization: "Bearer " + cfg.token, Accept: "application/vnd.github+json" };
+  const H = {
+    Authorization: "Bearer " + cfg.token,
+    Accept: "application/vnd.github+json"
+  };
   try {
     let sha = null;
-    const g = await fetch(api + "?ref=" + cfg.branch, { headers: H });
-    if (g.ok) { const gj = await g.json(); sha = gj.sha || null; }
-    else if (g.status === 401 || g.status === 403) return { ok: false, err: "auth failed (" + g.status + ") - check token scope/expiry" };
+    const g = await fetch(api + "?ref=" + cfg.branch, {
+      headers: H
+    });
+    if (g.ok) {
+      const gj = await g.json();
+      sha = gj.sha || null;
+    } else if (g.status === 401 || g.status === 403) return {
+      ok: false,
+      err: "auth failed (" + g.status + ") - check token scope/expiry"
+    };
     const body = {
       message: "sync: " + sessions.length + " sessions @ " + new Date().toISOString(),
       content: b64encode(JSON.stringify(sessions, null, 2)),
       branch: cfg.branch
     };
     if (sha) body.sha = sha;
-    const put = await fetch(api, { method: "PUT", headers: { ...H, "Content-Type": "application/json" }, body: JSON.stringify(body) });
-    if (!put.ok) { const t = await put.text(); return { ok: false, err: "HTTP " + put.status + " " + t.slice(0, 160) }; }
-    return { ok: true, count: sessions.length };
-  } catch (e) { return { ok: false, err: String(e.message || e) }; }
+    const put = await fetch(api, {
+      method: "PUT",
+      headers: {
+        ...H,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(body)
+    });
+    if (!put.ok) {
+      const t = await put.text();
+      return {
+        ok: false,
+        err: "HTTP " + put.status + " " + t.slice(0, 160)
+      };
+    }
+    return {
+      ok: true,
+      count: sessions.length
+    };
+  } catch (e) {
+    return {
+      ok: false,
+      err: String(e.message || e)
+    };
+  }
 }
 const STORAGE_KEY = "at_workout_stable";
 function loadData() {
@@ -8809,7 +9748,7 @@ function MovementChart({
   color,
   compact = false
 }) {
-  if (data.length < 2) return /*#__PURE__*/React.createElement("div", {
+  if (data.length < 2) return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     style: {
       height: 80,
       display: "flex",
@@ -8841,7 +9780,7 @@ function MovementChart({
     const d = new Date(str);
     return `${d.getMonth() + 1}/${d.getDate()}`;
   };
-  return /*#__PURE__*/React.createElement("svg", {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("svg", {
     viewBox: `0 0 ${W} ${H}`,
     style: {
       width: "100%",
@@ -8851,7 +9790,7 @@ function MovementChart({
   }, [0, 0.5, 1].map((t, i) => {
     const y = PAD_TOP + chartH - t * chartH;
     const wVal = Math.round(minW + t * range);
-    return /*#__PURE__*/React.createElement("g", {
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement("g", {
       key: i
     }, /*#__PURE__*/React.createElement("line", {
       x1: PAD_L,
@@ -8884,7 +9823,7 @@ function MovementChart({
     const wLabel = `${d.weight}`;
     const dateLabel = shortDate(d.date);
     const rpeLabel = d.rpe ? `${d.rpe}` : "";
-    return /*#__PURE__*/React.createElement("g", {
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement("g", {
       key: d.id
     }, /*#__PURE__*/React.createElement("text", {
       x: x,
@@ -8906,7 +9845,10 @@ function MovementChart({
       fontSize: "9",
       fill: "#aaa",
       textAnchor: anchor
-    }, dateLabel), rpeLabel ? /*#__PURE__*/React.createElement("text", {
+    }, dateLabel), rpeLabel ?
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("text", {
       x: x,
       y: DOT_AREA_H + 25,
       fontSize: "9",
@@ -8944,7 +9886,7 @@ function Badge({
   color,
   bg
 }) {
-  return /*#__PURE__*/React.createElement("span", {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("span", {
     style: {
       fontSize: 11,
       fontWeight: 600,
@@ -8979,10 +9921,15 @@ function buildPlannedSets(mov, sessionType) {
     const w = base.filter(x => x.type === "W");
     const nonW = base.filter(x => x.type !== "W");
     const ws = w.slice(0, want);
-    while (ws.length < want && w.length) ws.push({ ...w[w.length - 1] });
+    while (ws.length < want && w.length) ws.push({
+      ...w[w.length - 1]
+    });
     out = [...nonW, ...ws];
   }
-  if (mov.reps) out = out.map(x => x.type === "W" ? { ...x, reps: String(mov.reps) } : x);
+  if (mov.reps) out = out.map(x => x.type === "W" ? {
+    ...x,
+    reps: String(mov.reps)
+  } : x);
   return out;
 }
 function buildPlannedSetsBase(mov, sessionType) {
@@ -9159,7 +10106,7 @@ function SetLogger({
   const [noteOpen, setNoteOpen] = useState({});
   const pr = history ? getMovementPR(history, mov.name) : null;
   const chartData = history ? getMovementHistory(history, mov.name) : [];
-  return /*#__PURE__*/React.createElement("div", {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     style: {
       background: "#f9f9f8",
       borderTop: "0.5px solid #e5e5e3"
@@ -9181,13 +10128,19 @@ function SetLogger({
       fontSize: 11,
       color: "#999"
     }
-  }, mov.target), pr && /*#__PURE__*/React.createElement("span", {
+  }, mov.target), pr &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("span", {
     style: {
       fontSize: 10,
       color: pr.statusColor,
       fontWeight: 600
     }
-  }, pr.reps < 10 ? `best ${pr.weight}lb×${pr.reps}` : pr.status)), chartData.length >= 2 && /*#__PURE__*/React.createElement(MovementChart, {
+  }, pr.reps < 10 ? `best ${pr.weight}lb×${pr.reps}` : pr.status)), chartData.length >= 2 &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(MovementChart, {
     data: chartData,
     color: sessionColor,
     compact: true
@@ -9199,7 +10152,10 @@ function SetLogger({
       padding: "4px 10px 2px",
       alignItems: "center"
     }
-  }, ["", "lb", "reps", "RPE", ""].map((h, i) => /*#__PURE__*/React.createElement("div", {
+  }, ["", "lb", "reps", "RPE", ""].map((h, i) =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     key: i,
     style: {
       fontSize: 10,
@@ -9217,7 +10173,7 @@ function SetLogger({
     const tl = SET_TYPE_LABEL[s.type] || "S";
     const rc = rpeColor(s.rpe);
     const showNote = noteOpen[i];
-    return /*#__PURE__*/React.createElement("div", {
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
       key: i,
       style: {
         marginBottom: 4
@@ -9260,7 +10216,7 @@ function SetLogger({
     }), /*#__PURE__*/React.createElement("input", {
       type: "number",
       inputMode: "decimal",
-      placeholder: "—",
+      placeholder: "\u2014",
       value: s.rpe,
       onChange: e => onUpdate(i, "rpe", e.target.value),
       disabled: isLogged,
@@ -9273,7 +10229,10 @@ function SetLogger({
         color: isLogged ? rc : "#111",
         fontWeight: isLogged ? 700 : 400
       }
-    }), isLogged ? /*#__PURE__*/React.createElement("button", {
+    }), isLogged ?
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("button", {
       onClick: () => onDelete(i),
       style: {
         fontSize: 11,
@@ -9284,7 +10243,10 @@ function SetLogger({
         padding: 0,
         textAlign: "center"
       }
-    }, "✕") : /*#__PURE__*/React.createElement("button", {
+    }, "\u2715") :
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("button", {
       onClick: () => onLog(i),
       style: {
         padding: "5px 0",
@@ -9297,7 +10259,10 @@ function SetLogger({
         cursor: "pointer",
         width: "100%"
       }
-    }, "log")), isLogged && s.note ? /*#__PURE__*/React.createElement("div", {
+    }, "log")), isLogged && s.note ?
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
       style: {
         fontSize: 10,
         color: "#aaa",
@@ -9305,12 +10270,18 @@ function SetLogger({
         paddingLeft: 32,
         marginTop: 1
       }
-    }, s.note) : !isLogged ? /*#__PURE__*/React.createElement("div", {
+    }, s.note) : !isLogged ?
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
       style: {
         paddingLeft: 32,
         marginTop: 2
       }
-    }, showNote ? /*#__PURE__*/React.createElement("input", {
+    }, showNote ?
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("input", {
       type: "text",
       placeholder: "note...",
       value: s.note || "",
@@ -9323,7 +10294,10 @@ function SetLogger({
           padding: "4px 6px"
         })
       }
-    }) : /*#__PURE__*/React.createElement("button", {
+    }) :
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("button", {
       onClick: () => setNoteOpen(o => ({
         ...o,
         [i]: true
@@ -9439,7 +10413,7 @@ function MovementRow({
       rpe: ""
     } : s));
   };
-  return /*#__PURE__*/React.createElement("div", {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     style: {
       border: "0.5px solid #e5e5e3",
       borderRadius: 10,
@@ -9473,7 +10447,10 @@ function MovementRow({
       color: "#999",
       marginTop: 2
     }
-  }, mov.current), done && /*#__PURE__*/React.createElement("div", {
+  }, mov.current), done &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     style: {
       fontSize: 11,
       color: "#666",
@@ -9508,7 +10485,10 @@ function MovementRow({
       display: "inline-block",
       transition: "transform .15s"
     }
-  }, "▼"))), open && /*#__PURE__*/React.createElement(SetLogger, {
+  }, "\u25BC"))), open &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(SetLogger, {
     mov: mov,
     sets: plannedSets,
     onLog: handleLog,
@@ -9685,7 +10665,13 @@ function SessionScreen({
       const cfg = loadSyncCfg();
       if (cfg.auto && cfg.token) {
         syncPush(cfg, updated).then(r => {
-          try { localStorage.setItem("at_sync_last", JSON.stringify({ at: new Date().toISOString(), ok: r.ok, err: r.err || "" })); } catch (e) {}
+          try {
+            localStorage.setItem("at_sync_last", JSON.stringify({
+              at: new Date().toISOString(),
+              ok: r.ok,
+              err: r.err || ""
+            }));
+          } catch (e) {}
         });
       }
     })();
@@ -9718,7 +10704,7 @@ function SessionScreen({
     setTimeout(() => setCopied(false), 2000);
   };
   if (!active) {
-    if (!draftChecked) return /*#__PURE__*/React.createElement("div", {
+    if (!draftChecked) return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
       style: {
         padding: 24,
         textAlign: "center",
@@ -9733,7 +10719,7 @@ function SessionScreen({
         label: draft.type
       };
       const loggedCount = draft.movements.reduce((a, m) => a + (m._loggedSets?.length || 0), 0);
-      return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+      return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
         style: {
           fontSize: 15,
           fontWeight: 600,
@@ -9764,7 +10750,7 @@ function SessionScreen({
           fontWeight: 600,
           color: "#111"
         }
-      }, draft.label || draft.type, " · ", draft.date), /*#__PURE__*/React.createElement(Badge, {
+      }, draft.label || draft.type, " \xB7 ", draft.date), /*#__PURE__*/React.createElement(Badge, {
         label: draft.label || draft.type,
         color: s.color,
         bg: s.bg
@@ -9773,7 +10759,7 @@ function SessionScreen({
           fontSize: 12,
           color: "#999"
         }
-      }, draft.movements.length, " movements · ", loggedCount, " sets logged")), /*#__PURE__*/React.createElement("div", {
+      }, draft.movements.length, " movements \xB7 ", loggedCount, " sets logged")), /*#__PURE__*/React.createElement("div", {
         style: {
           display: "flex",
           gap: 8
@@ -9807,7 +10793,7 @@ function SessionScreen({
     }
     if (lastFinished) {
       const s = BLOCK.sessions[lastFinished.entry.type];
-      return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+      return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
         style: {
           display: "flex",
           justifyContent: "space-between",
@@ -9820,11 +10806,14 @@ function SessionScreen({
           fontWeight: 600,
           color: "#111"
         }
-      }, "Session saved ✓"), /*#__PURE__*/React.createElement(Badge, {
+      }, "Session saved \u2713"), /*#__PURE__*/React.createElement(Badge, {
         label: lastFinished.entry.label,
         color: s.color,
         bg: s.bg
-      })), !lastFinished.saved && /*#__PURE__*/React.createElement("div", {
+      })), !lastFinished.saved &&
+      /*#__PURE__*/
+      /*#__PURE__*/
+      React.createElement("div", {
         style: {
           background: "#FAECE7",
           borderRadius: 10,
@@ -9833,7 +10822,7 @@ function SessionScreen({
           fontSize: 12,
           color: "#993C1D"
         }
-      }, "⚠️ Storage save failed — copy summary below before closing"), /*#__PURE__*/React.createElement("div", {
+      }, "\u26A0\uFE0F Storage save failed \u2014 copy summary below before closing"), /*#__PURE__*/React.createElement("div", {
         style: {
           ...S.card,
           marginBottom: 10
@@ -9890,7 +10879,7 @@ function SessionScreen({
     [...history].sort((a, b) => parseSessionDate(b.date) - parseSessionDate(a.date)).forEach(h => {
       if (!lastByType[h.type]) lastByType[h.type] = h;
     });
-    return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
       style: S.label
     }, "Start session"), /*#__PURE__*/React.createElement("div", {
       style: {
@@ -9898,7 +10887,10 @@ function SessionScreen({
         gap: 8,
         marginBottom: 16
       }
-    }, ["legs", "push", "pull"].map(t => /*#__PURE__*/React.createElement("button", {
+    }, ["legs", "push", "pull"].map(t =>
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("button", {
       key: t,
       onClick: () => startSession(t),
       style: {
@@ -9917,7 +10909,7 @@ function SessionScreen({
     }, "Last session per type"), ["legs", "push", "pull"].map(t => {
       const entry = lastByType[t];
       const s = BLOCK.sessions[t];
-      if (!entry) return /*#__PURE__*/React.createElement("div", {
+      if (!entry) return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
         key: t,
         style: {
           ...S.card,
@@ -9939,7 +10931,7 @@ function SessionScreen({
         color: s.color,
         bg: s.bg
       })));
-      return /*#__PURE__*/React.createElement("div", {
+      return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
         key: t,
         style: S.card
       }, /*#__PURE__*/React.createElement("div", {
@@ -9955,7 +10947,7 @@ function SessionScreen({
           fontWeight: 600,
           color: "#111"
         }
-      }, entry.label, " · ", entry.date), /*#__PURE__*/React.createElement(Badge, {
+      }, entry.label, " \xB7 ", entry.date), /*#__PURE__*/React.createElement(Badge, {
         label: entry.label,
         color: s.color,
         bg: s.bg
@@ -9964,13 +10956,13 @@ function SessionScreen({
           fontSize: 12,
           color: "#999"
         }
-      }, entry.movements.length, " movements · ", entry.movements.reduce((a, m) => a + m.sets.length, 0), " sets"));
+      }, entry.movements.length, " movements \xB7 ", entry.movements.reduce((a, m) => a + m.sets.length, 0), " sets"));
     }));
   }
   const session = BLOCK.sessions[active];
   const totalSets = sessionMovements.reduce((a, m) => a + (m._loggedSets || []).length, 0);
   const doneMov = sessionMovements.filter(m => (m._loggedSets || []).length > 0).length;
-  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       justifyContent: "space-between",
@@ -10003,7 +10995,10 @@ function SessionScreen({
       gap: 8,
       marginBottom: 14
     }
-  }, [["movements", doneMov], ["total sets", totalSets]].map(([l, v]) => /*#__PURE__*/React.createElement("div", {
+  }, [["movements", doneMov], ["total sets", totalSets]].map(([l, v]) =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     key: l,
     style: {
       flex: 1,
@@ -10024,25 +11019,69 @@ function SessionScreen({
       color: "#999",
       marginTop: 2
     }
-  }, l)))), sessionMovements.map((mov, idx) => /*#__PURE__*/React.createElement("div", {
+  }, l)))), sessionMovements.map((mov, idx) =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     key: mov.name,
-    style: { marginTop: 10 }
+    style: {
+      marginTop: 10
+    }
   }, /*#__PURE__*/React.createElement("div", {
-    style: { display: "flex", alignItems: "center", gap: 8, margin: "0 0 4px" }
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 8,
+      margin: "0 0 4px"
+    }
   }, /*#__PURE__*/React.createElement("span", {
-    style: { fontSize: 10, fontWeight: 700, color: session.color, textTransform: "uppercase", letterSpacing: "0.08em", background: session.bg, padding: "2px 6px", borderRadius: 6 }
+    style: {
+      fontSize: 10,
+      fontWeight: 700,
+      color: session.color,
+      textTransform: "uppercase",
+      letterSpacing: "0.08em",
+      background: session.bg,
+      padding: "2px 6px",
+      borderRadius: 6
+    }
   }, mov._group || "Other"), /*#__PURE__*/React.createElement("div", {
-    style: { flex: 1, height: "0.5px", background: "#e5e5e3" }
+    style: {
+      flex: 1,
+      height: "0.5px",
+      background: "#e5e5e3"
+    }
   }), /*#__PURE__*/React.createElement("span", {
-    style: { fontSize: 10, color: "#bbb", marginRight: 4, fontWeight: 600 }
+    style: {
+      fontSize: 10,
+      color: "#bbb",
+      marginRight: 4,
+      fontWeight: 600
+    }
   }, "#", idx + 1), /*#__PURE__*/React.createElement("button", {
     onClick: () => moveMovementUp(idx),
     disabled: idx === 0,
-    style: { background: "none", border: "none", cursor: idx === 0 ? "default" : "pointer", fontSize: 12, color: idx === 0 ? "#e5e5e3" : "#bbb", padding: "2px 4px", lineHeight: 1 }
+    style: {
+      background: "none",
+      border: "none",
+      cursor: idx === 0 ? "default" : "pointer",
+      fontSize: 12,
+      color: idx === 0 ? "#e5e5e3" : "#bbb",
+      padding: "2px 4px",
+      lineHeight: 1
+    }
   }, "\u25B2"), /*#__PURE__*/React.createElement("button", {
     onClick: () => moveMovementDown(idx),
     disabled: idx === sessionMovements.length - 1,
-    style: { background: "none", border: "none", cursor: idx === sessionMovements.length - 1 ? "default" : "pointer", fontSize: 12, color: idx === sessionMovements.length - 1 ? "#e5e5e3" : "#bbb", padding: "2px 4px", lineHeight: 1 }
+    style: {
+      background: "none",
+      border: "none",
+      cursor: idx === sessionMovements.length - 1 ? "default" : "pointer",
+      fontSize: 12,
+      color: idx === sessionMovements.length - 1 ? "#e5e5e3" : "#bbb",
+      padding: "2px 4px",
+      lineHeight: 1
+    }
   }, "\u25BC")), /*#__PURE__*/React.createElement(MovementRow, {
     mov: mov,
     sessionColor: session.color,
@@ -10079,7 +11118,10 @@ function SessionScreen({
       const logged = (m._loggedSets || []).length;
       return logged === 0; // no sets logged at all
     });
-    return unloggedMovements.length > 0 ? /*#__PURE__*/React.createElement("div", {
+    return unloggedMovements.length > 0 ?
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
       style: {
         background: "#FEF3C7",
         border: "0.5px solid #D97706",
@@ -10094,15 +11136,18 @@ function SessionScreen({
         color: "#92400E",
         marginBottom: 4
       }
-    }, "⚠️ Unlogged movements"), /*#__PURE__*/React.createElement("div", {
+    }, "\u26A0\uFE0F Unlogged movements"), /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: 11,
         color: "#92400E"
       }
-    }, unloggedMovements.map(m => m.name).join(", "), " — no sets logged. Tap log on each set before finishing.")) : null;
+    }, unloggedMovements.map(m => m.name).join(", "), " \u2014 no sets logged. Tap log on each set before finishing.")) : null;
   })(), (() => {
     const unlogged = sessionMovements.filter(m => (m._loggedSets || []).length === 0);
-    return unlogged.length > 0 ? /*#__PURE__*/React.createElement("div", {
+    return unlogged.length > 0 ?
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
       style: {
         background: "#FEF3C7",
         border: "0.5px solid #D97706",
@@ -10117,12 +11162,12 @@ function SessionScreen({
         color: "#92400E",
         marginBottom: 3
       }
-    }, "⚠️ No sets logged"), /*#__PURE__*/React.createElement("div", {
+    }, "\u26A0\uFE0F No sets logged"), /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: 11,
         color: "#92400E"
       }
-    }, unlogged.map(m => m.name).join(", "), " — tap log on each set before finishing.")) : null;
+    }, unlogged.map(m => m.name).join(", "), " \u2014 tap log on each set before finishing.")) : null;
   })(), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
@@ -10163,9 +11208,9 @@ function BlockScreen({
   const toggleMovement = name => {
     setOpenMovement(prev => prev === name ? null : name);
   };
-  return /*#__PURE__*/React.createElement("div", null, ["legs", "push", "pull"].map(key => {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", null, ["legs", "push", "pull"].map(key => {
     const s = BLOCK.sessions[key];
-    return /*#__PURE__*/React.createElement("div", {
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
       key: key,
       style: S.card
     }, /*#__PURE__*/React.createElement("div", {
@@ -10189,9 +11234,12 @@ function BlockScreen({
       const pr = getMovementPR(history, m.name);
       const chartData = getMovementHistory(history, m.name);
       const isOpen = openMovement === m.name;
-      return /*#__PURE__*/React.createElement("div", {
+      return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
         key: m.name
-      }, i > 0 && /*#__PURE__*/React.createElement("div", {
+      }, i > 0 &&
+      /*#__PURE__*/
+      /*#__PURE__*/
+      React.createElement("div", {
         style: S.divider
       }), /*#__PURE__*/React.createElement("div", {
         onClick: () => toggleMovement(m.name),
@@ -10219,7 +11267,10 @@ function BlockScreen({
           color: "#999",
           marginTop: 2
         }
-      }, m.target), pr && /*#__PURE__*/React.createElement("div", {
+      }, m.target), pr &&
+      /*#__PURE__*/
+      /*#__PURE__*/
+      React.createElement("div", {
         style: {
           fontSize: 10,
           color: pr.statusColor,
@@ -10240,13 +11291,16 @@ function BlockScreen({
           fontWeight: 600,
           color: "#111"
         }
-      }, m.current), pr && /*#__PURE__*/React.createElement("div", {
+      }, m.current), pr &&
+      /*#__PURE__*/
+      /*#__PURE__*/
+      React.createElement("div", {
         style: {
           fontSize: 11,
           color: "#888",
           marginTop: 1
         }
-      }, "best: ", pr.weight, " lb × ", pr.reps)), /*#__PURE__*/React.createElement("span", {
+      }, "best: ", pr.weight, " lb \xD7 ", pr.reps)), /*#__PURE__*/React.createElement("span", {
         style: {
           fontSize: 11,
           color: "#ccc",
@@ -10254,7 +11308,10 @@ function BlockScreen({
           display: "inline-block",
           transition: "transform .15s"
         }
-      }, "▼"))), isOpen && /*#__PURE__*/React.createElement("div", {
+      }, "\u25BC"))), isOpen &&
+      /*#__PURE__*/
+      /*#__PURE__*/
+      React.createElement("div", {
         style: {
           paddingBottom: 8
         }
@@ -10282,9 +11339,15 @@ function BlockScreen({
     label: `${BLOCK.flags.length}`,
     color: "#993C1D",
     bg: "#FAECE7"
-  })), BLOCK.flags.map((f, i) => /*#__PURE__*/React.createElement("div", {
+  })), BLOCK.flags.map((f, i) =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     key: i
-  }, i > 0 && /*#__PURE__*/React.createElement("div", {
+  }, i > 0 &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     style: S.divider
   }), /*#__PURE__*/React.createElement("div", {
     style: {
@@ -10402,7 +11465,7 @@ function WeekCard({
     push: "#E6F1FB",
     pull: "#EEEDFE"
   };
-  return /*#__PURE__*/React.createElement("div", {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     style: {
       border: "0.5px solid #e5e5e3",
       borderRadius: 14,
@@ -10429,7 +11492,7 @@ function WeekCard({
       fontWeight: 600,
       color: "#111"
     }
-  }, monStr, " — ", sunStr), /*#__PURE__*/React.createElement("div", {
+  }, monStr, " \u2014 ", sunStr), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       alignItems: "center",
@@ -10440,7 +11503,7 @@ function WeekCard({
       fontSize: 11,
       color: "#999"
     }
-  }, week.sessions.length, " sessions · ", totalSets, " sets"), /*#__PURE__*/React.createElement("span", {
+  }, week.sessions.length, " sessions \xB7 ", totalSets, " sets"), /*#__PURE__*/React.createElement("span", {
     style: {
       fontSize: 11,
       color: "#bbb",
@@ -10448,26 +11511,35 @@ function WeekCard({
       display: "inline-block",
       transition: "transform .15s"
     }
-  }, "▼"))), /*#__PURE__*/React.createElement("div", {
+  }, "\u25BC"))), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       gap: 6,
       marginTop: 8,
       flexWrap: "wrap"
     }
-  }, week.sessions.map(s => /*#__PURE__*/React.createElement(Badge, {
+  }, week.sessions.map(s =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(Badge, {
     key: s.id,
     label: `${s.label} ${s.date.split(",")[0]}`,
     color: typeColors[s.type] || "#888",
     bg: typeBgs[s.type] || "#eee"
-  }))), allPRs.length > 0 && /*#__PURE__*/React.createElement("div", {
+  }))), allPRs.length > 0 &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     style: {
       marginTop: 8,
       display: "flex",
       gap: 6,
       flexWrap: "wrap"
     }
-  }, allPRs.map((pr, i) => /*#__PURE__*/React.createElement("div", {
+  }, allPRs.map((pr, i) =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     key: i,
     style: {
       background: "#FEF3C7",
@@ -10477,7 +11549,10 @@ function WeekCard({
       fontWeight: 600,
       color: "#92400E"
     }
-  }, "🏆 ", pr.name, " ", pr.weight, " lb × ", pr.reps)))), open && /*#__PURE__*/React.createElement("div", {
+  }, "\uD83C\uDFC6 ", pr.name, " ", pr.weight, " lb \xD7 ", pr.reps)))), open &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     style: {
       padding: "10px 14px 14px"
     }
@@ -10491,7 +11566,7 @@ function WeekCard({
       mov: m.name,
       note: s.note
     })));
-    return /*#__PURE__*/React.createElement("div", {
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
       key: session.id,
       style: {
         border: "0.5px solid #e5e5e3",
@@ -10519,7 +11594,7 @@ function WeekCard({
         fontWeight: 600,
         color: "#111"
       }
-    }, session.label, " · ", session.date), /*#__PURE__*/React.createElement("div", {
+    }, session.label, " \xB7 ", session.date), /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
         alignItems: "center",
@@ -10538,14 +11613,20 @@ function WeekCard({
         display: "inline-block",
         transition: "transform .15s"
       }
-    }, "▼"))), sessionPRs.length > 0 && /*#__PURE__*/React.createElement("div", {
+    }, "\u25BC"))), sessionPRs.length > 0 &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
       style: {
         display: "flex",
         gap: 6,
         marginTop: 6,
         flexWrap: "wrap"
       }
-    }, sessionPRs.map((pr, i) => /*#__PURE__*/React.createElement("div", {
+    }, sessionPRs.map((pr, i) =>
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
       key: i,
       style: {
         background: "#FEF3C7",
@@ -10555,13 +11636,19 @@ function WeekCard({
         fontWeight: 600,
         color: "#92400E"
       }
-    }, "🏆 ", pr.name, " ", pr.weight, " lb")))), isOpen && /*#__PURE__*/React.createElement("div", {
+    }, "\uD83C\uDFC6 ", pr.name, " ", pr.weight, " lb")))), isOpen &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
       style: {
         padding: "10px 12px",
         background: "#f9f9f8",
         borderTop: "0.5px solid #e5e5e3"
       }
-    }, session.movements.map(mov => /*#__PURE__*/React.createElement("div", {
+    }, session.movements.map(mov =>
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
       key: mov.name,
       style: {
         marginBottom: 10
@@ -10582,7 +11669,7 @@ function WeekCard({
     }, mov.sets.map((s, i) => {
       const rpe = parseFloat(s.rpe);
       const dotC = rpeColor(s.rpe);
-      return /*#__PURE__*/React.createElement("div", {
+      return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
         key: i,
         style: {
           background: "#fff",
@@ -10595,14 +11682,20 @@ function WeekCard({
         style: {
           color: "#111"
         }
-      }, s.weight, "×", s.reps), s.rpe && /*#__PURE__*/React.createElement("span", {
+      }, s.weight, "\xD7", s.reps), s.rpe &&
+      /*#__PURE__*/
+      /*#__PURE__*/
+      React.createElement("span", {
         style: {
           color: dotC,
           fontWeight: 600,
           marginLeft: 3
         }
       }, s.rpe));
-    })), mov.sets.filter(s => s.note).map((s, i) => /*#__PURE__*/React.createElement("div", {
+    })), mov.sets.filter(s => s.note).map((s, i) =>
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
       key: i,
       style: {
         fontSize: 11,
@@ -10610,7 +11703,10 @@ function WeekCard({
         fontStyle: "italic",
         marginTop: 3
       }
-    }, "S", s.set, ": ", s.note)))), session.note && /*#__PURE__*/React.createElement("div", {
+    }, "S", s.set, ": ", s.note)))), session.note &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
       style: {
         borderTop: "0.5px solid #e5e5e3",
         paddingTop: 8,
@@ -10654,14 +11750,17 @@ function ProgressScreen({
     if (sessionsByType[h.type] !== undefined) sessionsByType[h.type]++;
   });
   const totalSets = history.reduce((a, s) => a + s.movements.reduce((b, m) => b + m.sets.length, 0), 0);
-  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       gap: 8,
       marginBottom: 14,
       flexWrap: "wrap"
     }
-  }, [["sessions", history.length], ["sets", totalSets], ["legs", sessionsByType.legs], ["push", sessionsByType.push], ["pull", sessionsByType.pull]].map(([l, v]) => /*#__PURE__*/React.createElement("div", {
+  }, [["sessions", history.length], ["sets", totalSets], ["legs", sessionsByType.legs], ["push", sessionsByType.push], ["pull", sessionsByType.pull]].map(([l, v]) =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     key: l,
     style: {
       flex: "1 1 60px",
@@ -10684,7 +11783,10 @@ function ProgressScreen({
     }
   }, l)))), /*#__PURE__*/React.createElement("div", {
     style: S.label
-  }, "Weekly breakdown"), weeks.map((week, i) => /*#__PURE__*/React.createElement(WeekCard, {
+  }, "Weekly breakdown"), weeks.map((week, i) =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(WeekCard, {
     key: week.key,
     week: week,
     history: history,
@@ -10722,7 +11824,10 @@ function ProgressScreen({
       color: "#999",
       marginBottom: 10
     }
-  }, "Copy into a new Claude chat to resume coaching."), showHandoff && /*#__PURE__*/React.createElement("pre", {
+  }, "Copy into a new Claude chat to resume coaching."), showHandoff &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("pre", {
     style: {
       fontSize: 10,
       color: "#555",
@@ -10754,64 +11859,172 @@ function ProgressScreen({
     setHistory: setHistory
   }));
 }
-function SyncPanel({ history, setHistory }) {
+function SyncPanel({
+  history,
+  setHistory
+}) {
   const [cfg, setCfg] = useState(() => loadSyncCfg());
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
   const [show, setShow] = useState(false);
-  const upd = (k, v) => { const next = { ...cfg, [k]: v }; setCfg(next); saveSyncCfg(next); };
+  const upd = (k, v) => {
+    const next = {
+      ...cfg,
+      [k]: v
+    };
+    setCfg(next);
+    saveSyncCfg(next);
+  };
   const doPush = async () => {
-    setBusy(true); setStatus("pushing...");
+    setBusy(true);
+    setStatus("pushing...");
     const r = await syncPush(cfg, history);
     setStatus(r.ok ? "✓ pushed " + r.count + " sessions" : "✗ " + r.err);
     setBusy(false);
   };
   const doPull = async () => {
-    setBusy(true); setStatus("pulling...");
+    setBusy(true);
+    setStatus("pulling...");
     const r = await syncPull(cfg);
-    if (!r.ok) { setStatus("✗ " + r.err); setBusy(false); return; }
+    if (!r.ok) {
+      setStatus("✗ " + r.err);
+      setBusy(false);
+      return;
+    }
     const merged = mergeSessions(history, r.sessions);
     const added = merged.length - history.length;
-    setHistory(merged); saveData(merged);
+    setHistory(merged);
+    saveData(merged);
     setStatus("✓ pulled " + r.sessions.length + ", merged +" + added);
     setBusy(false);
   };
-  const inp = { width: "100%", padding: "8px 10px", border: "0.5px solid #ddd", borderRadius: 8, fontSize: 16, color: "#111", background: "#fff", outline: "none", marginBottom: 6 };
-  const btn = extra => ({ flex: 1, padding: "10px 12px", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, color: "#fff", cursor: busy ? "default" : "pointer", opacity: busy ? 0.6 : 1, ...extra });
-  return /*#__PURE__*/React.createElement("div", {
-    style: { border: "0.5px solid #e5e5e3", borderRadius: 12, padding: 12, marginTop: 12, background: "#fafafa" }
+  const inp = {
+    width: "100%",
+    padding: "8px 10px",
+    border: "0.5px solid #ddd",
+    borderRadius: 8,
+    fontSize: 16,
+    color: "#111",
+    background: "#fff",
+    outline: "none",
+    marginBottom: 6
+  };
+  const btn = extra => ({
+    flex: 1,
+    padding: "10px 12px",
+    border: "none",
+    borderRadius: 8,
+    fontSize: 13,
+    fontWeight: 600,
+    color: "#fff",
+    cursor: busy ? "default" : "pointer",
+    opacity: busy ? 0.6 : 1,
+    ...extra
+  });
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
+    style: {
+      border: "0.5px solid #e5e5e3",
+      borderRadius: 12,
+      padding: 12,
+      marginTop: 12,
+      background: "#fafafa"
+    }
   }, /*#__PURE__*/React.createElement("div", {
     onClick: () => setShow(v => !v),
-    style: { display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }
+    style: {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      cursor: "pointer"
+    }
   }, /*#__PURE__*/React.createElement("span", {
-    style: { fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#666" }
-  }, "Sync · GitHub"), /*#__PURE__*/React.createElement("span", {
-    style: { fontSize: 12, color: "#999" }
-  }, show ? "▲" : "▼")), show && /*#__PURE__*/React.createElement("div", {
-    style: { marginTop: 10 }
+    style: {
+      fontSize: 11,
+      fontWeight: 700,
+      textTransform: "uppercase",
+      letterSpacing: "0.08em",
+      color: "#666"
+    }
+  }, "Sync \xB7 GitHub"), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 12,
+      color: "#999"
+    }
+  }, show ? "▲" : "▼")), show &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    style: {
+      marginTop: 10
+    }
   }, /*#__PURE__*/React.createElement("div", {
-    style: { fontSize: 11, color: "#888", marginBottom: 8, lineHeight: 1.4 }
+    style: {
+      fontSize: 11,
+      color: "#888",
+      marginBottom: 8,
+      lineHeight: 1.4
+    }
   }, "Fine-grained PAT, Contents: read+write, this repo only. Stored on this device only - never committed."), /*#__PURE__*/React.createElement("input", {
-    type: "password", value: cfg.token, placeholder: "github_pat_...",
-    onChange: e => upd("token", e.target.value.trim()), style: inp
+    type: "password",
+    value: cfg.token,
+    placeholder: "github_pat_...",
+    onChange: e => upd("token", e.target.value.trim()),
+    style: inp
   }), /*#__PURE__*/React.createElement("input", {
-    value: cfg.repo, placeholder: "owner/repo", onChange: e => upd("repo", e.target.value.trim()), style: inp
+    value: cfg.repo,
+    placeholder: "owner/repo",
+    onChange: e => upd("repo", e.target.value.trim()),
+    style: inp
   }), /*#__PURE__*/React.createElement("input", {
-    value: cfg.path, placeholder: "data/sessions.json", onChange: e => upd("path", e.target.value.trim()), style: inp
+    value: cfg.path,
+    placeholder: "data/sessions.json",
+    onChange: e => upd("path", e.target.value.trim()),
+    style: inp
   }), /*#__PURE__*/React.createElement("input", {
-    value: cfg.branch, placeholder: "main", onChange: e => upd("branch", e.target.value.trim()), style: inp
+    value: cfg.branch,
+    placeholder: "main",
+    onChange: e => upd("branch", e.target.value.trim()),
+    style: inp
   }), /*#__PURE__*/React.createElement("label", {
-    style: { display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "#555", margin: "4px 0 10px" }
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 8,
+      fontSize: 12,
+      color: "#555",
+      margin: "4px 0 10px"
+    }
   }, /*#__PURE__*/React.createElement("input", {
-    type: "checkbox", checked: !!cfg.auto, onChange: e => upd("auto", e.target.checked)
+    type: "checkbox",
+    checked: !!cfg.auto,
+    onChange: e => upd("auto", e.target.checked)
   }), "Auto-push when a session is finished"), /*#__PURE__*/React.createElement("div", {
-    style: { display: "flex", gap: 8 }
+    style: {
+      display: "flex",
+      gap: 8
+    }
   }, /*#__PURE__*/React.createElement("button", {
-    onClick: doPush, disabled: busy, style: btn({ background: "#111" })
+    onClick: doPush,
+    disabled: busy,
+    style: btn({
+      background: "#111"
+    })
   }, "push now"), /*#__PURE__*/React.createElement("button", {
-    onClick: doPull, disabled: busy, style: btn({ background: "#555" })
-  }, "pull + merge")), status && /*#__PURE__*/React.createElement("div", {
-    style: { fontSize: 12, marginTop: 8, color: status.indexOf("✗") === 0 ? "#B91C1C" : "#3B6D11", wordBreak: "break-word" }
+    onClick: doPull,
+    disabled: busy,
+    style: btn({
+      background: "#555"
+    })
+  }, "pull + merge")), status &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    style: {
+      fontSize: 12,
+      marginTop: 8,
+      color: status.indexOf("✗") === 0 ? "#B91C1C" : "#3B6D11",
+      wordBreak: "break-word"
+    }
   }, status)));
 }
 function HistoryScreen({
@@ -10828,14 +12041,17 @@ function HistoryScreen({
     let removed = false;
     const updated = history.filter(h => {
       if (removed) return true;
-      const same = h === target || (h.id === target.id && h.type === target.type && h.date === target.date);
-      if (same) { removed = true; return false; }
+      const same = h === target || h.id === target.id && h.type === target.type && h.date === target.date;
+      if (same) {
+        removed = true;
+        return false;
+      }
       return true;
     });
     setHistory(updated);
     saveData(updated);
   };
-  if (!history.length) return /*#__PURE__*/React.createElement("div", {
+  if (!history.length) return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     style: {
       textAlign: "center",
       padding: "40px 16px",
@@ -10843,7 +12059,7 @@ function HistoryScreen({
       fontSize: 13
     }
   }, "No sessions logged yet.");
-  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 12,
       color: "#999",
@@ -10853,7 +12069,7 @@ function HistoryScreen({
     const s = sess(entry.type);
     const totalSets = entry.movements.reduce((a, m) => a + m.sets.length, 0);
     const isOpen = open[entry.id];
-    return /*#__PURE__*/React.createElement("div", {
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
       key: entry.id,
       style: {
         border: "0.5px solid #e5e5e3",
@@ -10877,13 +12093,13 @@ function HistoryScreen({
         fontWeight: 500,
         color: "#111"
       }
-    }, entry.label, " · ", entry.date), /*#__PURE__*/React.createElement("div", {
+    }, entry.label, " \xB7 ", entry.date), /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: 11,
         color: "#999",
         marginTop: 2
       }
-    }, entry.movements.length, " movements · ", totalSets, " sets")), /*#__PURE__*/React.createElement("div", {
+    }, entry.movements.length, " movements \xB7 ", totalSets, " sets")), /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
         alignItems: "center",
@@ -10901,12 +12117,18 @@ function HistoryScreen({
         display: "inline-block",
         transition: "transform .15s"
       }
-    }, "▼"))), isOpen && /*#__PURE__*/React.createElement("div", {
+    }, "\u25BC"))), isOpen &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
       style: {
         padding: "12px",
         background: "#fff"
       }
-    }, entry.movements.map(m => /*#__PURE__*/React.createElement("div", {
+    }, entry.movements.map(m =>
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
       key: m.name,
       style: {
         marginBottom: 10
@@ -10918,19 +12140,28 @@ function HistoryScreen({
         color: "#333",
         marginBottom: 4
       }
-    }, m.name), m.sets.map((s, i) => /*#__PURE__*/React.createElement("div", {
+    }, m.name), m.sets.map((s, i) =>
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
       key: i,
       style: {
         fontSize: 12,
         color: "#777",
         padding: "2px 0"
       }
-    }, "S", s.set, ": ", s.weight ? s.weight + " lb" : "—", " × ", s.reps || "—", " reps", s.rpe ? ` · RPE ${s.rpe}` : "", s.note ? /*#__PURE__*/React.createElement("span", {
+    }, "S", s.set, ": ", s.weight ? s.weight + " lb" : "—", " \xD7 ", s.reps || "—", " reps", s.rpe ? ` · RPE ${s.rpe}` : "", s.note ?
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("span", {
       style: {
         fontStyle: "italic",
         color: "#aaa"
       }
-    }, " · ", s.note) : "")))), entry.note && /*#__PURE__*/React.createElement("div", {
+    }, " · ", s.note) : "")))), entry.note &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
       style: {
         fontSize: 12,
         color: "#999",
@@ -10972,12 +12203,15 @@ function App() {
       syncPull(cfg).then(r => {
         if (r.ok && r.sessions && r.sessions.length) {
           const merged = mergeSessions(saved, r.sessions);
-          if (merged.length !== saved.length) { setHistory(merged); saveData(merged); }
+          if (merged.length !== saved.length) {
+            setHistory(merged);
+            saveData(merged);
+          }
         }
       });
     }
   }, []);
-  if (!loaded) return /*#__PURE__*/React.createElement("div", {
+  if (!loaded) return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       justifyContent: "center",
@@ -10987,7 +12221,7 @@ function App() {
       color: "#aaa"
     }
   }, "Loading...");
-  return /*#__PURE__*/React.createElement("div", {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     style: {
       maxWidth: 480,
       margin: "0 auto",
@@ -11003,7 +12237,10 @@ function App() {
       borderRadius: 10,
       padding: 4
     }
-  }, TABS.map(t => /*#__PURE__*/React.createElement("button", {
+  }, TABS.map(t =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
     key: t,
     onClick: () => setTab(t),
     style: {
@@ -11019,20 +12256,35 @@ function App() {
       boxShadow: tab === t ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
       transition: "all .15s"
     }
-  }, t.charAt(0).toUpperCase() + t.slice(1)))), tab === "session" && /*#__PURE__*/React.createElement(SessionScreen, {
+  }, t.charAt(0).toUpperCase() + t.slice(1)))), tab === "session" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(SessionScreen, {
     history: history,
     setHistory: setHistory
-  }), tab === "block" && /*#__PURE__*/React.createElement(BlockScreen, {
+  }), tab === "block" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(BlockScreen, {
     history: history
-  }), tab === "progress" && /*#__PURE__*/React.createElement(ProgressScreen, {
+  }), tab === "progress" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(ProgressScreen, {
     history: history,
     setHistory: setHistory
-  }), tab === "history" && /*#__PURE__*/React.createElement(HistoryScreen, {
+  }), tab === "history" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(HistoryScreen, {
     history: history,
     setHistory: setHistory
   }));
 }
-ReactDOM.createRoot(document.getElementById("root")).render(/*#__PURE__*/React.createElement(App, null));
+ReactDOM.createRoot(document.getElementById("root")).render(
+/*#__PURE__*/
+/*#__PURE__*/
+React.createElement(App, null));
 </script>
 </body>
 </html>

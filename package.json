@@ -1,0 +1,21 @@
+{
+  "name": "training",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Workout tracker PWA build tooling",
+  "scripts": {
+    "build": "node scripts/build.js",
+    "test": "node scripts/test.js"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.29.7",
+    "@babel/core": "^7.29.7",
+    "@babel/generator": "^7.29.7",
+    "@babel/parser": "^7.29.7",
+    "@babel/preset-react": "^7.29.7",
+    "@babel/types": "^7.29.7",
+    "babel-plugin-transform-react-createelement-to-jsx": "^1.1.0",
+    "jsdom": "^30.0.1",
+    "prettier": "^3.9.6"
+  }
+}
