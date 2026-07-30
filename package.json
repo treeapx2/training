@@ -8,13 +8,11 @@
     "test": "node scripts/test.js"
   },
   "devDependencies": {
-    "@babel/cli": "^7.29.7",
-    "@babel/core": "^7.29.7",
-    "@babel/generator": "^7.29.7",
-    "@babel/parser": "^7.29.7",
-    "@babel/preset-react": "^7.29.7",
-    "@babel/types": "^7.29.7",
-    "babel-plugin-transform-react-createelement-to-jsx": "^1.1.0",
+    "@babel/core": "^8.0.1",
+    "@babel/generator": "^8.0.0",
+    "@babel/parser": "^8.0.4",
+    "@babel/preset-react": "^8.0.1",
+    "@babel/types": "^8.0.4",
     "jsdom": "^30.0.1",
     "prettier": "^3.9.6"
   }
