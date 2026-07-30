@@ -1,5 +1,197 @@
 [
   {
+    "id": 1785448598669,
+    "type": "pull",
+    "label": "Pull",
+    "date": "Jul 30, 2026",
+    "note": "10 min stairmaster level 3 wave intervals -\nvery brief entry into zone 3 - felt really good",
+    "movements": [
+      {
+        "name": "Seated Row",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "105",
+            "reps": "10",
+            "rpe": "5",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "120",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "120",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 4,
+            "weight": "135",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 5,
+            "weight": "135",
+            "reps": "10",
+            "rpe": "8",
+            "note": ""
+          }
+        ],
+        "order": 0
+      },
+      {
+        "name": "Lat Pulldown",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "105",
+            "reps": "10",
+            "rpe": "5",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "120",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "120",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 4,
+            "weight": "135",
+            "reps": "10",
+            "rpe": "8",
+            "note": ""
+          },
+          {
+            "set": 5,
+            "weight": "135",
+            "reps": "10",
+            "rpe": "8",
+            "note": ""
+          }
+        ],
+        "order": 1
+      },
+      {
+        "name": "Hammer Curl",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "25",
+            "reps": "8",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "25",
+            "reps": "8",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "25",
+            "reps": "8",
+            "rpe": "8",
+            "note": ""
+          }
+        ],
+        "order": 2
+      },
+      {
+        "name": "DB Row",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "40",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "40",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          }
+        ],
+        "order": 3
+      },
+      {
+        "name": "Zottman Curl",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "15",
+            "reps": "8",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "15",
+            "reps": "8",
+            "rpe": "8",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "15",
+            "reps": "10",
+            "rpe": "8",
+            "note": ""
+          }
+        ],
+        "order": 4
+      },
+      {
+        "name": "Reverse Fly",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "15",
+            "reps": "8",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "15",
+            "reps": "8",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "15",
+            "reps": "8",
+            "rpe": "6",
+            "note": ""
+          }
+        ],
+        "order": 5
+      }
+    ]
+  },
+  {
     "id": 1785361789424,
     "type": "legs",
     "label": "Legs",
