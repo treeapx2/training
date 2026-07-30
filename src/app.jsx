@@ -294,12 +294,36 @@ function saveGroupOrders(orders) {
   } catch {}
 }
 const DRAFT_KEY = "at_session_draft";
-function saveDraft(type, movements, note, sessionDate, variant) {
+// Cardio finisher — first-class fields instead of typed into the freeform
+// note. effort is a closed enum; machine/duration/level are free text so any
+// machine (Stairmaster, Z2 bike, elliptical, incline walk, rower — see
+// BLOCK.flags) fits without a fixed dropdown.
+const EMPTY_CARDIO = { machine: "", duration: "", level: "", effort: "" };
+const CARDIO_EFFORT_OPTIONS = ["easy", "moderate", "hard"];
+function hasCardioData(cardio) {
+  return !!(
+    cardio &&
+    (cardio.machine || cardio.duration || cardio.level || cardio.effort)
+  );
+}
+function formatCardio(cardio) {
+  if (!hasCardioData(cardio)) return "";
+  return [
+    cardio.machine,
+    cardio.duration ? cardio.duration + " min" : "",
+    cardio.level ? "L" + cardio.level : "",
+    cardio.effort,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+}
+function saveDraft(type, movements, note, sessionDate, variant, cardio) {
   try {
     const draft = {
       type,
       variant: variant || null,
       note,
+      cardio: hasCardioData(cardio) ? cardio : null,
       sessionDate,
       date: sessionDate
         ? new Date(sessionDate + "T12:00:00").toLocaleDateString("en-US", {
@@ -615,12 +639,14 @@ function buildHandoff(history) {
           lines.push(l);
         });
       });
+      if (hasCardioData(h.cardio))
+        lines.push(`  Cardio: ${formatCardio(h.cardio)}`);
       if (h.note) lines.push(`  Session note: ${h.note}`);
     });
   }
   return lines.join("\n");
 }
-function buildCoachSummary(type, setsRef, sessionNote) {
+function buildCoachSummary(type, setsRef, sessionNote, cardio) {
   const session = BLOCK.sessions[type];
   const lines = [];
   lines.push(
@@ -643,6 +669,7 @@ function buildCoachSummary(type, setsRef, sessionNote) {
       lines.push(l);
     });
   });
+  if (hasCardioData(cardio)) lines.push("Cardio: " + formatCardio(cardio));
   if (sessionNote) lines.push("Note: " + sessionNote);
   return lines.join("\n");
 }
@@ -1697,6 +1724,7 @@ function SessionScreen({ history, setHistory }) {
   const [lastFinished, setLastFinished] = useState(null);
   const [autoPushStatus, setAutoPushStatus] = useState(null);
   const [legsVariant, setLegsVariant] = useState(null);
+  const [cardio, setCardio] = useState(EMPTY_CARDIO);
   const [copied, setCopied] = useState(false);
   const [groupOrders, setGroupOrders] = useState(null);
   const [sessionMovements, setSessionMovements] = useState([]);
@@ -1715,8 +1743,23 @@ function SessionScreen({ history, setHistory }) {
   // Auto-save draft whenever session movements change OR any set is logged (tick)
   useEffect(() => {
     if (!active) return;
-    saveDraft(active, sessionMovements, sessionNote, sessionDate, legsVariant);
-  }, [sessionMovements, sessionNote, active, tick, sessionDate, legsVariant]);
+    saveDraft(
+      active,
+      sessionMovements,
+      sessionNote,
+      sessionDate,
+      legsVariant,
+      cardio,
+    );
+  }, [
+    sessionMovements,
+    sessionNote,
+    active,
+    tick,
+    sessionDate,
+    legsVariant,
+    cardio,
+  ]);
   const startSession = (type, variant) => {
     BLOCK.sessions[type].movements.forEach((m) => {
       delete m._loggedSets;
@@ -1734,6 +1777,7 @@ function SessionScreen({ history, setHistory }) {
     setLastFinished(null);
     setAutoPushStatus(null);
     setSessionNote("");
+    setCardio(EMPTY_CARDIO);
     setSessionDate(new Date().toISOString().split("T")[0]);
   };
   const resumeDraft = () => {
@@ -1764,6 +1808,7 @@ function SessionScreen({ history, setHistory }) {
     setActive(draft.type);
     setLegsVariant(draft.type === "legs" ? draft.variant || null : null);
     setSessionNote(draft.note || "");
+    setCardio(draft.cardio || EMPTY_CARDIO);
     if (draft.sessionDate) setSessionDate(draft.sessionDate);
     setDraft(null);
   };
@@ -1864,6 +1909,7 @@ function SessionScreen({ history, setHistory }) {
       date: formattedDate,
       note: sessionNote,
       variant: legsVariant || undefined,
+      cardio: hasCardioData(cardio) ? cardio : undefined,
       movements,
     };
     const updated = [entry, ...history];
@@ -1896,7 +1942,12 @@ function SessionScreen({ history, setHistory }) {
     movements.forEach((m) => {
       setsForSummary[m.name] = m.sets;
     });
-    const summary = buildCoachSummary(active, setsForSummary, sessionNote);
+    const summary = buildCoachSummary(
+      active,
+      setsForSummary,
+      sessionNote,
+      cardio,
+    );
     setLastFinished({
       entry,
       summary,
@@ -2498,6 +2549,122 @@ function SessionScreen({ history, setHistory }) {
           outline: "none",
         }}
       />
+      <div
+        style={{
+          ...S.label,
+          marginTop: 12,
+        }}
+      >
+        Cardio finisher
+      </div>
+      <div
+        style={{
+          display: "flex",
+          gap: 8,
+          marginBottom: 8,
+        }}
+      >
+        <input
+          value={cardio.machine}
+          onChange={(e) =>
+            setCardio((c) => ({
+              ...c,
+              machine: e.target.value,
+            }))
+          }
+          placeholder="machine (Stairmaster, bike...)"
+          style={{
+            flex: 2,
+            padding: "9px 10px",
+            border: "0.5px solid #ddd",
+            borderRadius: 10,
+            fontSize: 16,
+            color: "#111",
+            background: "#fff",
+            outline: "none",
+            minWidth: 0,
+          }}
+        />
+        <input
+          type="number"
+          inputMode="numeric"
+          value={cardio.duration}
+          onChange={(e) =>
+            setCardio((c) => ({
+              ...c,
+              duration: e.target.value,
+            }))
+          }
+          placeholder="min"
+          style={{
+            flex: 1,
+            padding: "9px 10px",
+            border: "0.5px solid #ddd",
+            borderRadius: 10,
+            fontSize: 16,
+            color: "#111",
+            background: "#fff",
+            outline: "none",
+            minWidth: 0,
+          }}
+        />
+        <input
+          value={cardio.level}
+          onChange={(e) =>
+            setCardio((c) => ({
+              ...c,
+              level: e.target.value,
+            }))
+          }
+          placeholder="level"
+          style={{
+            flex: 1,
+            padding: "9px 10px",
+            border: "0.5px solid #ddd",
+            borderRadius: 10,
+            fontSize: 16,
+            color: "#111",
+            background: "#fff",
+            outline: "none",
+            minWidth: 0,
+          }}
+        />
+      </div>
+      <div
+        style={{
+          display: "flex",
+          gap: 8,
+          marginBottom: 14,
+        }}
+      >
+        {CARDIO_EFFORT_OPTIONS.map((eff) => (
+          /*#__PURE__*/ <button
+            key={eff}
+            onClick={() =>
+              setCardio((c) => ({
+                ...c,
+                effort: c.effort === eff ? "" : eff,
+              }))
+            }
+            style={{
+              flex: 1,
+              padding: "8px 0",
+              border:
+                cardio.effort === eff
+                  ? "0.5px solid #111"
+                  : "0.5px solid #ddd",
+              borderRadius: 10,
+              background: cardio.effort === eff ? "#111" : "#fff",
+              color: cardio.effort === eff ? "#fff" : "#555",
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            {eff}
+          </button>
+        ))}
+      </div>
       {(() => {
         const unlogged = sessionMovements.map((m) => {
           const planned = m._plannedSets || [];
@@ -3846,6 +4013,19 @@ function HistoryScreen({ history, setHistory }) {
                     ))}
                   </div>
                 ))}
+                {hasCardioData(entry.cardio) && (
+                  /*#__PURE__*/ <div
+                    style={{
+                      fontSize: 12,
+                      color: "#3B6D11",
+                      borderTop: "0.5px solid #eee",
+                      paddingTop: 8,
+                      marginTop: 4,
+                    }}
+                  >
+                    🏃 {formatCardio(entry.cardio)}
+                  </div>
+                )}
                 {entry.note && (
                   /*#__PURE__*/ <div
                     style={{
