@@ -441,19 +441,22 @@ async function syncPush(cfg, sessions) {
     Authorization: "Bearer " + cfg.token,
     Accept: "application/vnd.github+json",
   };
-  try {
-    let sha = null;
+  const fetchSha = async () => {
     const g = await fetch(api + "?ref=" + cfg.branch, {
       headers: H,
     });
     if (g.ok) {
       const gj = await g.json();
-      sha = gj.sha || null;
-    } else if (g.status === 401 || g.status === 403)
+      return { sha: gj.sha || null };
+    }
+    if (g.status === 401 || g.status === 403) {
       return {
-        ok: false,
-        err: "auth failed (" + g.status + ") - check token scope/expiry",
+        authError: "auth failed (" + g.status + ") - check token scope/expiry",
       };
+    }
+    return { sha: null };
+  };
+  const put = async (sha) => {
     const body = {
       message:
         "sync: " + sessions.length + " sessions @ " + new Date().toISOString(),
@@ -461,7 +464,7 @@ async function syncPush(cfg, sessions) {
       branch: cfg.branch,
     };
     if (sha) body.sha = sha;
-    const put = await fetch(api, {
+    return fetch(api, {
       method: "PUT",
       headers: {
         ...H,
@@ -469,11 +472,23 @@ async function syncPush(cfg, sessions) {
       },
       body: JSON.stringify(body),
     });
-    if (!put.ok) {
-      const t = await put.text();
+  };
+  try {
+    const first = await fetchSha();
+    if (first.authError) return { ok: false, err: first.authError };
+    let res = await put(first.sha);
+    if (res.status === 409) {
+      // Stale sha — another writer (auto-push racing a manual push, or vice
+      // versa) updated the file in between. Refetch and retry exactly once.
+      const retry = await fetchSha();
+      if (retry.authError) return { ok: false, err: retry.authError };
+      res = await put(retry.sha);
+    }
+    if (!res.ok) {
+      const t = await res.text();
       return {
         ok: false,
-        err: "HTTP " + put.status + " " + t.slice(0, 160),
+        err: "HTTP " + res.status + " " + t.slice(0, 160),
       };
     }
     return {
@@ -1644,6 +1659,7 @@ function SessionScreen({ history, setHistory }) {
     () => new Date().toISOString().split("T")[0],
   );
   const [lastFinished, setLastFinished] = useState(null);
+  const [autoPushStatus, setAutoPushStatus] = useState(null);
   const [copied, setCopied] = useState(false);
   const [groupOrders, setGroupOrders] = useState(null);
   const [sessionMovements, setSessionMovements] = useState([]);
@@ -1675,6 +1691,7 @@ function SessionScreen({ history, setHistory }) {
     setSessionMovements(ordered);
     setActive(type);
     setLastFinished(null);
+    setAutoPushStatus(null);
     setSessionNote("");
     setSessionDate(new Date().toISOString().split("T")[0]);
   };
@@ -1807,6 +1824,7 @@ function SessionScreen({ history, setHistory }) {
     (() => {
       const cfg = loadSyncCfg();
       if (cfg.auto && cfg.token) {
+        setAutoPushStatus({ state: "pending" });
         syncPush(cfg, updated).then((r) => {
           try {
             localStorage.setItem(
@@ -1818,6 +1836,9 @@ function SessionScreen({ history, setHistory }) {
               }),
             );
           } catch (e) {}
+          setAutoPushStatus(
+            r.ok ? { state: "ok" } : { state: "error", err: r.err || "" },
+          );
         });
       }
     })();
@@ -2008,6 +2029,21 @@ function SessionScreen({ history, setHistory }) {
               }}
             >
               ⚠️ Storage save failed — copy summary below before closing
+            </div>
+          )}
+          {autoPushStatus?.state === "error" && (
+            /*#__PURE__*/ <div
+              style={{
+                background: "#FAECE7",
+                borderRadius: 10,
+                padding: "10px 12px",
+                marginBottom: 12,
+                fontSize: 12,
+                color: "#993C1D",
+              }}
+            >
+              ⚠️ Auto-sync to GitHub failed — {autoPushStatus.err || "unknown error"}
+              . Push manually from the Sync panel.
             </div>
           )}
           <div
@@ -3338,6 +3374,26 @@ function SyncPanel({ history, setHistory }) {
     setStatus("✓ pulled " + r.sessions.length + ", merged +" + added);
     setBusy(false);
   };
+  const doReplaceFromRemote = async () => {
+    if (
+      !window.confirm(
+        "Replace local history with sessions.json from GitHub? This overwrites everything on this device, including anything not yet pushed, and can't be undone.",
+      )
+    )
+      return;
+    setBusy(true);
+    setStatus("replacing from remote...");
+    const r = await syncPull(cfg);
+    if (!r.ok) {
+      setStatus("✗ " + r.err);
+      setBusy(false);
+      return;
+    }
+    setHistory(r.sessions);
+    saveData(r.sessions);
+    setStatus("✓ replaced local with " + r.sessions.length + " remote sessions");
+    setBusy(false);
+  };
   const inp = {
     width: "100%",
     padding: "8px 10px",
@@ -3432,7 +3488,7 @@ function SyncPanel({ history, setHistory }) {
           />
           <input
             value={cfg.path}
-            placeholder="data/sessions.json"
+            placeholder="sessions.json"
             onChange={(e) => upd("path", e.target.value.trim())}
             style={inp}
           />
@@ -3483,6 +3539,38 @@ function SyncPanel({ history, setHistory }) {
             >
               pull + merge
             </button>
+          </div>
+          <button
+            onClick={doReplaceFromRemote}
+            disabled={busy}
+            style={{
+              width: "100%",
+              padding: "8px 12px",
+              border: "0.5px solid #E8B4A6",
+              borderRadius: 8,
+              background: "#fff",
+              fontSize: 12,
+              fontWeight: 600,
+              color: "#B91C1C",
+              cursor: busy ? "default" : "pointer",
+              opacity: busy ? 0.6 : 1,
+              marginTop: 8,
+            }}
+          >
+            replace local from remote
+          </button>
+          <div
+            style={{
+              fontSize: 10,
+              color: "#aaa",
+              marginTop: 4,
+              lineHeight: 1.4,
+            }}
+          >
+            Destructive — overwrites this device's history with
+            sessions.json. mergeSessions is additive-only, so a local delete
+            can't otherwise be undone by pulling; use this when you deleted a
+            session by mistake and the repo still has it.
           </div>
           {status && (
             /*#__PURE__*/ <div
