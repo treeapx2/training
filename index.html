@@ -2191,6 +2191,9 @@ function SessionScreen({
           color: "#999"
         }
       }, entry.movements.length, " movements · ", entry.movements.reduce((a, m) => a + m.sets.length, 0), " sets"));
+    }), /*#__PURE__*/React.createElement(SyncPanel, {
+      history: history,
+      setHistory: setHistory
     }));
   }
   const session = BLOCK.sessions[active];
@@ -2953,8 +2956,7 @@ function WeekCard({
   })));
 }
 function ProgressScreen({
-  history,
-  setHistory
+  history
 }) {
   const [showHandoff, setShowHandoff] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -3088,19 +3090,18 @@ function ProgressScreen({
       cursor: "pointer",
       transition: "background .2s"
     }
-  }, copied ? "✓ copied to clipboard" : "copy handoff summary")), /*#__PURE__*/React.createElement(SyncPanel, {
-    history: history,
-    setHistory: setHistory
-  }));
+  }, copied ? "✓ copied to clipboard" : "copy handoff summary")));
 }
 function SyncPanel({
   history,
   setHistory
 }) {
   const [cfg, setCfg] = useState(() => loadSyncCfg());
+  // Expanded by default until a token is configured — collapsed-by-default
+  // meant most people never found this panel at all.
+  const [show, setShow] = useState(() => !loadSyncCfg().token);
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
-  const [show, setShow] = useState(false);
   const upd = (k, v) => {
     const next = {
       ...cfg,
@@ -3557,8 +3558,7 @@ function App() {
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement(ProgressScreen, {
-    history: history,
-    setHistory: setHistory
+    history: history
   }), tab === "history" &&
   /*#__PURE__*/
   /*#__PURE__*/

@@ -2216,6 +2216,7 @@ function SessionScreen({ history, setHistory }) {
             </div>
           );
         })}
+        <SyncPanel history={history} setHistory={setHistory} />
       </div>
     );
   }
@@ -3161,7 +3162,7 @@ function WeekCard({ week, history, defaultOpen }) {
     </div>
   );
 }
-function ProgressScreen({ history, setHistory }) {
+function ProgressScreen({ history }) {
   const [showHandoff, setShowHandoff] = useState(false);
   const [copied, setCopied] = useState(false);
   const weeks = groupByWeek(history);
@@ -3334,15 +3335,16 @@ function ProgressScreen({ history, setHistory }) {
           {copied ? "✓ copied to clipboard" : "copy handoff summary"}
         </button>
       </div>
-      <SyncPanel history={history} setHistory={setHistory} />
     </div>
   );
 }
 function SyncPanel({ history, setHistory }) {
   const [cfg, setCfg] = useState(() => loadSyncCfg());
+  // Expanded by default until a token is configured — collapsed-by-default
+  // meant most people never found this panel at all.
+  const [show, setShow] = useState(() => !loadSyncCfg().token);
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
-  const [show, setShow] = useState(false);
   const upd = (k, v) => {
     const next = {
       ...cfg,
@@ -3902,10 +3904,7 @@ function App() {
       )}
       {tab === "block" && /*#__PURE__*/ <BlockScreen history={history} />}
       {tab === "progress" && (
-        /*#__PURE__*/ <ProgressScreen
-          history={history}
-          setHistory={setHistory}
-        />
+        /*#__PURE__*/ <ProgressScreen history={history} />
       )}
       {tab === "history" && (
         /*#__PURE__*/ <HistoryScreen
