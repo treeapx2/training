@@ -14,7 +14,7 @@ this repo as JSON.
 | Live app | `index.html` (repo root, `main`) — ~377 KB, compiled |
 | Session data | `sessions.json` (repo root, `main`) — 64 sessions, Feb 28–Jul 29 2026 |
 | Branch | `main` only. `master` was deleted; `raw.githubusercontent.com` may still serve stale cached copies of it — do not trust those |
-| Build | **None.** This is the core problem to fix |
+| Build | `npm run build` (Babel 8, classic JSX runtime) — see **Build system**, below |
 
 ## HARD CONSTRAINTS — violating these produces a white screen
 
@@ -30,11 +30,52 @@ Learned the hard way in Safari and Firefox. Non-negotiable:
 4. **Single self-contained file output.** `index.html` must work when opened
    directly with no network and no module resolution.
 
+## Build system
+
+`npm run build` runs `scripts/build.js`, which:
+
+1. Compiles `src/app.jsx` via the **`@babel/core` API directly**
+   (`babel.transformFileSync`), using `babel.config.js`
+   (`@babel/preset-react`, `runtime: "classic"`). There is no `@babel/cli`
+   dependency — it was installed early on, never actually invoked anywhere,
+   and was the sole source of every `npm audit` finding at the time, so it
+   was removed.
+2. Reads the two vendor UMD bundles (`vendor/react.production.min.js`,
+   `vendor/react-dom.production.min.js`) verbatim — the exact bytes
+   extracted from the previously hand-patched `index.html`, never touched by
+   Babel.
+3. Wraps everything in the HTML shell (`src/shell.head.html` /
+   `src/shell.tail.html`) and writes the single self-contained `index.html`
+   at the repo root.
+
+Toolchain is pinned to **Babel 8** (`@babel/core`, `@babel/preset-react`,
+`@babel/generator`, `@babel/parser`, `@babel/types`, all `^8.x`).
+`preset-react`'s `runtime: "classic"` option works unchanged on Babel 8 — this
+was confirmed by rebuilding on 8.x and diffing the result against both the
+originally-shipped `index.html` and the prior Babel-7 rebuild (see
+`scripts/normalize-for-diff.js`); the normalized diff is empty in both
+directions.
+
+### File layout
+
+| Path | Purpose |
+|---|---|
+| `src/app.jsx` | The real JSX source. Edit this, not `index.html`. |
+| `src/shell.head.html` / `src/shell.tail.html` | HTML/CSS shell around the three inline `<script>` blocks. |
+| `vendor/react.production.min.js`, `vendor/react-dom.production.min.js` | React 18 UMD builds, embedded inline verbatim (hard constraint #1). |
+| `babel.config.js` | `@babel/preset-react` with `runtime: "classic"` (hard constraint #2). |
+| `scripts/build.js` | `npm run build` — see above. |
+| `scripts/test.js` | `npm test` — the validation bar, below. |
+| `smoke.js` | jsdom headless-mount check (validation bar step 4). |
+| `scripts/decompile.js` | **Historical/documentation only.** The one-time script that reconstructed `src/app.jsx` from the previously shipped, hand-patched `index.html`. Not runnable against current devDependencies — it needs the Babel 7.x line plus `babel-plugin-transform-react-createelement-to-jsx` (unmaintained, relies on legacy `t.jSXIdentifier`-style `@babel/types` builders that Babel 8 removed), both of which were removed once the decompile was done and committed. See the comment in the file for how to temporarily reinstall them if this is ever needed again. |
+| `scripts/normalize-for-diff.js` | Parses a compiled app script and re-emits it through `@babel/generator` with fixed formatting, so two semantically-identical scripts (differing only in quote style, escaping, etc.) diff to nothing. Used to prove the JSX reconstruction and the Babel 7→8 upgrade changed no behavior; reusable for future refactors that touch `src/app.jsx`. |
+| `index.html` | **Build output.** Don't hand-edit — regenerate via `npm run build`. Still the file that gets committed and deployed (see Deploy, below); there is no separate `dist/`. |
+
 ## Validation bar — every change must pass all four
 
 ```bash
 # 1. extract the app's inline script and syntax-check it
-#    (index.html has 4 inline <script> blocks; the app is the 3rd, index 2)
+#    (index.html has 3 inline <script> blocks; the app is the 3rd, index 2)
 node --check <extracted-app-script>.js
 
 # 2. zero line-start import statements
@@ -49,8 +90,11 @@ grep -c 'react/jsx-runtime' index.html # must be 0
 node smoke.js
 ```
 
-Script these as `npm test`. Do not skip #4 — static checks pass on code that
-still white-screens.
+Scripted as `npm test` (`scripts/test.js`). Do not skip #4 — static checks
+pass on code that still white-screens. Both `scripts/test.js` and
+`smoke.js` have been negative-tested against deliberately broken builds (an
+injected `import` statement; a thrown error before mount) to confirm the
+checks actually fail rather than rubber-stamping.
 
 ## Current architecture
 
@@ -147,41 +191,48 @@ a test fixture. Fine-grained, `Contents: read+write`, this repo only.
 
 ## Known issues / queued work
 
-Priority order. The first three are the ones that pay off.
+Priority order.
 
-1. **No JSX source exists.** `workout.html` (the original JSX) was lost and is
-   not in the repo. Every recent change was hand-applied to compiled
-   `React.createElement` output. **Reconstruct a real source** (`src/app.jsx`),
-   verify the rebuild is functionally equivalent to the shipped `index.html`,
-   then never hand-patch again.
-2. **No build step.** Add `package.json` + `@babel/cli` (classic runtime) +
-   `npm run build` that emits the single-file `index.html`, and `npm test` for
-   the validation bar above.
-3. **Session data is duplicated.** `SEED_SESSIONS` embeds **62 records inside
-   `index.html`** while `sessions.json` holds 64. The embedded copy has drifted
-   twice already and required manual surgery both times. Make `sessions.json`
-   the single source of truth and remove the embedded seed (or generate it at
-   build time).
-4. **`syncPush` has no 409 retry.** A stale `sha` returns HTTP 409 and the push
+**Done:** the original items 1–2 here (reconstruct a real JSX source; add a
+build step) are complete — see **Build system**, above. `src/app.jsx` is the
+real source, verified AST-equivalent and jsdom-render-equivalent to the
+previously shipped `index.html`. Never hand-patch `index.html` again; edit
+`src/app.jsx` and run `npm run build`.
+
+1. **Session data is duplicated.** `SEED_SESSIONS` embeds **62 records inside
+   `index.html`** (now `src/app.jsx`) while `sessions.json` holds 64. The
+   embedded copy has drifted twice already and required manual surgery both
+   times. Make `sessions.json` the single source of truth and remove the
+   embedded seed (or generate it at build time).
+2. **`syncPush` has no 409 retry.** A stale `sha` returns HTTP 409 and the push
    just fails. Reproduces reliably when auto-push (on finish) races a manual
    "push now". Refetch the sha and retry once.
-5. **No "replace local from remote".** `mergeSessions` is additive, so a local
+3. **No "replace local from remote".** `mergeSessions` is additive, so a local
    delete is unrecoverable from the repo — a deleted session cannot be restored
    by pulling. This caused real data loss requiring manual JSON repair. Add a
    destructive-but-confirmed "remote wins" action.
-6. **Legs A/B not modeled.** Only `legs|push|pull` exist. Programming now uses
+4. **Legs A/B not modeled.** Only `legs|push|pull` exist. Programming now uses
    two distinct leg days (A = heavy 8–10 quad emphasis, B = higher-rep 12–15
    posterior). Add a fourth session type.
-7. **No cardio/finisher fields.** Stairmaster finishers (duration, level,
+5. **No cardio/finisher fields.** Stairmaster finishers (duration, level,
    perceived effort) are currently typed into the freeform session note. Add
    first-class fields.
-8. **Sync panel is collapsed by default** and easy to miss entirely. Default it
+6. **Sync panel is collapsed by default** and easy to miss entirely. Default it
    to expanded until a token is configured.
-9. **Cache/staleness footgun.** No service worker; the PWA relies on plain HTTP
+7. **Cache/staleness footgun.** No service worker; the PWA relies on plain HTTP
    caching, so a pushed fix can take a refresh or two to reach the device. A
    stale build once executed an already-fixed delete bug and destroyed a
    session. Consider a version stamp visible in the UI so the running build is
    identifiable.
+8. **No Claude Code session hygiene configured.** No project
+   `.claude/settings.json` permission allowlist, no habit of
+   checkpoint-committing before a session starts, no end-of-session `git diff`
+   review. Adopt: (a) a project `.claude/settings.json` that scopes tool
+   permissions instead of relying on ad hoc prompts; (b) commit or stash any
+   dirty working tree before starting a new Claude Code session, so
+   in-progress work is never ambiguous when a session begins; (c) review
+   `git diff`/`git status` at the end of every session before deciding what to
+   commit, rather than committing mid-session on trust.
 
 ## Deploy
 
