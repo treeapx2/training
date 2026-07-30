@@ -180,6 +180,41 @@ const BLOCK = {
   },
 };
 
+// ── Legs A/B variants ─────────────────────────────────────────────────────────
+// Per-movement prescription overrides layered onto BLOCK.sessions.legs.movements
+// at session-start time (see startSession/resumeDraft). Both variants use the
+// exact same movement names as BLOCK.sessions.legs.movements, so progression
+// history (keyed by movement name) and `current` weights are shared across A
+// and B — only workSets/reps for today's working sets differ. Numbers below
+// are prescription mechanics, not authored BLOCK content; source: TARGETS.md
+// "Legs A/B note for whoever implements the toggle".
+const LEGS_VARIANTS = {
+  A: {
+    label: "Legs A",
+    rest: "2-2.5 min on opener",
+    finisher: "8-10 min @ L2-3 easy",
+    movements: {
+      "Leg Press": { workSets: 3, reps: 10 },
+      "Leg Curl": { workSets: 2, reps: 10 },
+      "Leg Extension": { workSets: 2, reps: 10 },
+      "Goblet Squat": { workSets: 2, reps: 10 },
+      "Calf Raise": { workSets: 3, reps: 15 },
+    },
+  },
+  B: {
+    label: "Legs B",
+    rest: "45-75s throughout",
+    finisher: "8-10 min @ L3 easy",
+    movements: {
+      "Leg Press": { workSets: 3, reps: 15 },
+      "Leg Curl": { workSets: 3, reps: 12 },
+      "Leg Extension": { workSets: 2, reps: 15 },
+      "Goblet Squat": { workSets: 2, reps: 15 },
+      "Calf Raise": { workSets: 3, reps: 20 },
+    },
+  },
+};
+
 // ── Movement metadata ──────────────────────────────────────────────────────────
 // Muscle group definitions — order within each group is fixed
 const MUSCLE_GROUPS = {
@@ -259,10 +294,11 @@ function saveGroupOrders(orders) {
   } catch {}
 }
 const DRAFT_KEY = "at_session_draft";
-function saveDraft(type, movements, note, sessionDate) {
+function saveDraft(type, movements, note, sessionDate, variant) {
   try {
     const draft = {
       type,
+      variant: variant || null,
       note,
       sessionDate,
       date: sessionDate
@@ -1660,6 +1696,7 @@ function SessionScreen({ history, setHistory }) {
   );
   const [lastFinished, setLastFinished] = useState(null);
   const [autoPushStatus, setAutoPushStatus] = useState(null);
+  const [legsVariant, setLegsVariant] = useState(null);
   const [copied, setCopied] = useState(false);
   const [groupOrders, setGroupOrders] = useState(null);
   const [sessionMovements, setSessionMovements] = useState([]);
@@ -1678,18 +1715,22 @@ function SessionScreen({ history, setHistory }) {
   // Auto-save draft whenever session movements change OR any set is logged (tick)
   useEffect(() => {
     if (!active) return;
-    saveDraft(active, sessionMovements, sessionNote, sessionDate);
-  }, [sessionMovements, sessionNote, active, tick, sessionDate]);
-  const startSession = (type) => {
+    saveDraft(active, sessionMovements, sessionNote, sessionDate, legsVariant);
+  }, [sessionMovements, sessionNote, active, tick, sessionDate, legsVariant]);
+  const startSession = (type, variant) => {
     BLOCK.sessions[type].movements.forEach((m) => {
       delete m._loggedSets;
     });
+    const overrides =
+      type === "legs" && variant ? LEGS_VARIANTS[variant].movements : null;
     const ordered = BLOCK.sessions[type].movements.map((m) => ({
       ...m,
+      ...(overrides && overrides[m.name] ? overrides[m.name] : null),
       _group: groupLabelFor(m.name),
     }));
     setSessionMovements(ordered);
     setActive(type);
+    setLegsVariant(type === "legs" ? variant : null);
     setLastFinished(null);
     setAutoPushStatus(null);
     setSessionNote("");
@@ -1702,6 +1743,10 @@ function SessionScreen({ history, setHistory }) {
     blockMovs.forEach((m) => {
       delete m._loggedSets;
     });
+    const overrides =
+      draft.type === "legs" && draft.variant
+        ? LEGS_VARIANTS[draft.variant].movements
+        : null;
     const restored = draft.movements.map((dm) => {
       const blockMov = blockMovs.find((m) => m.name === dm.name) || {
         name: dm.name,
@@ -1711,11 +1756,13 @@ function SessionScreen({ history, setHistory }) {
       blockMov._loggedSets = dm._loggedSets || [];
       return {
         ...blockMov,
+        ...(overrides && overrides[dm.name] ? overrides[dm.name] : null),
         _group: dm._group,
       };
     });
     setSessionMovements(restored);
     setActive(draft.type);
+    setLegsVariant(draft.type === "legs" ? draft.variant || null : null);
     setSessionNote(draft.note || "");
     if (draft.sessionDate) setSessionDate(draft.sessionDate);
     setDraft(null);
@@ -1813,9 +1860,10 @@ function SessionScreen({ history, setHistory }) {
     const entry = {
       id: Date.now(),
       type: active,
-      label: s.label,
+      label: legsVariant ? s.label + " " + legsVariant : s.label,
       date: formattedDate,
       note: sessionNote,
+      variant: legsVariant || undefined,
       movements,
     };
     const updated = [entry, ...history];
@@ -1890,6 +1938,10 @@ function SessionScreen({ history, setHistory }) {
         bg: "#eee",
         label: draft.type,
       };
+      const draftLabel =
+        draft.type === "legs" && draft.variant
+          ? s.label + " " + draft.variant
+          : s.label;
       const loggedCount = draft.movements.reduce(
         (a, m) => a + (m._loggedSets?.length || 0),
         0,
@@ -1936,13 +1988,9 @@ function SessionScreen({ history, setHistory }) {
                   color: "#111",
                 }}
               >
-                {draft.label || draft.type} · {draft.date}
+                {draftLabel} · {draft.date}
               </div>
-              <Badge
-                label={draft.label || draft.type}
-                color={s.color}
-                bg={s.bg}
-              />
+              <Badge label={draftLabel} color={s.color} bg={s.bg} />
             </div>
             <div
               style={{
@@ -2129,10 +2177,37 @@ function SessionScreen({ history, setHistory }) {
           style={{
             display: "flex",
             gap: 8,
+            marginBottom: 8,
+          }}
+        >
+          {["A", "B"].map((v) => (
+            /*#__PURE__*/ <button
+              key={v}
+              onClick={() => startSession("legs", v)}
+              style={{
+                flex: 1,
+                padding: "12px 0",
+                border: "0.5px solid #ddd",
+                borderRadius: 10,
+                background: "#fff",
+                fontSize: 13,
+                fontWeight: 600,
+                color: BLOCK.sessions.legs.color,
+                cursor: "pointer",
+              }}
+            >
+              {LEGS_VARIANTS[v].label}
+            </button>
+          ))}
+        </div>
+        <div
+          style={{
+            display: "flex",
+            gap: 8,
             marginBottom: 16,
           }}
         >
-          {["legs", "push", "pull"].map((t) => (
+          {["push", "pull"].map((t) => (
             /*#__PURE__*/ <button
               key={t}
               onClick={() => startSession(t)}
@@ -2245,7 +2320,7 @@ function SessionScreen({ history, setHistory }) {
             color: "#111",
           }}
         >
-          {session.label}
+          {legsVariant ? session.label + " " + legsVariant : session.label}
         </div>
         <input
           type="date"
@@ -2263,6 +2338,19 @@ function SessionScreen({ history, setHistory }) {
           }}
         />
       </div>
+      {legsVariant && (
+        /*#__PURE__*/ <div
+          style={{
+            fontSize: 11,
+            color: "#888",
+            marginBottom: 14,
+            marginTop: -8,
+          }}
+        >
+          rest {LEGS_VARIANTS[legsVariant].rest} · finisher{" "}
+          {LEGS_VARIANTS[legsVariant].finisher}
+        </div>
+      )}
       <div
         style={{
           display: "flex",
