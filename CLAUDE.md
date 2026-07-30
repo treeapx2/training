@@ -240,6 +240,15 @@ GitHub Pages serves `main`. Commit `index.html` to the repo root and push;
 allow a few minutes for CDN propagation, then hard-refresh Safari at the live
 URL before relaunching the installed PWA.
 
+**iOS storage isolation — IMPORTANT:** the installed PWA (home-screen icon)
+and Safari maintain **separate `localStorage` containers**, even for the same
+URL. Safari is used in the deploy flow purely to force a cache refresh so the
+installed PWA picks up the new build — it is not a window into the PWA's
+state. Never verify session history, sync config, or the stored token by
+checking Safari; `localStorage` reads there tell you nothing about what the
+installed PWA has. All state verification (history, sync config, token)
+must be done inside the installed PWA itself.
+
 ## Scope boundary
 
 This repo is the **app**. Training programming, progression decisions, session
