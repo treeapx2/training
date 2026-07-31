@@ -330,8 +330,8 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
 // see build.js) so a stale cached build is identifiable on the device
 // instead of silently running fixed-but-not-yet-deployed code.
 const BUILD_INFO = {
-  sha: "b784a34",
-  builtAt: "2026-07-31T12:27:38.612Z"
+  sha: "498d286",
+  builtAt: "2026-07-31T12:31:13.202Z"
 };
 function formatBuildStamp() {
   const d = new Date(BUILD_INFO.builtAt);
@@ -623,23 +623,25 @@ function saveGroupOrders(orders) {
   } catch {}
 }
 const DRAFT_KEY = "at_session_draft";
-// Cardio finisher — first-class fields instead of typed into the freeform
-// note. effort is a closed enum; machine/duration/level are free text so any
-// machine (Stairmaster, Z2 bike, elliptical, incline walk, rower — see
-// BLOCK.flags) fits without a fixed dropdown.
+// Cardio finisher — first-class fields. machine is a fixed dropdown;
+// duration/level/rpe are numeric, entered consistent with how strength sets
+// are logged (rpe, not a closed easy/moderate/hard enum). Older records may
+// still carry the retired `effort` string — hasCardioData/formatCardio keep
+// reading it so history doesn't crash or silently drop it; new entries
+// always write rpe instead.
 const EMPTY_CARDIO = {
   machine: "",
   duration: "",
   level: "",
-  effort: ""
+  rpe: ""
 };
-const CARDIO_EFFORT_OPTIONS = ["easy", "moderate", "hard"];
+const CARDIO_MACHINE_OPTIONS = ["Stairmaster", "Recumbent bike", "Spin bike", "Elliptical", "Treadmill (incline walk)", "Rower", "Other"];
 function hasCardioData(cardio) {
-  return !!(cardio && (cardio.machine || cardio.duration || cardio.level || cardio.effort));
+  return !!(cardio && (cardio.machine || cardio.duration || cardio.level || cardio.rpe || cardio.effort));
 }
 function formatCardio(cardio) {
   if (!hasCardioData(cardio)) return "";
-  return [cardio.machine, cardio.duration ? cardio.duration + " min" : "", cardio.level ? "L" + cardio.level : "", cardio.effort].filter(Boolean).join(" · ");
+  return [cardio.machine, cardio.duration ? cardio.duration + " min" : "", cardio.level ? "L" + cardio.level : "", cardio.rpe ? "RPE " + cardio.rpe : cardio.effort || ""].filter(Boolean).join(" · ");
 }
 function saveDraft(type, movements, note, sessionDate, variant, cardio) {
   try {
@@ -2556,19 +2558,18 @@ function SessionScreen({
     }
   }, "Cardio finisher"), /*#__PURE__*/React.createElement("div", {
     style: {
-      display: "flex",
-      gap: 8,
-      marginBottom: 8
+      fontSize: 11,
+      color: "#999",
+      marginBottom: 4
     }
-  }, /*#__PURE__*/React.createElement("input", {
+  }, "Machine"), /*#__PURE__*/React.createElement("select", {
     value: cardio.machine,
     onChange: e => setCardio(c => ({
       ...c,
       machine: e.target.value
     })),
-    placeholder: "machine (Stairmaster, bike...)",
     style: {
-      flex: 2,
+      width: "100%",
       padding: "9px 10px",
       border: "0.5px solid #ddd",
       borderRadius: 10,
@@ -2576,73 +2577,56 @@ function SessionScreen({
       color: "#111",
       background: "#fff",
       outline: "none",
-      minWidth: 0
+      marginBottom: 8
     }
-  }), /*#__PURE__*/React.createElement("input", {
-    type: "number",
-    inputMode: "numeric",
-    value: cardio.duration,
-    onChange: e => setCardio(c => ({
-      ...c,
-      duration: e.target.value
-    })),
-    placeholder: "min",
-    style: {
-      flex: 1,
-      padding: "9px 10px",
-      border: "0.5px solid #ddd",
-      borderRadius: 10,
-      fontSize: 16,
-      color: "#111",
-      background: "#fff",
-      outline: "none",
-      minWidth: 0
-    }
-  }), /*#__PURE__*/React.createElement("input", {
-    value: cardio.level,
-    onChange: e => setCardio(c => ({
-      ...c,
-      level: e.target.value
-    })),
-    placeholder: "level",
-    style: {
-      flex: 1,
-      padding: "9px 10px",
-      border: "0.5px solid #ddd",
-      borderRadius: 10,
-      fontSize: 16,
-      color: "#111",
-      background: "#fff",
-      outline: "none",
-      minWidth: 0
-    }
-  })), /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("option", {
+    value: ""
+  }), CARDIO_MACHINE_OPTIONS.map(m =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("option", {
+    key: m,
+    value: m
+  }, m))), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       gap: 8,
       marginBottom: 14
     }
-  }, CARDIO_EFFORT_OPTIONS.map(eff =>
+  }, [["duration", "min"], ["level", "level"], ["rpe", "rpe"]].map(([field, fieldLabel]) =>
   /*#__PURE__*/
   /*#__PURE__*/
-  React.createElement("button", {
-    key: eff,
-    onClick: () => setCardio(c => ({
+  React.createElement("div", {
+    key: field,
+    style: {
+      flex: 1
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 11,
+      color: "#999",
+      marginBottom: 4
+    }
+  }, fieldLabel), /*#__PURE__*/React.createElement("input", {
+    type: "number",
+    inputMode: "numeric",
+    value: cardio[field],
+    onChange: e => setCardio(c => ({
       ...c,
-      effort: c.effort === eff ? "" : eff
+      [field]: e.target.value
     })),
     style: {
-      flex: 1,
-      padding: "8px 0",
-      border: cardio.effort === eff ? "0.5px solid #111" : "0.5px solid #ddd",
+      width: "100%",
+      padding: "9px 10px",
+      border: "0.5px solid #ddd",
       borderRadius: 10,
-      background: cardio.effort === eff ? "#111" : "#fff",
-      color: cardio.effort === eff ? "#fff" : "#555",
-      fontSize: 12,
-      fontWeight: 600,
-      cursor: "pointer"
+      fontSize: 16,
+      color: "#111",
+      background: "#fff",
+      outline: "none",
+      minWidth: 0
     }
-  }, eff))), (() => {
+  })))), (() => {
     const unlogged = sessionMovements.map(m => {
       const planned = m._plannedSets || [];
       const unloggedCount = planned.filter ? 0 : 0; // placeholder — check via DOM not reliable

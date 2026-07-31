@@ -215,16 +215,30 @@ function saveGroupOrders(orders) {
   } catch {}
 }
 const DRAFT_KEY = "at_session_draft";
-// Cardio finisher — first-class fields instead of typed into the freeform
-// note. effort is a closed enum; machine/duration/level are free text so any
-// machine (Stairmaster, Z2 bike, elliptical, incline walk, rower — see
-// BLOCK.flags) fits without a fixed dropdown.
-const EMPTY_CARDIO = { machine: "", duration: "", level: "", effort: "" };
-const CARDIO_EFFORT_OPTIONS = ["easy", "moderate", "hard"];
+// Cardio finisher — first-class fields. machine is a fixed dropdown;
+// duration/level/rpe are numeric, entered consistent with how strength sets
+// are logged (rpe, not a closed easy/moderate/hard enum). Older records may
+// still carry the retired `effort` string — hasCardioData/formatCardio keep
+// reading it so history doesn't crash or silently drop it; new entries
+// always write rpe instead.
+const EMPTY_CARDIO = { machine: "", duration: "", level: "", rpe: "" };
+const CARDIO_MACHINE_OPTIONS = [
+  "Stairmaster",
+  "Recumbent bike",
+  "Spin bike",
+  "Elliptical",
+  "Treadmill (incline walk)",
+  "Rower",
+  "Other",
+];
 function hasCardioData(cardio) {
   return !!(
     cardio &&
-    (cardio.machine || cardio.duration || cardio.level || cardio.effort)
+    (cardio.machine ||
+      cardio.duration ||
+      cardio.level ||
+      cardio.rpe ||
+      cardio.effort)
   );
 }
 function formatCardio(cardio) {
@@ -233,7 +247,7 @@ function formatCardio(cardio) {
     cardio.machine,
     cardio.duration ? cardio.duration + " min" : "",
     cardio.level ? "L" + cardio.level : "",
-    cardio.effort,
+    cardio.rpe ? "RPE " + cardio.rpe : cardio.effort || "",
   ]
     .filter(Boolean)
     .join(" · ");
@@ -2523,77 +2537,40 @@ function SessionScreen({ history, setHistory }) {
       </div>
       <div
         style={{
-          display: "flex",
-          gap: 8,
+          fontSize: 11,
+          color: "#999",
+          marginBottom: 4,
+        }}
+      >
+        Machine
+      </div>
+      <select
+        value={cardio.machine}
+        onChange={(e) =>
+          setCardio((c) => ({
+            ...c,
+            machine: e.target.value,
+          }))
+        }
+        style={{
+          width: "100%",
+          padding: "9px 10px",
+          border: "0.5px solid #ddd",
+          borderRadius: 10,
+          fontSize: 16,
+          color: "#111",
+          background: "#fff",
+          outline: "none",
           marginBottom: 8,
         }}
       >
-        <input
-          value={cardio.machine}
-          onChange={(e) =>
-            setCardio((c) => ({
-              ...c,
-              machine: e.target.value,
-            }))
-          }
-          placeholder="machine (Stairmaster, bike...)"
-          style={{
-            flex: 2,
-            padding: "9px 10px",
-            border: "0.5px solid #ddd",
-            borderRadius: 10,
-            fontSize: 16,
-            color: "#111",
-            background: "#fff",
-            outline: "none",
-            minWidth: 0,
-          }}
-        />
-        <input
-          type="number"
-          inputMode="numeric"
-          value={cardio.duration}
-          onChange={(e) =>
-            setCardio((c) => ({
-              ...c,
-              duration: e.target.value,
-            }))
-          }
-          placeholder="min"
-          style={{
-            flex: 1,
-            padding: "9px 10px",
-            border: "0.5px solid #ddd",
-            borderRadius: 10,
-            fontSize: 16,
-            color: "#111",
-            background: "#fff",
-            outline: "none",
-            minWidth: 0,
-          }}
-        />
-        <input
-          value={cardio.level}
-          onChange={(e) =>
-            setCardio((c) => ({
-              ...c,
-              level: e.target.value,
-            }))
-          }
-          placeholder="level"
-          style={{
-            flex: 1,
-            padding: "9px 10px",
-            border: "0.5px solid #ddd",
-            borderRadius: 10,
-            fontSize: 16,
-            color: "#111",
-            background: "#fff",
-            outline: "none",
-            minWidth: 0,
-          }}
-        />
-      </div>
+        <option value=""></option>
+        {CARDIO_MACHINE_OPTIONS.map((m) => (
+          /*#__PURE__*/ <option key={m} value={m}>
+            {m}
+          </option>
+        ))}
+      </select>
       <div
         style={{
           display: "flex",
@@ -2601,32 +2578,49 @@ function SessionScreen({ history, setHistory }) {
           marginBottom: 14,
         }}
       >
-        {CARDIO_EFFORT_OPTIONS.map((eff) => (
-          /*#__PURE__*/ <button
-            key={eff}
-            onClick={() =>
-              setCardio((c) => ({
-                ...c,
-                effort: c.effort === eff ? "" : eff,
-              }))
-            }
+        {[
+          ["duration", "min"],
+          ["level", "level"],
+          ["rpe", "rpe"],
+        ].map(([field, fieldLabel]) => (
+          /*#__PURE__*/ <div
+            key={field}
             style={{
               flex: 1,
-              padding: "8px 0",
-              border:
-                cardio.effort === eff
-                  ? "0.5px solid #111"
-                  : "0.5px solid #ddd",
-              borderRadius: 10,
-              background: cardio.effort === eff ? "#111" : "#fff",
-              color: cardio.effort === eff ? "#fff" : "#555",
-              fontSize: 12,
-              fontWeight: 600,
-              cursor: "pointer",
             }}
           >
-            {eff}
-          </button>
+            <div
+              style={{
+                fontSize: 11,
+                color: "#999",
+                marginBottom: 4,
+              }}
+            >
+              {fieldLabel}
+            </div>
+            <input
+              type="number"
+              inputMode="numeric"
+              value={cardio[field]}
+              onChange={(e) =>
+                setCardio((c) => ({
+                  ...c,
+                  [field]: e.target.value,
+                }))
+              }
+              style={{
+                width: "100%",
+                padding: "9px 10px",
+                border: "0.5px solid #ddd",
+                borderRadius: 10,
+                fontSize: 16,
+                color: "#111",
+                background: "#fff",
+                outline: "none",
+                minWidth: 0,
+              }}
+            />
+          </div>
         ))}
       </div>
       {(() => {
