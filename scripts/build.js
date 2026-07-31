@@ -63,5 +63,13 @@ const output =
   "</script>\n" +
   shellTail;
 
-fs.writeFileSync(path.join(repoRoot, "index.html"), output);
-console.log(`Wrote index.html (${output.length} bytes, ${output.split("\n").length} lines)`);
+// Optional output path (argv[2]) lets the Phase 0 staleness check in
+// scripts/test.js rebuild to a temp file without overwriting the real,
+// committed index.html mid-test-run.
+const outPath = process.argv[2]
+  ? path.resolve(process.argv[2])
+  : path.join(repoRoot, "index.html");
+
+fs.mkdirSync(path.dirname(outPath), { recursive: true });
+fs.writeFileSync(outPath, output);
+console.log(`Wrote ${path.relative(repoRoot, outPath)} (${output.length} bytes, ${output.split("\n").length} lines)`);

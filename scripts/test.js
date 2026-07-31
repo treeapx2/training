@@ -73,4 +73,33 @@ check("4. headless mount (smoke.js)", () => {
   });
 });
 
+// 5. staleness check — a prior cycle committed source changes across six
+// phases but never re-ran `npm run build`, so the live index.html stayed
+// unchanged while npm test passed anyway (it only validates whatever
+// index.html currently contains). Rebuild to a temp path and diff against
+// the committed file. BUILD_INFO's sha/builtAt are expected to differ on
+// every rebuild (see CLAUDE.md "Version stamp") so those two fields are
+// normalized out before comparing — this check is about src/app.jsx vs.
+// index.html divergence, not build-stamp churn.
+check("5. index.html matches a fresh build of src/app.jsx (staleness)", () => {
+  const rebuiltPath = path.join(repoRoot, "build_tmp", "index.rebuilt.html");
+  execFileSync(
+    process.execPath,
+    [path.join(repoRoot, "scripts", "build.js"), rebuiltPath],
+    { stdio: "pipe" },
+  );
+  const rebuilt = fs.readFileSync(rebuiltPath, "utf8");
+
+  const normalize = (s) =>
+    s
+      .replace(/sha: "[^"]*"/, 'sha: "__SHA__"')
+      .replace(/builtAt: "[^"]*"/, 'builtAt: "__BUILT_AT__"');
+
+  if (normalize(html) !== normalize(rebuilt)) {
+    throw new Error(
+      "committed index.html does not match a fresh build of src/app.jsx — run `npm run build` and commit the result",
+    );
+  }
+});
+
 process.exit(failed ? 1 : 0);

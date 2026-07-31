@@ -1,0 +1,16 @@
+#!/bin/sh
+# Keeps the committed index.html from silently diverging from src/app.jsx.
+# See CLAUDE.md "Build system" and CHANGES.md Phase 0 — a prior cycle
+# committed six phases of source changes without ever rebuilding, so the
+# live app didn't move even though npm test kept passing.
+#
+# Activated via `git config core.hooksPath githooks` (see package.json
+# "prepare" script, which sets this automatically on `npm install`).
+set -e
+
+npm run build --silent
+
+if ! git diff --quiet -- index.html; then
+  git add index.html
+  echo "pre-commit: rebuilt index.html from src/app.jsx and staged it."
+fi

@@ -5,7 +5,8 @@
   "description": "Workout tracker PWA build tooling",
   "scripts": {
     "build": "node scripts/build.js",
-    "test": "node scripts/test.js"
+    "test": "node scripts/test.js",
+    "prepare": "git config core.hooksPath githooks"
   },
   "devDependencies": {
     "@babel/core": "^8.0.1",
