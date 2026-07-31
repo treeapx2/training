@@ -75,40 +75,66 @@ const BLOCK = {
   }
 };
 
-// ── Legs A/B variants ─────────────────────────────────────────────────────────
-// Per-movement prescription overrides layered onto BLOCK.sessions.legs.movements
-// at session-start time (see startSession/resumeDraft). Both variants use the
-// exact same movement names as BLOCK.sessions.legs.movements, so progression
-// history (keyed by movement name) and `current` weights are shared across A
-// and B — only workSets/reps for today's working sets differ. Numbers below
-// are prescription mechanics, not authored BLOCK content; source: TARGETS.md
-// "Legs A/B note for whoever implements the toggle".
-const LEGS_VARIANTS = {
-  A: {
-    label: "Legs A",
-    rest: "2-2.5 min on opener",
-    finisher: "8-10 min @ L2-3 easy",
-    movements: {
-      "Leg Press": { workSets: 3, reps: 10 },
-      "Leg Curl": { workSets: 2, reps: 10 },
-      "Leg Extension": { workSets: 2, reps: 10 },
-      "Goblet Squat": { workSets: 2, reps: 10 },
-      "Calf Raise": { workSets: 3, reps: 15 },
+// ── Session variants ──────────────────────────────────────────────────────────
+// Generic per-session-type variant list. Each variant is a per-movement
+// prescription overlay layered onto BLOCK.sessions[type].movements at
+// session-start/switch time (see buildSessionMovements). Variant movement
+// keys match BLOCK.sessions[type].movements names exactly, so progression
+// history (keyed by movement name) and `current` weights are shared across
+// variants of the same type — only workSets/reps for today's working sets
+// differ. Legs carries two variants (A/B, prescription mechanics from
+// TARGETS.md "Legs A/B note for whoever implements the toggle"); Push and
+// Pull each carry a single default variant. A type's variant switcher only
+// renders when SESSION_VARIANTS[type].length > 1 — adding a second Push or
+// Pull variant later is a data addition here, not a structural change.
+const SESSION_VARIANTS = {
+  legs: [
+    {
+      id: "A",
+      label: "A",
+      rest: "2-2.5 min on opener",
+      movements: {
+        "Leg Press": { workSets: 3, reps: 10 },
+        "Leg Curl": { workSets: 2, reps: 10 },
+        "Leg Extension": { workSets: 2, reps: 10 },
+        "Goblet Squat": { workSets: 2, reps: 10 },
+        "Calf Raise": { workSets: 3, reps: 15 },
+      },
     },
-  },
-  B: {
-    label: "Legs B",
-    rest: "45-75s throughout",
-    finisher: "8-10 min @ L3 easy",
-    movements: {
-      "Leg Press": { workSets: 3, reps: 15 },
-      "Leg Curl": { workSets: 3, reps: 12 },
-      "Leg Extension": { workSets: 2, reps: 15 },
-      "Goblet Squat": { workSets: 2, reps: 15 },
-      "Calf Raise": { workSets: 3, reps: 20 },
+    {
+      id: "B",
+      label: "B",
+      rest: "45-75s throughout",
+      movements: {
+        "Leg Press": { workSets: 3, reps: 15 },
+        "Leg Curl": { workSets: 3, reps: 12 },
+        "Leg Extension": { workSets: 2, reps: 15 },
+        "Goblet Squat": { workSets: 2, reps: 15 },
+        "Calf Raise": { workSets: 3, reps: 20 },
+      },
     },
-  },
+  ],
+  push: [
+    {
+      id: "standard",
+      label: "Standard",
+      rest: "",
+      movements: {},
+    },
+  ],
+  pull: [
+    {
+      id: "standard",
+      label: "Standard",
+      rest: "",
+      movements: {},
+    },
+  ],
 };
+function getVariant(type, variantId) {
+  const variants = SESSION_VARIANTS[type] || [];
+  return variants.find((v) => v.id === variantId) || variants[0];
+}
 
 // ── Movement metadata ──────────────────────────────────────────────────────────
 // Muscle group definitions — order within each group is fixed
@@ -279,6 +305,22 @@ function buildOrderedMovements(type, groupOrder, blockMovements) {
       });
   });
   return result;
+}
+// Builds a fresh sessionMovements array for a given type/variant, applying
+// the variant's per-movement overrides and re-attaching any previously
+// logged sets (keyed by movement name) so switching variant mid-session, or
+// resuming a draft, keeps logged data instead of discarding it.
+function buildSessionMovements(type, variantId, loggedMap) {
+  const variant = getVariant(type, variantId);
+  return BLOCK.sessions[type].movements.map((m) => {
+    const mov = {
+      ...m,
+      ...(variant.movements[m.name] || null),
+      _group: groupLabelFor(m.name),
+    };
+    mov._loggedSets = (loggedMap && loggedMap[m.name]) || [];
+    return mov;
+  });
 }
 // Single stable storage key — never changes
 const SYNC_KEY = "at_sync_cfg_v1";
@@ -1618,7 +1660,7 @@ function SessionScreen({ history, setHistory }) {
   );
   const [lastFinished, setLastFinished] = useState(null);
   const [autoPushStatus, setAutoPushStatus] = useState(null);
-  const [legsVariant, setLegsVariant] = useState(null);
+  const [variant, setVariant] = useState(null);
   const [cardio, setCardio] = useState(EMPTY_CARDIO);
   const [copied, setCopied] = useState(false);
   const [groupOrders, setGroupOrders] = useState(null);
@@ -1643,7 +1685,7 @@ function SessionScreen({ history, setHistory }) {
       sessionMovements,
       sessionNote,
       sessionDate,
-      legsVariant,
+      variant,
       cardio,
     );
   }, [
@@ -1652,23 +1694,17 @@ function SessionScreen({ history, setHistory }) {
     active,
     tick,
     sessionDate,
-    legsVariant,
+    variant,
     cardio,
   ]);
-  const startSession = (type, variant) => {
+  const startSession = (type) => {
     BLOCK.sessions[type].movements.forEach((m) => {
       delete m._loggedSets;
     });
-    const overrides =
-      type === "legs" && variant ? LEGS_VARIANTS[variant].movements : null;
-    const ordered = BLOCK.sessions[type].movements.map((m) => ({
-      ...m,
-      ...(overrides && overrides[m.name] ? overrides[m.name] : null),
-      _group: groupLabelFor(m.name),
-    }));
-    setSessionMovements(ordered);
+    const initialVariant = SESSION_VARIANTS[type][0].id;
+    setSessionMovements(buildSessionMovements(type, initialVariant, null));
     setActive(type);
-    setLegsVariant(type === "legs" ? variant : null);
+    setVariant(initialVariant);
     setLastFinished(null);
     setAutoPushStatus(null);
     setSessionNote("");
@@ -1677,15 +1713,15 @@ function SessionScreen({ history, setHistory }) {
   };
   const resumeDraft = () => {
     if (!draft) return;
-    // Rebuild sessionMovements from draft, re-attach block movement data
+    // Rebuild sessionMovements from draft, re-attach block movement data.
+    // Order follows draft.movements (preserves any manual reorder from before
+    // the app closed), not BLOCK's default order.
     const blockMovs = BLOCK.sessions[draft.type].movements;
     blockMovs.forEach((m) => {
       delete m._loggedSets;
     });
-    const overrides =
-      draft.type === "legs" && draft.variant
-        ? LEGS_VARIANTS[draft.variant].movements
-        : null;
+    const draftVariantId = draft.variant || SESSION_VARIANTS[draft.type][0].id;
+    const v = getVariant(draft.type, draftVariantId);
     const restored = draft.movements.map((dm) => {
       const blockMov = blockMovs.find((m) => m.name === dm.name) || {
         name: dm.name,
@@ -1695,13 +1731,13 @@ function SessionScreen({ history, setHistory }) {
       blockMov._loggedSets = dm._loggedSets || [];
       return {
         ...blockMov,
-        ...(overrides && overrides[dm.name] ? overrides[dm.name] : null),
+        ...(v.movements[dm.name] || null),
         _group: dm._group,
       };
     });
     setSessionMovements(restored);
     setActive(draft.type);
-    setLegsVariant(draft.type === "legs" ? draft.variant || null : null);
+    setVariant(draftVariantId);
     setSessionNote(draft.note || "");
     setCardio(draft.cardio || EMPTY_CARDIO);
     if (draft.sessionDate) setSessionDate(draft.sessionDate);
@@ -1710,6 +1746,28 @@ function SessionScreen({ history, setHistory }) {
   const discardDraft = () => {
     setDraft(null);
     clearDraft();
+  };
+  // Accidental-switch protection: freely switchable while no set has been
+  // logged; once any set carries logged data, require an explicit confirm.
+  // Switching changes today's targets (workSets/reps overlay) but keeps
+  // logged sets — see buildSessionMovements' loggedMap re-attachment.
+  const switchVariant = (variantId) => {
+    if (variantId === variant) return;
+    const hasLogged = sessionMovements.some(
+      (m) => (m._loggedSets || []).length > 0,
+    );
+    if (hasLogged) {
+      const ok = window.confirm(
+        "Switching variants changes today's targets. Logged sets are kept, not discarded. Continue?",
+      );
+      if (!ok) return;
+    }
+    const loggedMap = {};
+    sessionMovements.forEach((m) => {
+      loggedMap[m.name] = m._loggedSets || [];
+    });
+    setSessionMovements(buildSessionMovements(active, variantId, loggedMap));
+    setVariant(variantId);
   };
   const moveMovementUp = (idx) => {
     if (idx <= 0) return;
@@ -1797,13 +1855,16 @@ function SessionScreen({ history, setHistory }) {
       day: "numeric",
       year: "numeric",
     });
+    const hasVariants = SESSION_VARIANTS[active].length > 1;
     const entry = {
       id: Date.now(),
       type: active,
-      label: legsVariant ? s.label + " " + legsVariant : s.label,
+      label: hasVariants
+        ? s.label + " " + getVariant(active, variant).label
+        : s.label,
       date: formattedDate,
       note: sessionNote,
-      variant: legsVariant || undefined,
+      variant: hasVariants ? variant : undefined,
       cardio: hasCardioData(cardio) ? cardio : undefined,
       movements,
     };
@@ -1884,9 +1945,11 @@ function SessionScreen({ history, setHistory }) {
         bg: "#eee",
         label: draft.type,
       };
+      const draftHasVariants =
+        (SESSION_VARIANTS[draft.type] || []).length > 1;
       const draftLabel =
-        draft.type === "legs" && draft.variant
-          ? s.label + " " + draft.variant
+        draftHasVariants && draft.variant
+          ? s.label + " " + getVariant(draft.type, draft.variant).label
           : s.label;
       const loggedCount = draft.movements.reduce(
         (a, m) => a + (m._loggedSets?.length || 0),
@@ -2123,37 +2186,10 @@ function SessionScreen({ history, setHistory }) {
           style={{
             display: "flex",
             gap: 8,
-            marginBottom: 8,
-          }}
-        >
-          {["A", "B"].map((v) => (
-            /*#__PURE__*/ <button
-              key={v}
-              onClick={() => startSession("legs", v)}
-              style={{
-                flex: 1,
-                padding: "12px 0",
-                border: "0.5px solid #ddd",
-                borderRadius: 10,
-                background: "#fff",
-                fontSize: 13,
-                fontWeight: 600,
-                color: BLOCK.sessions.legs.color,
-                cursor: "pointer",
-              }}
-            >
-              {LEGS_VARIANTS[v].label}
-            </button>
-          ))}
-        </div>
-        <div
-          style={{
-            display: "flex",
-            gap: 8,
             marginBottom: 16,
           }}
         >
-          {["push", "pull"].map((t) => (
+          {["legs", "push", "pull"].map((t) => (
             /*#__PURE__*/ <button
               key={t}
               onClick={() => startSession(t)}
@@ -2242,6 +2278,8 @@ function SessionScreen({ history, setHistory }) {
     );
   }
   const session = BLOCK.sessions[active];
+  const sessionVariants = SESSION_VARIANTS[active];
+  const hasVariants = sessionVariants.length > 1;
   const totalSets = sessionMovements.reduce(
     (a, m) => a + (m._loggedSets || []).length,
     0,
@@ -2266,7 +2304,9 @@ function SessionScreen({ history, setHistory }) {
             color: "#111",
           }}
         >
-          {legsVariant ? session.label + " " + legsVariant : session.label}
+          {hasVariants
+            ? session.label + " " + getVariant(active, variant).label
+            : session.label}
         </div>
         <input
           type="date"
@@ -2284,7 +2324,39 @@ function SessionScreen({ history, setHistory }) {
           }}
         />
       </div>
-      {legsVariant && (
+      {hasVariants && (
+        /*#__PURE__*/ <div
+          style={{
+            display: "flex",
+            gap: 8,
+            marginBottom: 10,
+          }}
+        >
+          {sessionVariants.map((v) => (
+            /*#__PURE__*/ <button
+              key={v.id}
+              onClick={() => switchVariant(v.id)}
+              style={{
+                flex: 1,
+                padding: "8px 0",
+                border:
+                  variant === v.id
+                    ? "0.5px solid #111"
+                    : "0.5px solid #ddd",
+                borderRadius: 10,
+                background: variant === v.id ? "#111" : "#fff",
+                color: variant === v.id ? "#fff" : session.color,
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              {v.label}
+            </button>
+          ))}
+        </div>
+      )}
+      {hasVariants && (
         /*#__PURE__*/ <div
           style={{
             fontSize: 11,
@@ -2293,8 +2365,7 @@ function SessionScreen({ history, setHistory }) {
             marginTop: -8,
           }}
         >
-          rest {LEGS_VARIANTS[legsVariant].rest} · finisher{" "}
-          {LEGS_VARIANTS[legsVariant].finisher}
+          rest {getVariant(active, variant).rest}
         </div>
       )}
       <div
@@ -2341,7 +2412,7 @@ function SessionScreen({ history, setHistory }) {
       </div>
       {sessionMovements.map((mov, idx) => (
         /*#__PURE__*/ <div
-          key={mov.name}
+          key={mov.name + ":" + variant}
           style={{
             marginTop: 10,
           }}
