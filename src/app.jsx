@@ -275,6 +275,7 @@ function saveDraft(type, movements, note, sessionDate, variant, cardio) {
         name: m.name,
         _group: m._group,
         _loggedSets: m._loggedSets || [],
+        note: m._exerciseNote || "",
       })),
     };
     localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
@@ -322,9 +323,10 @@ function buildOrderedMovements(type, groupOrder, blockMovements) {
 }
 // Builds a fresh sessionMovements array for a given type/variant, applying
 // the variant's per-movement overrides and re-attaching any previously
-// logged sets (keyed by movement name) so switching variant mid-session, or
-// resuming a draft, keeps logged data instead of discarding it.
-function buildSessionMovements(type, variantId, loggedMap) {
+// logged sets and exercise note (keyed by movement name) so switching
+// variant mid-session, or resuming a draft, keeps logged data instead of
+// discarding it.
+function buildSessionMovements(type, variantId, carryMap) {
   const variant = getVariant(type, variantId);
   return BLOCK.sessions[type].movements.map((m) => {
     const mov = {
@@ -332,7 +334,9 @@ function buildSessionMovements(type, variantId, loggedMap) {
       ...(variant.movements[m.name] || null),
       _group: groupLabelFor(m.name),
     };
-    mov._loggedSets = (loggedMap && loggedMap[m.name]) || [];
+    const carry = (carryMap && carryMap[m.name]) || {};
+    mov._loggedSets = carry.loggedSets || [];
+    mov._exerciseNote = carry.note || "";
     return mov;
   });
 }
@@ -589,6 +593,7 @@ function buildHandoff(history) {
           if (s.note) l += ` — ${s.note}`;
           lines.push(l);
         });
+        if (m.note) lines.push(`    note: ${m.note}`);
       });
       if (hasCardioData(h.cardio))
         lines.push(`  Cardio: ${formatCardio(h.cardio)}`);
@@ -597,7 +602,7 @@ function buildHandoff(history) {
   }
   return lines.join("\n");
 }
-function buildCoachSummary(type, setsRef, sessionNote, cardio) {
+function buildCoachSummary(type, setsRef, sessionNote, cardio, notesRef) {
   const session = BLOCK.sessions[type];
   const lines = [];
   lines.push(
@@ -611,7 +616,8 @@ function buildCoachSummary(type, setsRef, sessionNote, cardio) {
   );
   session.movements.forEach((mov) => {
     const sets = setsRef[mov.name] || [];
-    if (!sets.length) return;
+    const note = (notesRef && notesRef[mov.name]) || "";
+    if (!sets.length && !note) return;
     lines.push(mov.name + ":");
     sets.forEach((s) => {
       let l = `  S${s.set}: ${s.weight ? s.weight + " lb" : "—"} × ${s.reps || "—"} reps`;
@@ -619,6 +625,7 @@ function buildCoachSummary(type, setsRef, sessionNote, cardio) {
       if (s.note) l += ` — ${s.note}`;
       lines.push(l);
     });
+    if (note) lines.push(`  note: ${note}`);
   });
   if (hasCardioData(cardio)) lines.push("Cardio: " + formatCardio(cardio));
   if (sessionNote) lines.push("Note: " + sessionNote);
@@ -1180,7 +1187,6 @@ function SetLogger({
   history,
   sessionColor,
 }) {
-  const [noteOpen, setNoteOpen] = useState({});
   const pr = history ? getMovementPR(history, mov.name) : null;
   const chartData = history ? getMovementHistory(history, mov.name) : [];
   return (
@@ -1265,7 +1271,6 @@ function SetLogger({
           const tc = SET_TYPE_COLOR[s.type] || "#111";
           const tl = SET_TYPE_LABEL[s.type] || "S";
           const rc = rpeColor(s.rpe);
-          const showNote = noteOpen[i];
           return (
             /*#__PURE__*/ <div
               key={i}
@@ -1366,62 +1371,6 @@ function SetLogger({
                   </button>
                 )}
               </div>
-              {isLogged && s.note ? (
-                /*#__PURE__*/ <div
-                  style={{
-                    fontSize: 10,
-                    color: "#aaa",
-                    fontStyle: "italic",
-                    paddingLeft: 32,
-                    marginTop: 1,
-                  }}
-                >
-                  {s.note}
-                </div>
-              ) : !isLogged ? (
-                /*#__PURE__*/ <div
-                  style={{
-                    paddingLeft: 32,
-                    marginTop: 2,
-                  }}
-                >
-                  {showNote ? (
-                    /*#__PURE__*/ <input
-                      type="text"
-                      placeholder="note..."
-                      value={s.note || ""}
-                      onChange={(e) => onUpdate(i, "note", e.target.value)}
-                      style={{
-                        ...ci({
-                          width: "100%",
-                          textAlign: "left",
-                          fontSize: 13,
-                          padding: "4px 6px",
-                        }),
-                      }}
-                    />
-                  ) : (
-                    /*#__PURE__*/ <button
-                      onClick={() =>
-                        setNoteOpen((o) => ({
-                          ...o,
-                          [i]: true,
-                        }))
-                      }
-                      style={{
-                        fontSize: 10,
-                        color: "#ccc",
-                        background: "none",
-                        border: "none",
-                        cursor: "pointer",
-                        padding: 0,
-                      }}
-                    >
-                      + note
-                    </button>
-                  )}
-                </div>
-              ) : null}
             </div>
           );
         })}
@@ -1447,6 +1396,12 @@ function SetLogger({
 }
 function MovementRow({ mov, sessionColor, history, sessionType, onChange }) {
   const [open, setOpen] = useState(false);
+  // One note per exercise (not per set) — see CHANGES.md Phase 4.
+  const [exerciseNote, setExerciseNote] = useState(mov._exerciseNote || "");
+  useEffect(() => {
+    mov._exerciseNote = exerciseNote;
+    if (onChange) onChange();
+  }, [exerciseNote]);
   // Initialize with planned sets — all editable, none logged yet
   const [plannedSets, setPlannedSets] = useState(() => {
     const planned = buildPlannedSets(mov, sessionType);
@@ -1650,16 +1605,42 @@ function MovementRow({ mov, sessionColor, history, sessionType, onChange }) {
         </div>
       </div>
       {open && (
-        /*#__PURE__*/ <SetLogger
-          mov={mov}
-          sets={plannedSets}
-          onLog={handleLog}
-          onUpdate={handleUpdate}
-          onDelete={handleDelete}
-          history={history}
-          sessionColor={sessionColor}
-          sessionType={sessionType}
-        />
+        /*#__PURE__*/ <>
+          <SetLogger
+            mov={mov}
+            sets={plannedSets}
+            onLog={handleLog}
+            onUpdate={handleUpdate}
+            onDelete={handleDelete}
+            history={history}
+            sessionColor={sessionColor}
+            sessionType={sessionType}
+          />
+          <div
+            style={{
+              padding: "0 10px 10px",
+              background: "#f9f9f8",
+            }}
+          >
+            <textarea
+              value={exerciseNote}
+              onChange={(e) => setExerciseNote(e.target.value)}
+              placeholder="note for this exercise..."
+              style={{
+                width: "100%",
+                padding: "6px 8px",
+                border: "0.5px solid #ddd",
+                borderRadius: 8,
+                fontSize: 13,
+                color: "#111",
+                background: "#fff",
+                resize: "none",
+                height: 44,
+                outline: "none",
+              }}
+            />
+          </div>
+        </>
       )}
     </div>
   );
@@ -1743,6 +1724,7 @@ function SessionScreen({ history, setHistory }) {
         target: "",
       };
       blockMov._loggedSets = dm._loggedSets || [];
+      blockMov._exerciseNote = dm.note || "";
       return {
         ...blockMov,
         ...(v.movements[dm.name] || null),
@@ -1776,11 +1758,14 @@ function SessionScreen({ history, setHistory }) {
       );
       if (!ok) return;
     }
-    const loggedMap = {};
+    const carryMap = {};
     sessionMovements.forEach((m) => {
-      loggedMap[m.name] = m._loggedSets || [];
+      carryMap[m.name] = {
+        loggedSets: m._loggedSets || [],
+        note: m._exerciseNote || "",
+      };
     });
-    setSessionMovements(buildSessionMovements(active, variantId, loggedMap));
+    setSessionMovements(buildSessionMovements(active, variantId, carryMap));
     setVariant(variantId);
   };
   const moveMovementUp = (idx) => {
@@ -1859,9 +1844,10 @@ function SessionScreen({ history, setHistory }) {
       .map((m) => ({
         name: m.name,
         sets: m._loggedSets || [],
+        note: m._exerciseNote || "",
         order: sessionMovements.indexOf(m),
       }))
-      .filter((m) => m.sets.length > 0);
+      .filter((m) => m.sets.length > 0 || m.note);
     const formattedDate = new Date(
       sessionDate + "T12:00:00",
     ).toLocaleDateString("en-US", {
@@ -1909,14 +1895,17 @@ function SessionScreen({ history, setHistory }) {
     // Save this session order as the new default for this type
     saveCurrentOrder();
     const setsForSummary = {};
+    const notesForSummary = {};
     movements.forEach((m) => {
       setsForSummary[m.name] = m.sets;
+      notesForSummary[m.name] = m.note;
     });
     const summary = buildCoachSummary(
       active,
       setsForSummary,
       sessionNote,
       cardio,
+      notesForSummary,
     );
     setLastFinished({
       entry,
@@ -3349,6 +3338,18 @@ function WeekCard({ week, history, defaultOpen }) {
                               S{s.set}: {s.note}
                             </div>
                           ))}
+                        {mov.note && (
+                          /*#__PURE__*/ <div
+                            style={{
+                              fontSize: 11,
+                              color: "#999",
+                              fontStyle: "italic",
+                              marginTop: 3,
+                            }}
+                          >
+                            {mov.note}
+                          </div>
+                        )}
                       </div>
                     ))}
                     {session.note && (
@@ -3969,6 +3970,18 @@ function HistoryScreen({ history, setHistory }) {
                         )}
                       </div>
                     ))}
+                    {m.note && (
+                      /*#__PURE__*/ <div
+                        style={{
+                          fontSize: 12,
+                          color: "#aaa",
+                          fontStyle: "italic",
+                          padding: "2px 0",
+                        }}
+                      >
+                        {m.note}
+                      </div>
+                    )}
                   </div>
                 ))}
                 {hasCardioData(entry.cardio) && (

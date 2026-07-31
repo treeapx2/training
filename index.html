@@ -330,8 +330,8 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
 // see build.js) so a stale cached build is identifiable on the device
 // instead of silently running fixed-but-not-yet-deployed code.
 const BUILD_INFO = {
-  sha: "498d286",
-  builtAt: "2026-07-31T12:31:13.202Z"
+  sha: "e52783f",
+  builtAt: "2026-07-31T12:36:20.195Z"
 };
 function formatBuildStamp() {
   const d = new Date(BUILD_INFO.builtAt);
@@ -663,7 +663,8 @@ function saveDraft(type, movements, note, sessionDate, variant, cardio) {
       movements: movements.map(m => ({
         name: m.name,
         _group: m._group,
-        _loggedSets: m._loggedSets || []
+        _loggedSets: m._loggedSets || [],
+        note: m._exerciseNote || ""
       }))
     };
     localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
@@ -709,9 +710,10 @@ function buildOrderedMovements(type, groupOrder, blockMovements) {
 }
 // Builds a fresh sessionMovements array for a given type/variant, applying
 // the variant's per-movement overrides and re-attaching any previously
-// logged sets (keyed by movement name) so switching variant mid-session, or
-// resuming a draft, keeps logged data instead of discarding it.
-function buildSessionMovements(type, variantId, loggedMap) {
+// logged sets and exercise note (keyed by movement name) so switching
+// variant mid-session, or resuming a draft, keeps logged data instead of
+// discarding it.
+function buildSessionMovements(type, variantId, carryMap) {
   const variant = getVariant(type, variantId);
   return BLOCK.sessions[type].movements.map(m => {
     const mov = {
@@ -719,7 +721,9 @@ function buildSessionMovements(type, variantId, loggedMap) {
       ...(variant.movements[m.name] || null),
       _group: groupLabelFor(m.name)
     };
-    mov._loggedSets = loggedMap && loggedMap[m.name] || [];
+    const carry = carryMap && carryMap[m.name] || {};
+    mov._loggedSets = carry.loggedSets || [];
+    mov._exerciseNote = carry.note || "";
     return mov;
   });
 }
@@ -957,6 +961,7 @@ function buildHandoff(history) {
           if (s.note) l += ` — ${s.note}`;
           lines.push(l);
         });
+        if (m.note) lines.push(`    note: ${m.note}`);
       });
       if (hasCardioData(h.cardio)) lines.push(`  Cardio: ${formatCardio(h.cardio)}`);
       if (h.note) lines.push(`  Session note: ${h.note}`);
@@ -964,7 +969,7 @@ function buildHandoff(history) {
   }
   return lines.join("\n");
 }
-function buildCoachSummary(type, setsRef, sessionNote, cardio) {
+function buildCoachSummary(type, setsRef, sessionNote, cardio, notesRef) {
   const session = BLOCK.sessions[type];
   const lines = [];
   lines.push(session.label + " — " + new Date().toLocaleDateString("en-US", {
@@ -974,7 +979,8 @@ function buildCoachSummary(type, setsRef, sessionNote, cardio) {
   }));
   session.movements.forEach(mov => {
     const sets = setsRef[mov.name] || [];
-    if (!sets.length) return;
+    const note = notesRef && notesRef[mov.name] || "";
+    if (!sets.length && !note) return;
     lines.push(mov.name + ":");
     sets.forEach(s => {
       let l = `  S${s.set}: ${s.weight ? s.weight + " lb" : "—"} × ${s.reps || "—"} reps`;
@@ -982,6 +988,7 @@ function buildCoachSummary(type, setsRef, sessionNote, cardio) {
       if (s.note) l += ` — ${s.note}`;
       lines.push(l);
     });
+    if (note) lines.push(`  note: ${note}`);
   });
   if (hasCardioData(cardio)) lines.push("Cardio: " + formatCardio(cardio));
   if (sessionNote) lines.push("Note: " + sessionNote);
@@ -1456,7 +1463,6 @@ function SetLogger({
   history,
   sessionColor
 }) {
-  const [noteOpen, setNoteOpen] = useState({});
   const pr = history ? getMovementPR(history, mov.name) : null;
   const chartData = history ? getMovementHistory(history, mov.name) : [];
   return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
@@ -1525,7 +1531,6 @@ function SetLogger({
     const tc = SET_TYPE_COLOR[s.type] || "#111";
     const tl = SET_TYPE_LABEL[s.type] || "S";
     const rc = rpeColor(s.rpe);
-    const showNote = noteOpen[i];
     return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
       key: i,
       style: {
@@ -1612,58 +1617,7 @@ function SetLogger({
         cursor: "pointer",
         width: "100%"
       }
-    }, "log")), isLogged && s.note ?
-    /*#__PURE__*/
-    /*#__PURE__*/
-    React.createElement("div", {
-      style: {
-        fontSize: 10,
-        color: "#aaa",
-        fontStyle: "italic",
-        paddingLeft: 32,
-        marginTop: 1
-      }
-    }, s.note) : !isLogged ?
-    /*#__PURE__*/
-    /*#__PURE__*/
-    React.createElement("div", {
-      style: {
-        paddingLeft: 32,
-        marginTop: 2
-      }
-    }, showNote ?
-    /*#__PURE__*/
-    /*#__PURE__*/
-    React.createElement("input", {
-      type: "text",
-      placeholder: "note...",
-      value: s.note || "",
-      onChange: e => onUpdate(i, "note", e.target.value),
-      style: {
-        ...ci({
-          width: "100%",
-          textAlign: "left",
-          fontSize: 13,
-          padding: "4px 6px"
-        })
-      }
-    }) :
-    /*#__PURE__*/
-    /*#__PURE__*/
-    React.createElement("button", {
-      onClick: () => setNoteOpen(o => ({
-        ...o,
-        [i]: true
-      })),
-      style: {
-        fontSize: 10,
-        color: "#ccc",
-        background: "none",
-        border: "none",
-        cursor: "pointer",
-        padding: 0
-      }
-    }, "+ note")) : null);
+    }, "log")));
   }), /*#__PURE__*/React.createElement("button", {
     onClick: () => onUpdate("_add", "_add", "_add"),
     style: {
@@ -1687,6 +1641,12 @@ function MovementRow({
   onChange
 }) {
   const [open, setOpen] = useState(false);
+  // One note per exercise (not per set) — see CHANGES.md Phase 4.
+  const [exerciseNote, setExerciseNote] = useState(mov._exerciseNote || "");
+  useEffect(() => {
+    mov._exerciseNote = exerciseNote;
+    if (onChange) onChange();
+  }, [exerciseNote]);
   // Initialize with planned sets — all editable, none logged yet
   const [plannedSets, setPlannedSets] = useState(() => {
     const planned = buildPlannedSets(mov, sessionType);
@@ -1841,7 +1801,7 @@ function MovementRow({
   }, "▼"))), open &&
   /*#__PURE__*/
   /*#__PURE__*/
-  React.createElement(SetLogger, {
+  React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(SetLogger, {
     mov: mov,
     sets: plannedSets,
     onLog: handleLog,
@@ -1850,7 +1810,28 @@ function MovementRow({
     history: history,
     sessionColor: sessionColor,
     sessionType: sessionType
-  }));
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: "0 10px 10px",
+      background: "#f9f9f8"
+    }
+  }, /*#__PURE__*/React.createElement("textarea", {
+    value: exerciseNote,
+    onChange: e => setExerciseNote(e.target.value),
+    placeholder: "note for this exercise...",
+    style: {
+      width: "100%",
+      padding: "6px 8px",
+      border: "0.5px solid #ddd",
+      borderRadius: 8,
+      fontSize: 13,
+      color: "#111",
+      background: "#fff",
+      resize: "none",
+      height: 44,
+      outline: "none"
+    }
+  }))));
 }
 
 // ── Screens ───────────────────────────────────────────────────────────────────
@@ -1917,6 +1898,7 @@ function SessionScreen({
         target: ""
       };
       blockMov._loggedSets = dm._loggedSets || [];
+      blockMov._exerciseNote = dm.note || "";
       return {
         ...blockMov,
         ...(v.movements[dm.name] || null),
@@ -1946,11 +1928,14 @@ function SessionScreen({
       const ok = window.confirm("Switching variants changes today's targets. Logged sets are kept, not discarded. Continue?");
       if (!ok) return;
     }
-    const loggedMap = {};
+    const carryMap = {};
     sessionMovements.forEach(m => {
-      loggedMap[m.name] = m._loggedSets || [];
+      carryMap[m.name] = {
+        loggedSets: m._loggedSets || [],
+        note: m._exerciseNote || ""
+      };
     });
-    setSessionMovements(buildSessionMovements(active, variantId, loggedMap));
+    setSessionMovements(buildSessionMovements(active, variantId, carryMap));
     setVariant(variantId);
   };
   const moveMovementUp = idx => {
@@ -2024,8 +2009,9 @@ function SessionScreen({
     const movements = sessionMovements.map(m => ({
       name: m.name,
       sets: m._loggedSets || [],
+      note: m._exerciseNote || "",
       order: sessionMovements.indexOf(m)
-    })).filter(m => m.sets.length > 0);
+    })).filter(m => m.sets.length > 0 || m.note);
     const formattedDate = new Date(sessionDate + "T12:00:00").toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
@@ -2071,10 +2057,12 @@ function SessionScreen({
     // Save this session order as the new default for this type
     saveCurrentOrder();
     const setsForSummary = {};
+    const notesForSummary = {};
     movements.forEach(m => {
       setsForSummary[m.name] = m.sets;
+      notesForSummary[m.name] = m.note;
     });
-    const summary = buildCoachSummary(active, setsForSummary, sessionNote, cardio);
+    const summary = buildCoachSummary(active, setsForSummary, sessionNote, cardio, notesForSummary);
     setLastFinished({
       entry,
       summary,
@@ -3223,7 +3211,17 @@ function WeekCard({
         fontStyle: "italic",
         marginTop: 3
       }
-    }, "S", s.set, ": ", s.note)))), session.note &&
+    }, "S", s.set, ": ", s.note)), mov.note &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
+      style: {
+        fontSize: 11,
+        color: "#999",
+        fontStyle: "italic",
+        marginTop: 3
+      }
+    }, mov.note))), session.note &&
     /*#__PURE__*/
     /*#__PURE__*/
     React.createElement("div", {
@@ -3714,7 +3712,17 @@ function HistoryScreen({
         fontStyle: "italic",
         color: "#aaa"
       }
-    }, " · ", s.note) : "")))), hasCardioData(entry.cardio) &&
+    }, " · ", s.note) : "")), m.note &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
+      style: {
+        fontSize: 12,
+        color: "#aaa",
+        fontStyle: "italic",
+        padding: "2px 0"
+      }
+    }, m.note))), hasCardioData(entry.cardio) &&
     /*#__PURE__*/
     /*#__PURE__*/
     React.createElement("div", {
