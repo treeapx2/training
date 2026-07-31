@@ -330,8 +330,8 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
 // see build.js) so a stale cached build is identifiable on the device
 // instead of silently running fixed-but-not-yet-deployed code.
 const BUILD_INFO = {
-  sha: "079c3b2",
-  builtAt: "2026-07-31T12:37:33.747Z"
+  sha: "fdea4b4",
+  builtAt: "2026-07-31T12:50:22.057Z"
 };
 function formatBuildStamp() {
   const d = new Date(BUILD_INFO.builtAt);
@@ -758,6 +758,39 @@ function saveSyncCfg(cfg) {
   } catch (e) {
     return false;
   }
+}
+// Last-successful-sync timestamp, shown on the Session tab near the sync
+// panel. Extends the existing at_sync_last key rather than adding a new
+// one — only written on a successful pull or push, so a later failure
+// doesn't clobber the last known-good time.
+const SYNC_LAST_KEY = "at_sync_last";
+function recordSyncLast(kind) {
+  try {
+    localStorage.setItem(SYNC_LAST_KEY, JSON.stringify({
+      at: new Date().toISOString(),
+      kind
+    }));
+  } catch (e) {}
+}
+function loadSyncLast() {
+  try {
+    const r = localStorage.getItem(SYNC_LAST_KEY);
+    if (r) return JSON.parse(r);
+  } catch {}
+  return null;
+}
+function formatSyncLast(last) {
+  const d = last && last.at ? new Date(last.at) : null;
+  if (!d || isNaN(d.getTime())) return "Never synced";
+  const date = d.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric"
+  });
+  const time = d.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit"
+  });
+  return "Last synced: " + date + ", " + time;
 }
 function b64encode(str) {
   return btoa(unescape(encodeURIComponent(str)));
@@ -1837,7 +1870,9 @@ function MovementRow({
 // ── Screens ───────────────────────────────────────────────────────────────────
 function SessionScreen({
   history,
-  setHistory
+  setHistory,
+  syncLast,
+  onSynced
 }) {
   const [active, setActive] = useState(null);
   const [sessionNote, setSessionNote] = useState("");
@@ -2038,13 +2073,10 @@ function SessionScreen({
           state: "pending"
         });
         syncPush(cfg, updated).then(r => {
-          try {
-            localStorage.setItem("at_sync_last", JSON.stringify({
-              at: new Date().toISOString(),
-              ok: r.ok,
-              err: r.err || ""
-            }));
-          } catch (e) {}
+          if (r.ok) {
+            recordSyncLast("push");
+            if (onSynced) onSynced();
+          }
           setAutoPushStatus(r.ok ? {
             state: "ok"
           } : {
@@ -2352,9 +2384,17 @@ function SessionScreen({
           color: "#999"
         }
       }, entry.movements.length, " movements · ", entry.movements.reduce((a, m) => a + m.sets.length, 0), " sets"));
-    }), /*#__PURE__*/React.createElement(SyncPanel, {
+    }), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 11,
+        color: "#999",
+        textAlign: "center",
+        marginTop: 10
+      }
+    }, formatSyncLast(syncLast)), /*#__PURE__*/React.createElement(SyncPanel, {
       history: history,
-      setHistory: setHistory
+      setHistory: setHistory,
+      onSynced: onSynced
     }));
   }
   const session = BLOCK.sessions[active];
@@ -3312,7 +3352,8 @@ function ProgressScreen({
 }
 function SyncPanel({
   history,
-  setHistory
+  setHistory,
+  onSynced
 }) {
   const [cfg, setCfg] = useState(() => loadSyncCfg());
   // Expanded by default until a token is configured — collapsed-by-default
@@ -3332,6 +3373,10 @@ function SyncPanel({
     setBusy(true);
     setStatus("pushing...");
     const r = await syncPush(cfg, history);
+    if (r.ok) {
+      recordSyncLast("push");
+      if (onSynced) onSynced();
+    }
     setStatus(r.ok ? "✓ pushed " + r.count + " sessions" : "✗ " + r.err);
     setBusy(false);
   };
@@ -3344,6 +3389,8 @@ function SyncPanel({
       setBusy(false);
       return;
     }
+    recordSyncLast("pull");
+    if (onSynced) onSynced();
     const merged = mergeSessions(history, r.sessions);
     const added = merged.length - history.length;
     setHistory(merged);
@@ -3361,6 +3408,8 @@ function SyncPanel({
       setBusy(false);
       return;
     }
+    recordSyncLast("pull");
+    if (onSynced) onSynced();
     setHistory(r.sessions);
     saveData(r.sessions);
     setStatus("✓ replaced local with " + r.sessions.length + " remote sessions");
@@ -3706,6 +3755,8 @@ function App() {
   const [tab, setTab] = useState("session");
   const [history, setHistory] = useState([]);
   const [loaded, setLoaded] = useState(false);
+  const [syncLast, setSyncLast] = useState(() => loadSyncLast());
+  const refreshSyncLast = () => setSyncLast(loadSyncLast());
   useEffect(() => {
     const saved = loadData();
     const cfg = loadSyncCfg();
@@ -3721,6 +3772,10 @@ function App() {
     if (hasRemote) {
       syncPull(cfg).then(r => {
         let resolved = saved;
+        if (r.ok) {
+          recordSyncLast("pull");
+          refreshSyncLast();
+        }
         if (r.ok && r.sessions && r.sessions.length) {
           const merged = mergeSessions(saved, r.sessions);
           if (merged.length !== saved.length) {
@@ -3787,7 +3842,9 @@ function App() {
   /*#__PURE__*/
   React.createElement(SessionScreen, {
     history: history,
-    setHistory: setHistory
+    setHistory: setHistory,
+    syncLast: syncLast,
+    onSynced: refreshSyncLast
   }), tab === "block" &&
   /*#__PURE__*/
   /*#__PURE__*/
