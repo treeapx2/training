@@ -2502,7 +2502,6 @@ function SessionScreen({ history, setHistory }) {
       <textarea
         value={sessionNote}
         onChange={(e) => setSessionNote(e.target.value)}
-        placeholder="Overall notes, flags, how you felt..."
         style={{
           width: "100%",
           padding: "9px 10px",
@@ -2612,86 +2611,6 @@ function SessionScreen({ history, setHistory }) {
           </div>
         ))}
       </div>
-      {(() => {
-        const unlogged = sessionMovements.map((m) => {
-          const planned = m._plannedSets || [];
-          const unloggedCount = planned.filter ? 0 : 0; // placeholder — check via DOM not reliable
-          return null;
-        });
-        // Count movements with planned but unlogged sets by checking MovementRow state
-        // We do this by checking sessionMovements for any that have _loggedSets < planned set count
-        const unloggedMovements = sessionMovements.filter((m) => {
-          const logged = (m._loggedSets || []).length;
-          return logged === 0; // no sets logged at all
-        });
-        return unloggedMovements.length > 0 ? (
-          /*#__PURE__*/ <div
-            style={{
-              background: "#FEF3C7",
-              border: "0.5px solid #D97706",
-              borderRadius: 10,
-              padding: "10px 12px",
-              marginTop: 10,
-            }}
-          >
-            <div
-              style={{
-                fontSize: 12,
-                fontWeight: 600,
-                color: "#92400E",
-                marginBottom: 4,
-              }}
-            >
-              ⚠️ Unlogged movements
-            </div>
-            <div
-              style={{
-                fontSize: 11,
-                color: "#92400E",
-              }}
-            >
-              {unloggedMovements.map((m) => m.name).join(", ")} — no sets
-              logged. Tap log on each set before finishing.
-            </div>
-          </div>
-        ) : null;
-      })()}
-      {(() => {
-        const unlogged = sessionMovements.filter(
-          (m) => (m._loggedSets || []).length === 0,
-        );
-        return unlogged.length > 0 ? (
-          /*#__PURE__*/ <div
-            style={{
-              background: "#FEF3C7",
-              border: "0.5px solid #D97706",
-              borderRadius: 10,
-              padding: "10px 12px",
-              marginTop: 10,
-            }}
-          >
-            <div
-              style={{
-                fontSize: 12,
-                fontWeight: 600,
-                color: "#92400E",
-                marginBottom: 3,
-              }}
-            >
-              ⚠️ No sets logged
-            </div>
-            <div
-              style={{
-                fontSize: 11,
-                color: "#92400E",
-              }}
-            >
-              {unlogged.map((m) => m.name).join(", ")} — tap log on each set
-              before finishing.
-            </div>
-          </div>
-        ) : null;
-      })()}
       <div
         style={{
           display: "flex",

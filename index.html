@@ -330,8 +330,8 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
 // see build.js) so a stale cached build is identifiable on the device
 // instead of silently running fixed-but-not-yet-deployed code.
 const BUILD_INFO = {
-  sha: "e52783f",
-  builtAt: "2026-07-31T12:36:20.195Z"
+  sha: "079c3b2",
+  builtAt: "2026-07-31T12:37:33.747Z"
 };
 function formatBuildStamp() {
   const d = new Date(BUILD_INFO.builtAt);
@@ -2526,7 +2526,6 @@ function SessionScreen({
   }, "Session note"), /*#__PURE__*/React.createElement("textarea", {
     value: sessionNote,
     onChange: e => setSessionNote(e.target.value),
-    placeholder: "Overall notes, flags, how you felt...",
     style: {
       width: "100%",
       padding: "9px 10px",
@@ -2614,69 +2613,7 @@ function SessionScreen({
       outline: "none",
       minWidth: 0
     }
-  })))), (() => {
-    const unlogged = sessionMovements.map(m => {
-      const planned = m._plannedSets || [];
-      const unloggedCount = planned.filter ? 0 : 0; // placeholder — check via DOM not reliable
-      return null;
-    });
-    // Count movements with planned but unlogged sets by checking MovementRow state
-    // We do this by checking sessionMovements for any that have _loggedSets < planned set count
-    const unloggedMovements = sessionMovements.filter(m => {
-      const logged = (m._loggedSets || []).length;
-      return logged === 0; // no sets logged at all
-    });
-    return unloggedMovements.length > 0 ?
-    /*#__PURE__*/
-    /*#__PURE__*/
-    React.createElement("div", {
-      style: {
-        background: "#FEF3C7",
-        border: "0.5px solid #D97706",
-        borderRadius: 10,
-        padding: "10px 12px",
-        marginTop: 10
-      }
-    }, /*#__PURE__*/React.createElement("div", {
-      style: {
-        fontSize: 12,
-        fontWeight: 600,
-        color: "#92400E",
-        marginBottom: 4
-      }
-    }, "⚠️ Unlogged movements"), /*#__PURE__*/React.createElement("div", {
-      style: {
-        fontSize: 11,
-        color: "#92400E"
-      }
-    }, unloggedMovements.map(m => m.name).join(", "), " — no sets logged. Tap log on each set before finishing.")) : null;
-  })(), (() => {
-    const unlogged = sessionMovements.filter(m => (m._loggedSets || []).length === 0);
-    return unlogged.length > 0 ?
-    /*#__PURE__*/
-    /*#__PURE__*/
-    React.createElement("div", {
-      style: {
-        background: "#FEF3C7",
-        border: "0.5px solid #D97706",
-        borderRadius: 10,
-        padding: "10px 12px",
-        marginTop: 10
-      }
-    }, /*#__PURE__*/React.createElement("div", {
-      style: {
-        fontSize: 12,
-        fontWeight: 600,
-        color: "#92400E",
-        marginBottom: 3
-      }
-    }, "⚠️ No sets logged"), /*#__PURE__*/React.createElement("div", {
-      style: {
-        fontSize: 11,
-        color: "#92400E"
-      }
-    }, unlogged.map(m => m.name).join(", "), " — tap log on each set before finishing.")) : null;
-  })(), /*#__PURE__*/React.createElement("div", {
+  })))), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       gap: 8,
