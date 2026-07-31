@@ -330,8 +330,8 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
 // see build.js) so a stale cached build is identifiable on the device
 // instead of silently running fixed-but-not-yet-deployed code.
 const BUILD_INFO = {
-  sha: "5968edf",
-  builtAt: "2026-07-31T12:25:57.063Z"
+  sha: "b784a34",
+  builtAt: "2026-07-31T12:27:38.612Z"
 };
 function formatBuildStamp() {
   const d = new Date(BUILD_INFO.builtAt);
@@ -493,7 +493,7 @@ const SESSION_VARIANTS = {
   legs: [{
     id: "A",
     label: "A",
-    rest: "2-2.5 min on opener",
+    rest: "Opener 2–2.5 min · accessories 60s",
     movements: {
       "Leg Press": {
         workSets: 3,
@@ -519,7 +519,7 @@ const SESSION_VARIANTS = {
   }, {
     id: "B",
     label: "B",
-    rest: "45-75s throughout",
+    rest: "45–75s throughout",
     movements: {
       "Leg Press": {
         workSets: 3,
@@ -546,13 +546,13 @@ const SESSION_VARIANTS = {
   push: [{
     id: "standard",
     label: "Standard",
-    rest: "",
+    rest: "Opener 2 min · supersets 45–60s",
     movements: {}
   }],
   pull: [{
     id: "standard",
     label: "Standard",
-    rest: "",
+    rest: "Opener 2 min · supersets 45–60s",
     movements: {}
   }]
 };
@@ -2425,15 +2425,12 @@ function SessionScreen({
       fontWeight: 600,
       cursor: "pointer"
     }
-  }, v.label))), hasVariants &&
-  /*#__PURE__*/
-  /*#__PURE__*/
-  React.createElement("div", {
+  }, v.label))), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 11,
       color: "#888",
       marginBottom: 14,
-      marginTop: -8
+      marginTop: hasVariants ? -8 : 0
     }
   }, "rest ", getVariant(active, variant).rest), /*#__PURE__*/React.createElement("div", {
     style: {

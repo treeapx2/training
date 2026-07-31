@@ -92,7 +92,7 @@ const SESSION_VARIANTS = {
     {
       id: "A",
       label: "A",
-      rest: "2-2.5 min on opener",
+      rest: "Opener 2–2.5 min · accessories 60s",
       movements: {
         "Leg Press": { workSets: 3, reps: 10 },
         "Leg Curl": { workSets: 2, reps: 10 },
@@ -104,7 +104,7 @@ const SESSION_VARIANTS = {
     {
       id: "B",
       label: "B",
-      rest: "45-75s throughout",
+      rest: "45–75s throughout",
       movements: {
         "Leg Press": { workSets: 3, reps: 15 },
         "Leg Curl": { workSets: 3, reps: 12 },
@@ -118,7 +118,7 @@ const SESSION_VARIANTS = {
     {
       id: "standard",
       label: "Standard",
-      rest: "",
+      rest: "Opener 2 min · supersets 45–60s",
       movements: {},
     },
   ],
@@ -126,7 +126,7 @@ const SESSION_VARIANTS = {
     {
       id: "standard",
       label: "Standard",
-      rest: "",
+      rest: "Opener 2 min · supersets 45–60s",
       movements: {},
     },
   ],
@@ -2356,18 +2356,16 @@ function SessionScreen({ history, setHistory }) {
           ))}
         </div>
       )}
-      {hasVariants && (
-        /*#__PURE__*/ <div
-          style={{
-            fontSize: 11,
-            color: "#888",
-            marginBottom: 14,
-            marginTop: -8,
-          }}
-        >
-          rest {getVariant(active, variant).rest}
-        </div>
-      )}
+      <div
+        style={{
+          fontSize: 11,
+          color: "#888",
+          marginBottom: 14,
+          marginTop: hasVariants ? -8 : 0,
+        }}
+      >
+        rest {getVariant(active, variant).rest}
+      </div>
       <div
         style={{
           display: "flex",
