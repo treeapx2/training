@@ -374,17 +374,30 @@ function saveSyncCfg(cfg) {
     return false;
   }
 }
-// Last-successful-sync timestamp, shown on the Session tab near the sync
-// panel. Extends the existing at_sync_last key rather than adding a new
-// one — only written on a successful pull or push, so a later failure
-// doesn't clobber the last known-good time.
+// Last-sync tracking, shown on the Session tab near the sync panel.
+// Extends the existing at_sync_last key rather than adding a new one, but
+// splits what it tracks into two independent things:
+//   - at/direction: when + which direction the last STAMP-WORTHY sync
+//     succeeded. Only advances on a successful manual pull+merge, manual
+//     push, auto-push after finish, replace-from-remote, or a mount-time
+//     pull that actually merged >=1 new session. A mount-time pull that
+//     succeeds with nothing new to merge does NOT advance this — the app
+//     was opened, not synced, so the displayed time shouldn't move.
+//   - ok/err: the outcome of the MOST RECENT attempt of any kind,
+//     including failures and no-op mount-time pulls, so a broken sync is
+//     visible ("last attempt failed") without silently looking healthy
+//     just because someone opened the app.
 const SYNC_LAST_KEY = "at_sync_last";
-function recordSyncLast(kind) {
+function recordSyncOutcome(direction, ok, err, stamp) {
   try {
-    localStorage.setItem(
-      SYNC_LAST_KEY,
-      JSON.stringify({ at: new Date().toISOString(), kind }),
-    );
+    const prev = loadSyncLast() || {};
+    const next = {
+      at: stamp ? new Date().toISOString() : prev.at || null,
+      direction: stamp ? direction : prev.direction || null,
+      ok,
+      err: ok ? "" : err || "",
+    };
+    localStorage.setItem(SYNC_LAST_KEY, JSON.stringify(next));
   } catch (e) {}
 }
 function loadSyncLast() {
@@ -396,10 +409,17 @@ function loadSyncLast() {
 }
 function formatSyncLast(last) {
   const d = last && last.at ? new Date(last.at) : null;
-  if (!d || isNaN(d.getTime())) return "Never synced";
-  const date = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  const time = d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
-  return "Last synced: " + date + ", " + time;
+  let base;
+  if (!d || isNaN(d.getTime())) {
+    base = "Never synced";
+  } else {
+    const date = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    const time = d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+    base =
+      "Last synced: " + date + ", " + time + (last.direction ? " (" + last.direction + ")" : "");
+  }
+  if (last && last.ok === false) base += " · last attempt failed";
+  return base;
 }
 function b64encode(str) {
   return btoa(unescape(encodeURIComponent(str)));
@@ -1903,10 +1923,8 @@ function SessionScreen({ history, setHistory, syncLast, onSynced }) {
       if (cfg.auto && cfg.token) {
         setAutoPushStatus({ state: "pending" });
         syncPush(cfg, updated).then((r) => {
-          if (r.ok) {
-            recordSyncLast("push");
-            if (onSynced) onSynced();
-          }
+          recordSyncOutcome("push", r.ok, r.err, r.ok);
+          if (onSynced) onSynced();
           setAutoPushStatus(
             r.ok ? { state: "ok" } : { state: "error", err: r.err || "" },
           );
@@ -3525,10 +3543,8 @@ function SyncPanel({ history, setHistory, onSynced }) {
     setBusy(true);
     setStatus("pushing...");
     const r = await syncPush(cfg, history);
-    if (r.ok) {
-      recordSyncLast("push");
-      if (onSynced) onSynced();
-    }
+    recordSyncOutcome("push", r.ok, r.err, r.ok);
+    if (onSynced) onSynced();
     setStatus(r.ok ? "✓ pushed " + r.count + " sessions" : "✗ " + r.err);
     setBusy(false);
   };
@@ -3536,13 +3552,13 @@ function SyncPanel({ history, setHistory, onSynced }) {
     setBusy(true);
     setStatus("pulling...");
     const r = await syncPull(cfg);
+    recordSyncOutcome("pull", r.ok, r.err, r.ok);
+    if (onSynced) onSynced();
     if (!r.ok) {
       setStatus("✗ " + r.err);
       setBusy(false);
       return;
     }
-    recordSyncLast("pull");
-    if (onSynced) onSynced();
     const merged = mergeSessions(history, r.sessions);
     const added = merged.length - history.length;
     setHistory(merged);
@@ -3560,13 +3576,13 @@ function SyncPanel({ history, setHistory, onSynced }) {
     setBusy(true);
     setStatus("replacing from remote...");
     const r = await syncPull(cfg);
+    recordSyncOutcome("pull", r.ok, r.err, r.ok);
+    if (onSynced) onSynced();
     if (!r.ok) {
       setStatus("✗ " + r.err);
       setBusy(false);
       return;
     }
-    recordSyncLast("pull");
-    if (onSynced) onSynced();
     setHistory(r.sessions);
     saveData(r.sessions);
     setStatus("✓ replaced local with " + r.sessions.length + " remote sessions");
@@ -4027,17 +4043,19 @@ function App() {
     if (hasRemote) {
       syncPull(cfg).then((r) => {
         let resolved = saved;
-        if (r.ok) {
-          recordSyncLast("pull");
-          refreshSyncLast();
-        }
+        let addedCount = 0;
         if (r.ok && r.sessions && r.sessions.length) {
           const merged = mergeSessions(saved, r.sessions);
-          if (merged.length !== saved.length) {
+          addedCount = merged.length - saved.length;
+          if (addedCount > 0) {
             resolved = merged;
             saveData(merged);
           }
         }
+        // Opening the app silently pulls in the background — only count it
+        // as a "sync" worth stamping if it actually merged something new.
+        recordSyncOutcome("pull", r.ok, r.err, r.ok && addedCount > 0);
+        refreshSyncLast();
         if (waitingOnRemote) {
           setHistory(resolved);
           setLoaded(true);

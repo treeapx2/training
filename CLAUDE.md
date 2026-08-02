@@ -70,6 +70,7 @@ directions.
 | `scripts/build.js` | `npm run build` — see above. |
 | `scripts/test.js` | `npm test` — the validation bar, below. |
 | `smoke.js` | jsdom headless-mount check (validation bar step 4). |
+| `scripts/test-sync-last.js` | `npm run test:sync-last` — standalone jsdom behavioral check for the `at_sync_last` "Last synced" tracking (see **Sync layer**). Not part of the validation bar. |
 | `scripts/decompile.js` | **Historical/documentation only.** The one-time script that reconstructed `src/app.jsx` from the previously shipped, hand-patched `index.html`. Not runnable against current devDependencies — it needs the Babel 7.x line plus `babel-plugin-transform-react-createelement-to-jsx` (unmaintained, relies on legacy `t.jSXIdentifier`-style `@babel/types` builders that Babel 8 removed), both of which were removed once the decompile was done and committed. See the comment in the file for how to temporarily reinstall them if this is ever needed again. |
 | `scripts/normalize-for-diff.js` | Parses a compiled app script and re-emits it through `@babel/generator` with fixed formatting, so two semantically-identical scripts (differing only in quote style, escaping, etc.) diff to nothing. Used to prove the JSX reconstruction and the Babel 7→8 upgrade changed no behavior; reusable for future refactors that touch `src/app.jsx`. |
 | `index.html` | **Build output.** Don't hand-edit — regenerate via `npm run build`. Still the file that gets committed and deployed (see Deploy, below); there is no separate `dist/`. |
@@ -232,10 +233,9 @@ draft autosave/resume path as the Legs A/B variant.
   first, includes it for updates. On HTTP 409 (stale `sha` — auto-push racing
   a manual "push now", or vice versa) it refetches the `sha` and retries
   **exactly once** before giving up.
-- Auto-push fires on **session finish only** (not on delete). Result cached to
-  `at_sync_last`, and a failure now also surfaces as a warning banner on the
-  post-finish "Session saved" screen (`SessionScreen`'s `autoPushStatus`
-  state) — it used to be silent beyond that localStorage write.
+- Auto-push fires on **session finish only** (not on delete). A failure
+  surfaces as a warning banner on the post-finish "Session saved" screen
+  (`SessionScreen`'s `autoPushStatus` state).
 - `mergeSessions(a, b)` is **additive only** — it never deletes. To recover
   from a local delete that a plain pull can't undo, `SyncPanel` has
   "replace local from remote" — destructive, confirmed via `window.confirm`,
@@ -244,6 +244,25 @@ draft autosave/resume path as the Legs A/B variant.
   list (not Progress), and is expanded by default until a token is
   configured (`useState(() => !loadSyncCfg().token)`), collapsed by default
   once one exists.
+- **Last-sync display:** `at_sync_last` (`{ at, direction, ok, err }`,
+  `recordSyncOutcome(direction, ok, err, stamp)`) drives a "Last synced: `<date>`,
+  `<time>` (`<direction>`)" line above `SyncPanel` on the Session tab —
+  `formatSyncLast()` falls back to "Never synced" when `at` is unset, and
+  appends "· last attempt failed" whenever the most recent attempt's `ok` is
+  `false`, so a broken sync is visible without opening the panel.
+  `at`/`direction` only advance (`stamp: true`) on a successful manual
+  pull+merge, manual push, auto-push-after-finish, replace-from-remote, or a
+  **mount-time pull that actually merges ≥1 new session** — a mount-time
+  pull that succeeds with nothing new to merge, or any failed attempt of any
+  kind, updates `ok`/`err` (so a failure is still visible) but leaves
+  `at`/`direction` untouched. Opening the app is not the same as syncing
+  something; the display must not imply otherwise. Every call site (mount
+  effect in `App`, `SyncPanel`'s `doPush`/`doPull`/`doReplaceFromRemote`,
+  `finish()`'s auto-push) goes through the same `recordSyncOutcome()` so this
+  rule can't drift between call sites. Verified in
+  `scripts/test-sync-last.js` (`npm run test:sync-last`, standalone — not
+  part of the `npm test` validation bar, since that suite validates the
+  build artifact, not app behavior).
 
 ### localStorage keys
 
@@ -252,7 +271,7 @@ draft autosave/resume path as the Legs A/B variant.
 | `at_workout_stable` | device-local history cache, merged with `sessions.json` on load — see Sync layer |
 | `at_session_draft` | in-progress session autosave, incl. `variant`/`cardio` |
 | `at_sync_cfg_v1` | sync config incl. PAT |
-| `at_sync_last` | last auto-push result |
+| `at_sync_last` | last-sync tracking — see **Sync layer** ("Last-sync display") |
 | `at_group_order_v2` | **retired** — vestigial group ordering |
 
 ### Secrets
@@ -340,6 +359,14 @@ with pointers to where each is actually documented:
 8. **Claude Code session hygiene** — `.claude/settings.json` permission
    tiers, checkpoint-commit-before-session and end-of-session-diff-review
    habits. See **Claude Code session hygiene**, above.
+9. **Last-sync timestamp accuracy.** The "Last synced" display used to
+   advance on every mount-time pull regardless of outcome, so a silently
+   broken sync (or one that just found nothing new) looked identical to a
+   healthy one. `recordSyncOutcome()` now separates "did the most recent
+   attempt succeed" (`ok`/`err`, updated on every attempt) from "when did a
+   sync last actually accomplish something" (`at`/`direction`, only advanced
+   on a stamp-worthy success). See **Sync layer** → "Last-sync display",
+   above.
 
 Add new items here as they come up.
 
