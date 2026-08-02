@@ -12,7 +12,7 @@ this repo as JSON.
 | | |
 |---|---|
 | Live app | `index.html` (repo root, `main`) — ~248 KB, compiled |
-| Session data | `sessions.json` (repo root, `main`) — 64 sessions, Feb 28–Jul 29 2026 |
+| Session data | `sessions.json` (repo root, `main`) — 65 sessions, Feb 28–Jul 30 2026 |
 | Branch | `main` only. `master` was deleted; `raw.githubusercontent.com` may still serve stale cached copies of it — do not trust those |
 | Build | `npm run build` (Babel 8, classic JSX runtime) — see **Build system**, below |
 
@@ -70,12 +70,13 @@ directions.
 | `scripts/build.js` | `npm run build` — see above. |
 | `scripts/test.js` | `npm test` — the validation bar, below. |
 | `smoke.js` | jsdom headless-mount check (validation bar step 4). |
+| `githooks/pre-commit` | Runs `npm run build` and stages `index.html` if it changed; activated via `git config core.hooksPath githooks` (validation bar check #5). |
 | `scripts/test-sync-last.js` | `npm run test:sync-last` — standalone jsdom behavioral check for the `at_sync_last` "Last synced" tracking (see **Sync layer**). Not part of the validation bar. |
 | `scripts/decompile.js` | **Historical/documentation only.** The one-time script that reconstructed `src/app.jsx` from the previously shipped, hand-patched `index.html`. Not runnable against current devDependencies — it needs the Babel 7.x line plus `babel-plugin-transform-react-createelement-to-jsx` (unmaintained, relies on legacy `t.jSXIdentifier`-style `@babel/types` builders that Babel 8 removed), both of which were removed once the decompile was done and committed. See the comment in the file for how to temporarily reinstall them if this is ever needed again. |
 | `scripts/normalize-for-diff.js` | Parses a compiled app script and re-emits it through `@babel/generator` with fixed formatting, so two semantically-identical scripts (differing only in quote style, escaping, etc.) diff to nothing. Used to prove the JSX reconstruction and the Babel 7→8 upgrade changed no behavior; reusable for future refactors that touch `src/app.jsx`. |
 | `index.html` | **Build output.** Don't hand-edit — regenerate via `npm run build`. Still the file that gets committed and deployed (see Deploy, below); there is no separate `dist/`. |
 
-## Validation bar — every change must pass all four
+## Validation bar — every change must pass all five
 
 ```bash
 # 1. extract the app's inline script and syntax-check it
@@ -92,13 +93,33 @@ grep -c 'react/jsx-runtime' index.html # must be 0
 #    jsdom with runScripts:"dangerously", assert #root innerHTML > 50 chars
 #    and zero jsdomError events
 node smoke.js
+
+# 5. staleness — rebuild src/app.jsx to a temp path and diff against the
+#    committed index.html (BUILD_INFO's sha/builtAt normalized out first,
+#    since those legitimately differ on every rebuild — see Version stamp).
+#    Fails with a message to run `npm run build` if they diverge.
+node scripts/build.js build_tmp/index.rebuilt.html
+# diff (normalized) against index.html
 ```
 
 Scripted as `npm test` (`scripts/test.js`). Do not skip #4 — static checks
-pass on code that still white-screens. Both `scripts/test.js` and
-`smoke.js` have been negative-tested against deliberately broken builds (an
-injected `import` statement; a thrown error before mount) to confirm the
-checks actually fail rather than rubber-stamping.
+pass on code that still white-screens. `scripts/test.js`, `smoke.js`, and
+check #5 have all been negative-tested against deliberately broken builds
+(an injected `import` statement; a thrown error before mount; a hand-edited
+stale `index.html`) to confirm the checks actually fail rather than
+rubber-stamping.
+
+Check #5 exists because a prior cycle committed six phases of source
+changes without ever rebuilding, so `index.html` silently didn't move even
+though `npm test` kept passing — the suite only validates whatever
+`index.html` currently contains, so a stale artifact passes checks 1-4
+perfectly well. A committed git pre-commit hook backs this up:
+`githooks/pre-commit` runs `npm run build` and stages `index.html` if it
+changed, activated via `git config core.hooksPath githooks` (wired
+automatically by the `prepare` npm script, so `npm install` sets it up on a
+fresh clone). Together they mean source and artifact can't diverge in a
+commit made through normal `git commit`, and check #5 catches it in `npm
+test` regardless.
 
 ## Current architecture
 
@@ -126,17 +147,23 @@ BLOCK = {
 
 ```js
 { id, type: "legs"|"push"|"pull", label, date: "Mon D, YYYY", note,
-  variant: "A"|"B"|undefined,           // legs only, see Legs A/B variants
-  cardio: { machine, duration, level, effort }|undefined,  // see Cardio finisher fields
-  movements: [ { name, sets: [ { set, weight, reps, rpe, note } ] } ] }
+  variant: string|undefined,   // only set when the type has >1 variant — see Session variants
+  cardio: { machine, duration, level, rpe }|undefined,  // see Cardio finisher fields; older records may carry a retired `effort` string instead of `rpe`
+  movements: [ { name, sets: [ { set, weight, reps, rpe, note } ], note, order } ] }
 ```
 
 `date` is a **display-formatted string**, not ISO. Parsing uses `new Date(str)`.
 Do not silently migrate this format — the whole history and the dedup key depend on it.
 
-`label` already has the variant baked in for legs sessions (`"Legs A"` /
-`"Legs B"`) so history/handoff/PR displays need no extra branching — `variant`
-is there for anyone who needs to filter/query by it specifically.
+`label` already has the variant baked in when a type has more than one
+variant (`"Legs A"` / `"Legs B"`) so history/handoff/PR displays need no
+extra branching — `variant` is there for anyone who needs to filter/query
+by it specifically. Push/Pull currently have a single variant each, so
+their records never carry a `variant` or a label suffix.
+
+Per-set `note` is legacy (older records only, no longer written by the
+entry UI); the movement-level `note` and `order` are current — see
+**Exercise notes** and **Movement ordering**, below.
 
 ### Dedup rule — IMPORTANT
 
@@ -174,45 +201,107 @@ Note: `MUSCLE_GROUPS`, `ORDER_KEY` (`at_group_order_v2`) and
 the source for group labels, the rest is dead weight from the blocked design.
 Clean up carefully.
 
-### Legs A/B variants
+### Session variants
 
-`LEGS_VARIANTS` (near `BLOCK` in `src/app.jsx`) is a per-movement
-`{ workSets, reps }` prescription overlay for the two Legs variants, plus
-`rest`/`finisher` guidance text — **not** a separate session type and **not**
-part of `BLOCK` itself. Session `type` stays `"legs"`; only today's working
-set count/rep target differ. This is deliberate: `LEGS_VARIANTS`' movement
-keys ("Leg Press", "Leg Curl", ...) match `BLOCK.sessions.legs.movements`
-names exactly, so progression history (`getMovementHistory`/`getMovementPR`,
-both keyed by movement name across all history regardless of type or variant)
-and `current` weights are fully shared between A and B by construction — there
-is no separate "A history" vs "B history" to keep in sync.
+`SESSION_VARIANTS[type]` (near `BLOCK` in `src/app.jsx`) is an array of
+per-movement prescription overlays, one per session type — `{ id, label,
+rest, movements: { <name>: { workSets, reps } } }` — **not** part of `BLOCK`
+itself. Session `type` stays `"legs"`/`"push"`/`"pull"` regardless of
+variant; only today's working-set count/rep target/rest text differ. Legs
+carries two variants (`A`/`B`); Push and Pull each carry a single
+`"standard"` variant. A variant's movement keys ("Leg Press", "Leg Curl",
+...) match `BLOCK.sessions[type].movements` names exactly, so progression
+history (`getMovementHistory`/`getMovementPR`, both keyed by movement name
+across all history regardless of type or variant) and `current` weights are
+fully shared across variants of the same type by construction — there is no
+separate "A history" vs "B history" to keep in sync.
 
-The variant is threaded through `startSession(type, variant)` →
-`sessionMovements` (workSets/reps overridden at session-start time, never on
-the shared `BLOCK.sessions.legs.movements` objects themselves) → the draft
-autosave/resume round-trip (`saveDraft`/`loadDraft` carry a `variant` field
-so a resumed draft reapplies the same overlay) → `finish()`, which records
-`entry.variant` and bakes it into `entry.label`.
+**Switcher visibility:** `SessionScreen` only renders the in-session A/B
+switcher when `SESSION_VARIANTS[type].length > 1` — today that's legs only.
+Adding a real second Push or Pull variant is a data-only addition to
+`SESSION_VARIANTS`, not a structural change. The same gate controls whether
+`entry.label`/`entry.variant` get a variant suffix at all (see **Session
+records**, below) — Push/Pull's single "standard" variant is invisible to
+the user and never shows up in a record.
 
-Numbers in `LEGS_VARIANTS` came directly from TARGETS.md's "Legs A/B note for
-whoever implements the toggle" table — treat them as authored prescription
-content (like `BLOCK.flags`/`current`/`target`), not code to redesign.
+**Selecting/switching:** `startSession(type)` picks `SESSION_VARIANTS[type][0]`
+by default (no A/B choice at the type-selection screen anymore — one button
+per type). Mid-session, `switchVariant(variantId)` is free while no set has
+been logged; once any set carries logged data it requires a
+`window.confirm` — targets change (workSets/reps overlay), but logged sets
+are kept, not discarded. This works via `buildSessionMovements(type,
+variantId, carryMap)`, which rebuilds `sessionMovements` from
+`BLOCK.sessions[type].movements` + the new variant's overrides and
+re-attaches each movement's prior `_loggedSets`/`_exerciseNote` (`carryMap`,
+keyed by movement name) — and each movement row is keyed on
+`mov.name + ":" + variant` in `SessionScreen`'s render so `MovementRow`
+remounts on a switch and recomputes its planned sets against the new
+overlay (its lazy `useState` initializer merges the fresh plan with the
+carried-over `_loggedSets`, the same mechanism draft-resume already used).
+One side effect: switching collapses an open movement panel back closed
+(the remount resets `MovementRow`'s own `open` state) — no data is lost,
+just a re-tap to reopen.
+
+Persists through `startSession` → `sessionMovements` → the draft
+autosave/resume round-trip (`saveDraft`/`loadDraft` carry a `variant`
+field so a resumed draft reapplies the same overlay) → `finish()`, which
+records `entry.variant` and bakes it into `entry.label` only when
+`SESSION_VARIANTS[type].length > 1`.
+
+**Rest text:** each variant's `rest` string renders directly under the
+session header for every type (not gated on having multiple variants) —
+only the switcher itself is variant-count-gated.
+
+Numbers in `SESSION_VARIANTS.legs` came directly from TARGETS.md's "Legs A/B
+note for whoever implements the toggle" table — treat them as authored
+prescription content (like `BLOCK.flags`/`current`/`target`), not code to
+redesign.
+
+### Exercise notes
+
+Each movement carries a single free-text note, entered in `MovementRow`
+beneath all of that movement's sets — **not** a per-set field. Internally
+it's `_exerciseNote` state synced onto `mov._exerciseNote` via the same
+mutate-then-call-`onChange` pattern `_loggedSets` already used, so it flows
+through the same machinery: `buildSessionMovements`'s `carryMap` preserves
+it across a variant switch (same as logged sets), `saveDraft`/`loadDraft`
+carry a per-movement `note` field so a resumed draft restores it, and
+`finish()` writes `note` onto each entry in `movements` — a movement is
+kept in the finished record if it has logged sets **or** a note (previously
+logged-sets-only).
+
+**Migration:** this replaced an older per-set note field (`sets[].note`,
+with a "+ note" toggle per set, no longer present in the entry UI).
+Historical per-set notes are untouched and still rendered — in
+`HistoryScreen` and the Session tab's recent-sessions expander — alongside
+the movement-level note when both are present on the same record;
+`sessions.json` is never rewritten to migrate old shapes.
+`buildHandoff`/`buildCoachSummary` include both: per-set notes from
+`sets[].note` and, if present, the movement-level `note`.
 
 ### Cardio finisher fields
 
-`cardio: { machine, duration, level, effort }` on a session record, entered
-via SessionScreen's "Cardio finisher" section (below the movement list, above
-the session note). `effort` is a closed `easy|moderate|hard` enum
-(`CARDIO_EFFORT_OPTIONS`); `machine`/`duration`/`level` are free text/number
-so any machine from `BLOCK.flags` (Stairmaster, Z2 bike, elliptical, incline
-walk, rower) fits without a fixed dropdown.
+`cardio: { machine, duration, level, rpe }` on a session record, entered via
+SessionScreen's "Cardio finisher" section (below the movement list, above
+the session note). `machine` is a fixed dropdown (`CARDIO_MACHINE_OPTIONS`:
+Stairmaster, Recumbent bike, Spin bike, Elliptical, Treadmill (incline
+walk), Rower, Other); `duration`/`level`/`rpe` are numeric inputs labeled
+"min"/"level"/"rpe". `rpe` replaces what used to be a closed
+`easy|moderate|hard` effort enum, consistent with how strength sets are
+logged.
+
+**Migration:** older records may still carry the retired `effort` string
+instead of `rpe` — `hasCardioData`/`formatCardio` still read it (falling
+back to displaying `effort` when `rpe` is absent) so history doesn't crash
+or silently drop it. New entries always write `rpe` and never write
+`effort`; nothing rewrites `sessions.json` to migrate old records.
 
 `hasCardioData(cardio)` gates every read/write site — a session with no
 cardio fields filled in gets no `cardio` key at all, not an empty-string
 object. `formatCardio(cardio)` is the single formatter shared by
 `HistoryScreen`, `buildHandoff`, and `buildCoachSummary`; add new display
 sites through it rather than reformatting inline. Persists through the same
-draft autosave/resume path as the Legs A/B variant.
+draft autosave/resume path as the session variant.
 
 ### Sync layer
 
@@ -350,23 +439,45 @@ with pointers to where each is actually documented:
    **Sync layer**, above.
 4. **Sync panel moved** to the Session tab below the recent-sessions list,
    expanded by default until a token is configured. See **Sync layer**, above.
-5. **Legs A/B** implemented as a prescription overlay (`LEGS_VARIANTS`), not a
-   new session type. See **Legs A/B variants**, above.
-6. **Cardio finisher fields** added as first-class session fields. See
-   **Cardio finisher fields**, above.
+5. **Legs A/B** implemented as a prescription overlay, originally
+   legs-only (`LEGS_VARIANTS`) and later generalized into a per-type
+   `SESSION_VARIANTS[type]` array covering Push/Pull too (each with a
+   single variant, switcher hidden), plus an in-session switcher with
+   accidental-switch protection once a set is logged. See **Session
+   variants**, above.
+6. **Cardio finisher fields** added as first-class session fields, later
+   reworked from a free-text machine field + easy/moderate/hard effort
+   enum to a fixed machine dropdown + numeric `rpe`. See **Cardio
+   finisher fields**, above.
 7. **Version stamp** visible in the UI so a stale cached build is
    identifiable. See **Version stamp**, above.
 8. **Claude Code session hygiene** — `.claude/settings.json` permission
    tiers, checkpoint-commit-before-session and end-of-session-diff-review
    habits. See **Claude Code session hygiene**, above.
-9. **Last-sync timestamp accuracy.** The "Last synced" display used to
-   advance on every mount-time pull regardless of outcome, so a silently
-   broken sync (or one that just found nothing new) looked identical to a
-   healthy one. `recordSyncOutcome()` now separates "did the most recent
-   attempt succeed" (`ok`/`err`, updated on every attempt) from "when did a
-   sync last actually accomplish something" (`at`/`direction`, only advanced
-   on a stamp-worthy success). See **Sync layer** → "Last-sync display",
-   above.
+9. **Stale-artifact CI check + pre-commit hook.** A prior cycle committed
+   six phases of source changes without ever rebuilding, so `index.html`
+   silently didn't move even though `npm test` kept passing. Added
+   validation bar check #5 (rebuild-and-diff, normalizing the expected
+   `BUILD_INFO` drift) plus `githooks/pre-commit` so source and artifact
+   can't diverge in a normal commit. See **Validation bar**, above.
+10. **Exercise notes** replaced the older per-set note field with one
+    note per movement, positioned beneath all of that movement's sets.
+    Historical per-set notes are untouched and still rendered. See
+    **Exercise notes**, above.
+11. **Session-screen noise removed** — the placeholder help text under
+    the session note field and the redundant "unlogged movements"/"no
+    sets logged" warning banners (movements are often intentionally
+    skipped; the warnings just added friction).
+12. **Last-sync timestamp** added to the Session tab ("Last synced:
+    `<date>`, `<time>`", "Never synced" empty state), then fixed for
+    accuracy: it originally advanced on every mount-time pull regardless
+    of outcome, so a silently broken sync (or one that just found
+    nothing new) looked identical to a healthy one.
+    `recordSyncOutcome()` now separates "did the most recent attempt
+    succeed" (`ok`/`err`, updated on every attempt) from "when did a
+    sync last actually accomplish something" (`at`/`direction`, only
+    advanced on a stamp-worthy success). See **Sync layer** →
+    "Last-sync display", above.
 
 Add new items here as they come up.
 
