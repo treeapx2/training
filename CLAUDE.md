@@ -71,13 +71,19 @@ directions.
 | `scripts/test.js` | `npm test` — the validation bar, below. |
 | `smoke.js` | jsdom headless-mount check (validation bar step 4). |
 | `githooks/pre-commit` | Runs `npm run build` and stages `index.html` if it changed; activated via `git config core.hooksPath githooks` (validation bar check #5). |
-| `scripts/test-sync-last.js` | `npm run test:sync-last` — standalone jsdom behavioral check for the `at_sync_last` "Last synced" tracking (see **Sync layer**). Not part of the validation bar. |
-| `scripts/test-session-variants.js` | `npm run test:session-variants` — standalone jsdom behavioral check for the Legs A/B prescription overlay (see **Session variants**). Not part of the validation bar. |
+| `scripts/test-sync-last.js` | jsdom behavioral check for the `at_sync_last` "Last synced" tracking (see **Sync layer**). Validation bar check #6; also runnable alone via `npm run test:sync-last`. |
+| `scripts/test-session-variants.js` | jsdom behavioral check for the Legs A/B prescription overlay (see **Session variants**). Validation bar check #7; also runnable alone via `npm run test:session-variants`. |
 | `scripts/decompile.js` | **Historical/documentation only.** The one-time script that reconstructed `src/app.jsx` from the previously shipped, hand-patched `index.html`. Not runnable against current devDependencies — it needs the Babel 7.x line plus `babel-plugin-transform-react-createelement-to-jsx` (unmaintained, relies on legacy `t.jSXIdentifier`-style `@babel/types` builders that Babel 8 removed), both of which were removed once the decompile was done and committed. See the comment in the file for how to temporarily reinstall them if this is ever needed again. |
 | `scripts/normalize-for-diff.js` | Parses a compiled app script and re-emits it through `@babel/generator` with fixed formatting, so two semantically-identical scripts (differing only in quote style, escaping, etc.) diff to nothing. Used to prove the JSX reconstruction and the Babel 7→8 upgrade changed no behavior; reusable for future refactors that touch `src/app.jsx`. |
 | `index.html` | **Build output.** Don't hand-edit — regenerate via `npm run build`. Still the file that gets committed and deployed (see Deploy, below); there is no separate `dist/`. |
 
-## Validation bar — every change must pass all five
+## Validation bar — every change must pass all seven
+
+Two tiers, both scripted as `npm test` (`scripts/test.js`) — **one command
+runs everything**, checks 1-7:
+
+**Artifact tier (1-5):** is `index.html` a well-formed, non-stale build of
+`src/app.jsx`.
 
 ```bash
 # 1. extract the app's inline script and syntax-check it
@@ -103,12 +109,11 @@ node scripts/build.js build_tmp/index.rebuilt.html
 # diff (normalized) against index.html
 ```
 
-Scripted as `npm test` (`scripts/test.js`). Do not skip #4 — static checks
-pass on code that still white-screens. `scripts/test.js`, `smoke.js`, and
-check #5 have all been negative-tested against deliberately broken builds
-(an injected `import` statement; a thrown error before mount; a hand-edited
-stale `index.html`) to confirm the checks actually fail rather than
-rubber-stamping.
+Do not skip #4 — static checks pass on code that still white-screens.
+`scripts/test.js`, `smoke.js`, and check #5 have all been negative-tested
+against deliberately broken builds (an injected `import` statement; a
+thrown error before mount; a hand-edited stale `index.html`) to confirm the
+checks actually fail rather than rubber-stamping.
 
 Check #5 exists because a prior cycle committed six phases of source
 changes without ever rebuilding, so `index.html` silently didn't move even
@@ -121,6 +126,33 @@ automatically by the `prepare` npm script, so `npm install` sets it up on a
 fresh clone). Together they mean source and artifact can't diverge in a
 commit made through normal `git commit`, and check #5 catches it in `npm
 test` regardless.
+
+**Behavior tier (6-7):** does the app actually do the right thing at
+runtime, not just have valid syntax. Each check is a standalone jsdom
+script (also runnable alone, e.g. `npm run test:sync-last`,
+`npm run test:session-variants`) that `scripts/test.js` invokes as a
+subprocess:
+
+- **#6** `scripts/test-sync-last.js` — `at_sync_last` timestamp tracking,
+  see **Sync layer** → "Last-sync display".
+- **#7** `scripts/test-session-variants.js` — Legs A/B prescription
+  overlay, see **Session variants**.
+
+Negative-tested the same way as the artifact tier: deliberately
+reintroducing the Leg Press `workSets` bug (see **Session variants** →
+"`workSets` gotcha") makes check #7 fail with the specific assertion detail
+("expected Leg Press (A) to have 5 planned sets, got 6") surfaced directly
+in `npm test`'s output — `execFileSync`'s thrown error already includes the
+subprocess's stdout/stderr, so no extra plumbing was needed for failures to
+be diagnosable from `npm test` alone.
+
+**New test scripts MUST be registered here, in `scripts/test.js`, as a new
+numbered check — not left as a standalone-only `npm run test:*` script.**
+This has already happened twice (`test-sync-last.js`, then
+`test-session-variants.js`, both landed standalone before being wired in
+after the fact) — a behavior test nobody runs by default might as well not
+exist. `npm test` is the one command that's expected to run everything;
+anything that isn't reachable from it doesn't count as covered.
 
 ## Current architecture
 
@@ -282,11 +314,11 @@ exceed.
 Numbers in `SESSION_VARIANTS.legs` came directly from TARGETS.md's "Legs A/B
 note for whoever implements the toggle" table — treat them as authored
 prescription content (like `BLOCK.flags`/`current`/`target`), not code to
-redesign. Verified with `scripts/test-session-variants.js` (`npm run
-test:session-variants`, standalone — not part of the `npm test` validation
-bar): every Legs movement's planned sets differ between A and B, Leg Press
-is exactly 5 planned sets in both variants, and finishing a Legs B session
-persists `variant === "B"` on the record.
+redesign. Verified with `scripts/test-session-variants.js` (validation bar
+check #7, also runnable alone via `npm run test:session-variants`): every
+Legs movement's planned sets differ between A and B, Leg Press is exactly 5
+planned sets in both variants, and finishing a Legs B session persists
+`variant === "B"` on the record.
 
 ### Exercise notes
 
@@ -380,9 +412,8 @@ draft autosave/resume path as the session variant.
   effect in `App`, `SyncPanel`'s `doPush`/`doPull`/`doReplaceFromRemote`,
   `finish()`'s auto-push) goes through the same `recordSyncOutcome()` so this
   rule can't drift between call sites. Verified in
-  `scripts/test-sync-last.js` (`npm run test:sync-last`, standalone — not
-  part of the `npm test` validation bar, since that suite validates the
-  build artifact, not app behavior).
+  `scripts/test-sync-last.js` (validation bar check #6, also runnable
+  alone via `npm run test:sync-last`).
 
 ### localStorage keys
 
@@ -518,6 +549,12 @@ with pointers to where each is actually documented:
     ramp's built-in 2 "W" slots, padding a 6th set onto the intended
     5-set ramp in both A and B. See **Session variants** → "`weight` is
     a ramp anchor" and "`workSets` gotcha", above.
+14. **Behavior tests wired into `npm test`.** `test-sync-last.js` and
+    `test-session-variants.js` both landed as standalone-only
+    `npm run test:*` scripts before being registered as validation bar
+    checks #6/#7 — meaning `npm test` alone didn't actually run them,
+    twice. See **Validation bar**, above, for the rule going forward:
+    new test scripts must be registered there, not left standalone.
 
 Add new items here as they come up.
 

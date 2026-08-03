@@ -1,8 +1,16 @@
 #!/usr/bin/env node
-// Validation bar from CLAUDE.md — all four checks, run as `npm test`.
-// Every check must pass; static checks alone are not enough (a build can
-// pass grep/node --check and still white-screen at runtime), which is why
-// step 4 (headless mount) is not skippable.
+// Validation bar from CLAUDE.md, run as `npm test`. Two tiers:
+//   1-5: artifact validation — is index.html a well-formed, non-stale build
+//        of src/app.jsx. Every check must pass; static checks alone are not
+//        enough (a build can pass grep/node --check and still white-screen
+//        at runtime), which is why step 4 (headless mount) is not skippable.
+//   6+:  behavior tests — does the app actually do the right thing at
+//        runtime. Each is its own standalone script (also runnable directly,
+//        e.g. `npm run test:sync-last`) invoked here as a subprocess so
+//        `npm test` stays the one command that runs everything. New
+//        behavior test scripts MUST be registered here — see CLAUDE.md
+//        "Validation bar" for why (this is the second time one has landed
+//        outside the default command).
 const fs = require("fs");
 const path = require("path");
 const { execFileSync } = require("child_process");
@@ -100,6 +108,36 @@ check("5. index.html matches a fresh build of src/app.jsx (staleness)", () => {
       "committed index.html does not match a fresh build of src/app.jsx — run `npm run build` and commit the result",
     );
   }
+});
+
+// ── Behavior test tier ──────────────────────────────────────────────────
+// Each script below mounts index.html in jsdom and asserts actual runtime
+// behavior (not just artifact shape). Kept as separate standalone files —
+// each also has its own `npm run test:*` entry for fast iteration — but
+// invoked here too so `npm test` alone is a complete run. See CLAUDE.md
+// "Validation bar" before adding a new one.
+
+// 6. last-sync timestamp tracking (see CLAUDE.md "Sync layer" -> "Last-sync
+// display"): a mount-time pull with 0 new sessions must not advance
+// at_sync_last.at; a successful push must.
+check("6. sync-last timestamp behavior (test-sync-last.js)", () => {
+  execFileSync(
+    process.execPath,
+    [path.join(repoRoot, "scripts", "test-sync-last.js")],
+    { stdio: "pipe" },
+  );
+});
+
+// 7. session variant prescription overlay (see CLAUDE.md "Session
+// variants"): Legs A vs B must produce different planned sets for every
+// movement, Leg Press must be exactly 5 planned sets (not 6), and finishing
+// a Legs B session must persist variant === "B".
+check("7. session variants behavior (test-session-variants.js)", () => {
+  execFileSync(
+    process.execPath,
+    [path.join(repoRoot, "scripts", "test-session-variants.js")],
+    { stdio: "pipe" },
+  );
 });
 
 process.exit(failed ? 1 : 0);
