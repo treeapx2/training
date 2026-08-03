@@ -81,12 +81,17 @@ const BLOCK = {
 // session-start/switch time (see buildSessionMovements). Variant movement
 // keys match BLOCK.sessions[type].movements names exactly, so progression
 // history (keyed by movement name) and `current` weights are shared across
-// variants of the same type — only workSets/reps for today's working sets
-// differ. Legs carries two variants (A/B, prescription mechanics from
-// TARGETS.md "Legs A/B note for whoever implements the toggle"); Push and
-// Pull each carry a single default variant. A type's variant switcher only
-// renders when SESSION_VARIANTS[type].length > 1 — adding a second Push or
-// Pull variant later is a data addition here, not a structural change.
+// variants of the same type — only what's PRESCRIBED for today's session
+// differs, never the tracked `current`/PR baseline (that's why the override
+// is a separate optional `weight`, not `current` itself — buildPlannedSetsBase
+// ramps off `mov.weight || mov.current`, but `mov.current` stays untouched so
+// the "current: X lb" label and progression tracking never split by variant).
+// workSets/reps/weight for today's working sets are the adjustable fields.
+// Legs carries two variants (A/B, prescription mechanics from TARGETS.md
+// "Legs A/B note for whoever implements the toggle"); Push and Pull each
+// carry a single default variant. A type's variant switcher only renders
+// when SESSION_VARIANTS[type].length > 1 — adding a second Push or Pull
+// variant later is a data addition here, not a structural change.
 const SESSION_VARIANTS = {
   legs: [
     {
@@ -94,7 +99,7 @@ const SESSION_VARIANTS = {
       label: "A",
       rest: "Opener 2–2.5 min · accessories 60s",
       movements: {
-        "Leg Press": { workSets: 3, reps: 10 },
+        "Leg Press": { workSets: 2, reps: 10 },
         "Leg Curl": { workSets: 2, reps: 10 },
         "Leg Extension": { workSets: 2, reps: 10 },
         "Goblet Squat": { workSets: 2, reps: 10 },
@@ -106,10 +111,10 @@ const SESSION_VARIANTS = {
       label: "B",
       rest: "45–75s throughout",
       movements: {
-        "Leg Press": { workSets: 3, reps: 15 },
-        "Leg Curl": { workSets: 3, reps: 12 },
+        "Leg Press": { workSets: 2, reps: 15, weight: "150 lb" },
+        "Leg Curl": { workSets: 3, reps: 12, weight: "75 lb" },
         "Leg Extension": { workSets: 2, reps: 15 },
-        "Goblet Squat": { workSets: 2, reps: 15 },
+        "Goblet Squat": { workSets: 2, reps: 15, weight: "45 lb" },
         "Calf Raise": { workSets: 3, reps: 20 },
       },
     },
@@ -1028,7 +1033,10 @@ function buildPlannedSets(mov, sessionType) {
   return out;
 }
 function buildPlannedSetsBase(mov, sessionType) {
-  const working = parseFloat(parseCurrentWeight(mov.current));
+  // mov.weight is an optional variant-specific ramp anchor (see Session
+  // variants) — distinct from mov.current, which stays the shared
+  // progression baseline and must never be overridden per variant.
+  const working = parseFloat(parseCurrentWeight(mov.weight || mov.current));
   if (!working) return [];
   const name = mov.name;
   const inc = machineInc(name);

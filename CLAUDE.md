@@ -72,6 +72,7 @@ directions.
 | `smoke.js` | jsdom headless-mount check (validation bar step 4). |
 | `githooks/pre-commit` | Runs `npm run build` and stages `index.html` if it changed; activated via `git config core.hooksPath githooks` (validation bar check #5). |
 | `scripts/test-sync-last.js` | `npm run test:sync-last` — standalone jsdom behavioral check for the `at_sync_last` "Last synced" tracking (see **Sync layer**). Not part of the validation bar. |
+| `scripts/test-session-variants.js` | `npm run test:session-variants` — standalone jsdom behavioral check for the Legs A/B prescription overlay (see **Session variants**). Not part of the validation bar. |
 | `scripts/decompile.js` | **Historical/documentation only.** The one-time script that reconstructed `src/app.jsx` from the previously shipped, hand-patched `index.html`. Not runnable against current devDependencies — it needs the Babel 7.x line plus `babel-plugin-transform-react-createelement-to-jsx` (unmaintained, relies on legacy `t.jSXIdentifier`-style `@babel/types` builders that Babel 8 removed), both of which were removed once the decompile was done and committed. See the comment in the file for how to temporarily reinstall them if this is ever needed again. |
 | `scripts/normalize-for-diff.js` | Parses a compiled app script and re-emits it through `@babel/generator` with fixed formatting, so two semantically-identical scripts (differing only in quote style, escaping, etc.) diff to nothing. Used to prove the JSX reconstruction and the Babel 7→8 upgrade changed no behavior; reusable for future refactors that touch `src/app.jsx`. |
 | `index.html` | **Build output.** Don't hand-edit — regenerate via `npm run build`. Still the file that gets committed and deployed (see Deploy, below); there is no separate `dist/`. |
@@ -205,16 +206,28 @@ Clean up carefully.
 
 `SESSION_VARIANTS[type]` (near `BLOCK` in `src/app.jsx`) is an array of
 per-movement prescription overlays, one per session type — `{ id, label,
-rest, movements: { <name>: { workSets, reps } } }` — **not** part of `BLOCK`
-itself. Session `type` stays `"legs"`/`"push"`/`"pull"` regardless of
-variant; only today's working-set count/rep target/rest text differ. Legs
-carries two variants (`A`/`B`); Push and Pull each carry a single
-`"standard"` variant. A variant's movement keys ("Leg Press", "Leg Curl",
-...) match `BLOCK.sessions[type].movements` names exactly, so progression
-history (`getMovementHistory`/`getMovementPR`, both keyed by movement name
-across all history regardless of type or variant) and `current` weights are
-fully shared across variants of the same type by construction — there is no
-separate "A history" vs "B history" to keep in sync.
+rest, movements: { <name>: { workSets, reps, weight? } } }` — **not** part
+of `BLOCK` itself. Session `type` stays `"legs"`/`"push"`/`"pull"` regardless
+of variant; only today's working-set count/rep target/rest text/ramp weight
+differ. Legs carries two variants (`A`/`B`); Push and Pull each carry a
+single `"standard"` variant. A variant's movement keys ("Leg Press", "Leg
+Curl", ...) match `BLOCK.sessions[type].movements` names exactly, so
+progression history (`getMovementHistory`/`getMovementPR`, both keyed by
+movement name across all history regardless of type or variant) and
+`current` weights are fully shared across variants of the same type by
+construction — there is no separate "A history" vs "B history" to keep in
+sync.
+
+**`weight` is a ramp anchor, not a `current` override:** `buildPlannedSetsBase`
+computes today's ramp off `mov.weight || mov.current` — `weight` is optional
+per movement-per-variant (only set where the prescription genuinely differs,
+e.g. Legs B's Leg Press/Leg Curl/Goblet Squat), and when present it does
+**not** touch `mov.current` itself. `mov.current` — the shared progression
+baseline shown in the collapsed movement row and used for PR tracking —
+never changes based on variant, exactly as documented above. This
+distinction matters: merging a `current` override into the movement object
+(instead of a separate `weight` field) would have "split history by
+variant," which is explicitly the thing not to do.
 
 **Switcher visibility:** `SessionScreen` only renders the in-session A/B
 switcher when `SESSION_VARIANTS[type].length > 1` — today that's legs only.
@@ -228,8 +241,8 @@ the user and never shows up in a record.
 by default (no A/B choice at the type-selection screen anymore — one button
 per type). Mid-session, `switchVariant(variantId)` is free while no set has
 been logged; once any set carries logged data it requires a
-`window.confirm` — targets change (workSets/reps overlay), but logged sets
-are kept, not discarded. This works via `buildSessionMovements(type,
+`window.confirm` — targets change (workSets/reps/weight overlay), but
+logged sets are kept, not discarded. This works via `buildSessionMovements(type,
 variantId, carryMap)`, which rebuilds `sessionMovements` from
 `BLOCK.sessions[type].movements` + the new variant's overrides and
 re-attaches each movement's prior `_loggedSets`/`_exerciseNote` (`carryMap`,
@@ -252,10 +265,28 @@ records `entry.variant` and bakes it into `entry.label` only when
 session header for every type (not gated on having multiple variants) —
 only the switcher itself is variant-count-gated.
 
+**`workSets` gotcha:** `buildPlannedSets` PADS `mov.workSets` on top of
+`buildPlannedSetsBase`'s built-in ramp, it does not simply set the total.
+The Legs/Pull compound ramp already bakes in 2 "W"-type sets (on top of 1
+warmup + 2 build = 5 total); a movement's `workSets` should match that
+built-in count (2) unless you deliberately want MORE working sets than the
+ramp's natural 5-set total (Legs B's Leg Curl does — `workSets: 3` there is
+intentional, giving 6 total). Setting `workSets` higher than the ramp's
+native "W" count for a movement that should stay at 5 total silently pads a
+6th set on — this bit Legs A/B's Leg Press (`workSets: 3` on a 2-"W" base
+produced 6 sets instead of the intended 5) until it was caught and fixed.
+Accessory movements (3 straight "W" sets, no warmup/build) don't have this
+trap — `workSets` there trims/pads a flat list with no separate baseline to
+exceed.
+
 Numbers in `SESSION_VARIANTS.legs` came directly from TARGETS.md's "Legs A/B
 note for whoever implements the toggle" table — treat them as authored
 prescription content (like `BLOCK.flags`/`current`/`target`), not code to
-redesign.
+redesign. Verified with `scripts/test-session-variants.js` (`npm run
+test:session-variants`, standalone — not part of the `npm test` validation
+bar): every Legs movement's planned sets differ between A and B, Leg Press
+is exactly 5 planned sets in both variants, and finishing a Legs B session
+persists `variant === "B"` on the record.
 
 ### Exercise notes
 
@@ -478,6 +509,15 @@ with pointers to where each is actually documented:
     sync last actually accomplish something" (`at`/`direction`, only
     advanced on a stamp-worthy success). See **Sync layer** →
     "Last-sync display", above.
+13. **Session variant bugs fixed.** Legs B was applying no real
+    prescription override — `SESSION_VARIANTS` never carried a weight
+    field, so `buildPlannedSetsBase` always ramped off the shared
+    `mov.current` regardless of variant; added an optional `weight` ramp
+    anchor (distinct from `current`, which still never splits by
+    variant). Separately, Leg Press's `workSets: 3` exceeded the Legs
+    ramp's built-in 2 "W" slots, padding a 6th set onto the intended
+    5-set ramp in both A and B. See **Session variants** → "`weight` is
+    a ramp anchor" and "`workSets` gotcha", above.
 
 Add new items here as they come up.
 
