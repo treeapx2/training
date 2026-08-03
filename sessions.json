@@ -1,5 +1,182 @@
 [
   {
+    "id": 1785792057232,
+    "type": "legs",
+    "label": "Legs A",
+    "date": "Aug 3, 2026",
+    "note": "legs B needs updated weight/sets presets - right now theres no difference with A. need to remove the 6th press set from A and B. prioritized stairs over calves with short time",
+    "variant": "A",
+    "cardio": {
+      "machine": "Stairmaster",
+      "duration": "10",
+      "level": "3",
+      "rpe": "6"
+    },
+    "movements": [
+      {
+        "name": "Leg Press",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "155",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "170",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "170",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 4,
+            "weight": "185",
+            "reps": "10",
+            "rpe": "8",
+            "note": ""
+          },
+          {
+            "set": 5,
+            "weight": "185",
+            "reps": "10",
+            "rpe": "8",
+            "note": ""
+          }
+        ],
+        "note": "",
+        "order": 0
+      },
+      {
+        "name": "Leg Extension",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "120",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "135",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "135",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 4,
+            "weight": "150",
+            "reps": "10",
+            "rpe": "8",
+            "note": ""
+          },
+          {
+            "set": 5,
+            "weight": "150",
+            "reps": "10",
+            "rpe": "8",
+            "note": ""
+          }
+        ],
+        "note": "",
+        "order": 1
+      },
+      {
+        "name": "Leg Curl",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "60",
+            "reps": "10",
+            "rpe": "5",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "75",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "75",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 4,
+            "weight": "90",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 5,
+            "weight": "90",
+            "reps": "10",
+            "rpe": "8",
+            "note": ""
+          }
+        ],
+        "note": "",
+        "order": 2
+      },
+      {
+        "name": "Goblet Squat",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "50",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "50",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "50",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 4,
+            "weight": "50",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          }
+        ],
+        "note": "",
+        "order": 3
+      }
+    ]
+  },
+  {
     "id": 1785692164052,
     "type": "push",
     "label": "Push",
