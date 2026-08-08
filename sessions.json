@@ -1,5 +1,196 @@
 [
   {
+    "id": 1786221946345,
+    "type": "legs",
+    "label": "Legs A",
+    "date": "Aug 7, 2026",
+    "note": "",
+    "variant": "A",
+    "cardio": {
+      "machine": "Stairmaster",
+      "duration": "10",
+      "level": "3",
+      "rpe": "6"
+    },
+    "movements": [
+      {
+        "name": "Leg Press",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "155",
+            "reps": "10",
+            "rpe": "5",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "170",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "170",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 4,
+            "weight": "185",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 5,
+            "weight": "185",
+            "reps": "10",
+            "rpe": "8",
+            "note": ""
+          }
+        ],
+        "note": "rpe indicates initial lift of the weight - the pumps after are always easier",
+        "order": 0
+      },
+      {
+        "name": "Leg Extension",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "120",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "135",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "135",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 4,
+            "weight": "150",
+            "reps": "10",
+            "rpe": "8",
+            "note": ""
+          },
+          {
+            "set": 5,
+            "weight": "150",
+            "reps": "10",
+            "rpe": "8",
+            "note": ""
+          }
+        ],
+        "note": "",
+        "order": 1
+      },
+      {
+        "name": "Leg Curl",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "60",
+            "reps": "10",
+            "rpe": "5",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "75",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "75",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 4,
+            "weight": "90",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 5,
+            "weight": "90",
+            "reps": "10",
+            "rpe": "8",
+            "note": ""
+          }
+        ],
+        "note": "",
+        "order": 2
+      },
+      {
+        "name": "Goblet Squat",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "40",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "45",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          }
+        ],
+        "note": "",
+        "order": 3
+      },
+      {
+        "name": "Calf Raise",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "40",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "45",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "45",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          }
+        ],
+        "note": "",
+        "order": 4
+      }
+    ]
+  },
+  {
     "id": 1785968212187,
     "type": "pull",
     "label": "Pull",
