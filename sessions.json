@@ -1,5 +1,208 @@
 [
   {
+    "id": 1786244232331,
+    "type": "push",
+    "label": "Push",
+    "date": "Aug 8, 2026",
+    "note": "",
+    "cardio": {
+      "machine": "Stairmaster",
+      "duration": "12",
+      "level": "4",
+      "rpe": "6"
+    },
+    "movements": [
+      {
+        "name": "Chest Press",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "90",
+            "reps": "10",
+            "rpe": "5",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "105",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "105",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 4,
+            "weight": "120",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 5,
+            "weight": "120",
+            "reps": "5",
+            "rpe": "8",
+            "note": ""
+          }
+        ],
+        "note": "",
+        "order": 0
+      },
+      {
+        "name": "Pec Fly",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "90",
+            "reps": "10",
+            "rpe": "5",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "105",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "105",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 4,
+            "weight": "120",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 5,
+            "weight": "120",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          }
+        ],
+        "note": "",
+        "order": 1
+      },
+      {
+        "name": "Rope Pushdown",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "32.5",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "37.5",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "37.5",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 4,
+            "weight": "42.5",
+            "reps": "5",
+            "rpe": "8",
+            "note": ""
+          },
+          {
+            "set": 5,
+            "weight": "42.5",
+            "reps": "5",
+            "rpe": "8",
+            "note": ""
+          }
+        ],
+        "note": "",
+        "order": 2
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "12",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "12",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          }
+        ],
+        "note": "",
+        "order": 3
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "60",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "60",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "60",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 4,
+            "weight": "60",
+            "reps": "10",
+            "rpe": "8",
+            "note": ""
+          }
+        ],
+        "note": "did alternate shoulders: 4 sets 10 raises then quickly into 10 presses",
+        "order": 4
+      },
+      {
+        "name": "Skull Crusher",
+        "sets": [],
+        "note": "benches werent open",
+        "order": 5
+      }
+    ]
+  },
+  {
     "id": 1786221946345,
     "type": "legs",
     "label": "Legs A",
