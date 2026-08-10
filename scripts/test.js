@@ -152,4 +152,17 @@ check("8. superset behavior (test-superset.js)", () => {
   );
 });
 
+// 9. skip (see CLAUDE.md "Skip"): skipping renders collapsed with the
+// reason, "other" reveals free text, un-skip is reversible, finish() keeps
+// a zero-set skipped movement and persists skipped/skipReason, and the
+// coach summary/handoff both surface skips (handoff also aggregates
+// all-time skip counts per movement).
+check("9. skip behavior (test-skip.js)", () => {
+  execFileSync(
+    process.execPath,
+    [path.join(repoRoot, "scripts", "test-skip.js")],
+    { stdio: "pipe" },
+  );
+});
+
 process.exit(failed ? 1 : 0);

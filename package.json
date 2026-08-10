@@ -9,6 +9,7 @@
     "test:sync-last": "node scripts/test-sync-last.js",
     "test:target-picker": "node scripts/test-target-picker.js",
     "test:superset": "node scripts/test-superset.js",
+    "test:skip": "node scripts/test-skip.js",
     "prepare": "git config core.hooksPath githooks"
   },
   "devDependencies": {

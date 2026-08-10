@@ -221,6 +221,8 @@ function saveDraft(type, movements, note, sessionDate, cardio) {
         chipChoice: m._chipChoice || null,
         suggested: m._suggested || null,
         supersetId: m.supersetId || null,
+        skipped: m._skipped || false,
+        skipReason: m._skipped ? m._skipReason || "" : "",
       })),
     };
     localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
@@ -605,12 +607,32 @@ function buildHandoff(history) {
   });
   lines.push("\nACTIVE FLAGS:");
   BLOCK.flags.forEach((f) => lines.push(`  - ${f}`));
+  // Skip counts across all of history — repeated skips of the same
+  // movement are a programming signal (see CHANGES.md Phase 4), not just
+  // day-of-session noise, so this looks at everything, not just recent.
+  const skipCounts = {};
+  history.forEach((h) => {
+    h.movements.forEach((m) => {
+      if (m.skipped) skipCounts[m.name] = (skipCounts[m.name] || 0) + 1;
+    });
+  });
+  const skipEntries = Object.entries(skipCounts).sort((a, b) => b[1] - a[1]);
+  if (skipEntries.length) {
+    lines.push("\nSKIP COUNTS (all-time):");
+    skipEntries.forEach(([name, count]) =>
+      lines.push(`  ${name}: ${count}×`),
+    );
+  }
   const recent = history.slice(0, 6);
   if (recent.length) {
     lines.push("\nRECENT SESSIONS:");
     recent.forEach((h) => {
       lines.push(`\n${h.date} — ${h.label}`);
       h.movements.forEach((m) => {
+        if (m.skipped) {
+          lines.push(`  ${m.name}: SKIPPED — ${m.skipReason || "no reason given"}`);
+          return;
+        }
         lines.push(`  ${m.name}:`);
         m.sets.forEach((s) => {
           let l = `    S${s.set}: ${s.weight ? s.weight + " lb" : "—"} × ${s.reps || "—"} reps`;
@@ -627,7 +649,7 @@ function buildHandoff(history) {
   }
   return lines.join("\n");
 }
-function buildCoachSummary(type, setsRef, sessionNote, cardio, notesRef) {
+function buildCoachSummary(type, setsRef, sessionNote, cardio, notesRef, skipsRef) {
   const session = BLOCK.sessions[type];
   const lines = [];
   lines.push(
@@ -642,6 +664,11 @@ function buildCoachSummary(type, setsRef, sessionNote, cardio, notesRef) {
   session.movements.forEach((mov) => {
     const sets = setsRef[mov.name] || [];
     const note = (notesRef && notesRef[mov.name]) || "";
+    const skipReason = skipsRef && skipsRef[mov.name];
+    if (skipReason) {
+      lines.push(`${mov.name}: SKIPPED — ${skipReason}`);
+      return;
+    }
     if (!sets.length && !note) return;
     lines.push(mov.name + ":");
     sets.forEach((s) => {
@@ -1126,6 +1153,104 @@ const ci = (extra = {}) => ({
   boxSizing: "border-box",
   ...extra,
 });
+// Skip reason chips (see CHANGES.md Aug 10 2026, Phase 4). "other" reveals a
+// short free-text field instead of picking a fixed reason.
+const SKIP_REASONS = ["machine in use", "time", "pain", "other"];
+function SkipPicker({ onSkip, onCancel }) {
+  const [otherText, setOtherText] = useState("");
+  const [showOther, setShowOther] = useState(false);
+  return (
+    /*#__PURE__*/ <div
+      style={{
+        padding: "10px 12px",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          gap: 6,
+          flexWrap: "wrap",
+          marginBottom: showOther ? 6 : 0,
+        }}
+      >
+        {SKIP_REASONS.map((reason) => (
+          /*#__PURE__*/ <button
+            key={reason}
+            onClick={() =>
+              reason === "other" ? setShowOther(true) : onSkip(reason)
+            }
+            style={{
+              padding: "6px 10px",
+              border: "0.5px solid #ddd",
+              borderRadius: 8,
+              background: "#fff",
+              color: "#555",
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            {reason}
+          </button>
+        ))}
+      </div>
+      {showOther && (
+        /*#__PURE__*/ <div
+          style={{
+            display: "flex",
+            gap: 6,
+          }}
+        >
+          <input
+            value={otherText}
+            onChange={(e) => setOtherText(e.target.value)}
+            placeholder="reason..."
+            style={{
+              flex: 1,
+              padding: "6px 8px",
+              border: "0.5px solid #ddd",
+              borderRadius: 8,
+              fontSize: 13,
+              color: "#111",
+              background: "#fff",
+              outline: "none",
+              minWidth: 0,
+            }}
+          />
+          <button
+            onClick={() => otherText.trim() && onSkip(otherText.trim())}
+            style={{
+              padding: "6px 12px",
+              background: "#111",
+              color: "#fff",
+              border: "none",
+              borderRadius: 8,
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            skip
+          </button>
+        </div>
+      )}
+      <button
+        onClick={onCancel}
+        style={{
+          marginTop: 6,
+          fontSize: 11,
+          color: "#aaa",
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          padding: 0,
+        }}
+      >
+        cancel
+      </button>
+    </div>
+  );
+}
 // Down/hold/up target-weight chips (see CHANGES.md Aug 10 2026, Phase 2).
 // Shared by SetLogger (single movement) and SupersetRow (linked pair —
 // "each movement in a pair keeps its own target chips").
@@ -1459,6 +1584,26 @@ function useMovementPicker(mov, history, position, total, onChange) {
     if (onChange) onChange();
   }, [exerciseNote]);
 
+  // Skip (see CHANGES.md Aug 10 2026, Phase 4) — distinguishes a deliberate
+  // skip (machine in use, time, pain, other) from a movement that's simply
+  // untouched, so analysis (and the coach handoff) can tell the two apart.
+  // Reversible within the session: tapping "un-skip" just clears both.
+  const [skipped, setSkipped] = useState(!!mov._skipped);
+  const [skipReason, setSkipReason] = useState(mov._skipReason || "");
+  useEffect(() => {
+    mov._skipped = skipped;
+    mov._skipReason = skipped ? skipReason : "";
+    if (onChange) onChange();
+  }, [skipped, skipReason]);
+  const handleSkip = (reason) => {
+    setSkipReason(reason);
+    setSkipped(true);
+  };
+  const handleUnskip = () => {
+    setSkipped(false);
+    setSkipReason("");
+  };
+
   // Target picker (see CHANGES.md Aug 10 2026, Phase 2). `suggested` is a
   // pure function of history + this movement's position in today's session
   // (positional downgrade — a movement run late is not a valid place to
@@ -1625,6 +1770,10 @@ function useMovementPicker(mov, history, position, total, onChange) {
     handleLog,
     handleUpdate,
     handleDelete,
+    skipped,
+    skipReason,
+    handleSkip,
+    handleUnskip,
   };
 }
 function MovementRow({
@@ -1637,6 +1786,7 @@ function MovementRow({
   onChange,
 }) {
   const [open, setOpen] = useState(false);
+  const [showSkipPicker, setShowSkipPicker] = useState(false);
   const {
     exerciseNote,
     setExerciseNote,
@@ -1649,7 +1799,67 @@ function MovementRow({
     handleLog,
     handleUpdate,
     handleDelete,
+    skipped,
+    skipReason,
+    handleSkip,
+    handleUnskip,
   } = useMovementPicker(mov, history, position, total, onChange);
+
+  if (skipped) {
+    // Skipped movements render collapsed with the reason visible — no
+    // expand/log UI while skipped. Reversible: "un-skip" just clears it.
+    return (
+      /*#__PURE__*/ <div
+        style={{
+          border: "0.5px solid #e5e5e3",
+          borderRadius: 10,
+          marginBottom: 8,
+          padding: "11px 12px",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          background: "#f9f9f8",
+        }}
+      >
+        <div>
+          <span
+            style={{
+              fontSize: 13,
+              fontWeight: 600,
+              color: "#999",
+              textDecoration: "line-through",
+            }}
+          >
+            {mov.name}
+          </span>
+          <span
+            style={{
+              fontSize: 11,
+              color: "#aaa",
+              marginLeft: 8,
+            }}
+          >
+            skipped — {skipReason}
+          </span>
+        </div>
+        <button
+          onClick={handleUnskip}
+          style={{
+            fontSize: 11,
+            color: "#aaa",
+            background: "none",
+            border: "none",
+            textDecoration: "underline",
+            cursor: "pointer",
+            padding: 0,
+          }}
+        >
+          un-skip
+        </button>
+      </div>
+    );
+  }
+
   return (
     /*#__PURE__*/ <div
       style={{
@@ -1714,6 +1924,23 @@ function MovementRow({
             flexShrink: 0,
           }}
         >
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowSkipPicker((v) => !v);
+              if (!open) setOpen(true);
+            }}
+            style={{
+              fontSize: 11,
+              color: "#bbb",
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              padding: 0,
+            }}
+          >
+            skip
+          </button>
           <div
             style={{
               width: 20,
@@ -1748,7 +1975,16 @@ function MovementRow({
           </span>
         </div>
       </div>
-      {open && (
+      {open && showSkipPicker && (
+        /*#__PURE__*/ <SkipPicker
+          onSkip={(reason) => {
+            handleSkip(reason);
+            setShowSkipPicker(false);
+          }}
+          onCancel={() => setShowSkipPicker(false)}
+        />
+      )}
+      {open && !showSkipPicker && (
         /*#__PURE__*/ <>
           <SetLogger
             mov={mov}
@@ -2173,6 +2409,8 @@ function SessionScreen({ history, setHistory, syncLast, onSynced }) {
       blockMov._targetWeight = dm.targetWeight != null ? dm.targetWeight : null;
       blockMov._chipChoice = dm.chipChoice || null;
       blockMov._suggested = dm.suggested || null;
+      blockMov._skipped = dm.skipped || false;
+      blockMov._skipReason = dm.skipReason || "";
       return {
         ...blockMov,
         _group: dm._group,
@@ -2296,8 +2534,10 @@ function SessionScreen({ history, setHistory, syncLast, onSynced }) {
         chipChoice: m._chipChoice || undefined,
         suggested: m._suggested || undefined,
         supersetId: m.supersetId || undefined,
+        skipped: m._skipped || undefined,
+        skipReason: m._skipped ? m._skipReason || "" : undefined,
       }))
-      .filter((m) => m.sets.length > 0 || m.note);
+      .filter((m) => m.sets.length > 0 || m.note || m.skipped);
     const formattedDate = new Date(
       sessionDate + "T12:00:00",
     ).toLocaleDateString("en-US", {
@@ -2334,9 +2574,11 @@ function SessionScreen({ history, setHistory, syncLast, onSynced }) {
     saveCurrentOrder();
     const setsForSummary = {};
     const notesForSummary = {};
+    const skipsForSummary = {};
     movements.forEach((m) => {
       setsForSummary[m.name] = m.sets;
       notesForSummary[m.name] = m.note;
+      if (m.skipped) skipsForSummary[m.name] = m.skipReason || "no reason given";
     });
     const summary = buildCoachSummary(
       active,
@@ -2344,6 +2586,7 @@ function SessionScreen({ history, setHistory, syncLast, onSynced }) {
       sessionNote,
       cardio,
       notesForSummary,
+      skipsForSummary,
     );
     setLastFinished({
       entry,
@@ -3714,6 +3957,17 @@ function WeekCard({ week, history, defaultOpen }) {
                             );
                           })}
                         </div>
+                        {mov.skipped && (
+                          /*#__PURE__*/ <div
+                            style={{
+                              fontSize: 11,
+                              color: "#aaa",
+                              marginTop: 3,
+                            }}
+                          >
+                            skipped — {mov.skipReason || "no reason given"}
+                          </div>
+                        )}
                         {mov.sets
                           .filter((s) => s.note)
                           .map((s, i) => (
@@ -4345,6 +4599,17 @@ function HistoryScreen({ history, setHistory }) {
                     >
                       {m.name}
                     </div>
+                    {m.skipped && (
+                      /*#__PURE__*/ <div
+                        style={{
+                          fontSize: 12,
+                          color: "#aaa",
+                          padding: "2px 0",
+                        }}
+                      >
+                        skipped — {m.skipReason || "no reason given"}
+                      </div>
+                    )}
                     {m.sets.map((s, i) => (
                       /*#__PURE__*/ <div
                         key={i}
