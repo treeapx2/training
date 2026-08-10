@@ -128,16 +128,4 @@ check("6. sync-last timestamp behavior (test-sync-last.js)", () => {
   );
 });
 
-// 7. session variant prescription overlay (see CLAUDE.md "Session
-// variants"): Legs A vs B must produce different planned sets for every
-// movement, Leg Press must be exactly 5 planned sets (not 6), and finishing
-// a Legs B session must persist variant === "B".
-check("7. session variants behavior (test-session-variants.js)", () => {
-  execFileSync(
-    process.execPath,
-    [path.join(repoRoot, "scripts", "test-session-variants.js")],
-    { stdio: "pipe" },
-  );
-});
-
 process.exit(failed ? 1 : 0);

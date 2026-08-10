@@ -37,8 +37,9 @@ const BLOCK = {
       label: "Legs",
       color: "#3B6D11",
       bg: "#EAF3DE",
+      rest: "Opener 2\u20132.5 min \u00b7 accessories 60s",
       movements: [
-        { name: "Leg Press", current: "185 lb", workSets: 3, reps: 10, target: "BANK 185 at RPE 7 \u2014 test passed 7/29 (185x10x2 @ RPE 8) but that's the rep ceiling. Two clean sessions at RPE 7, then TEST 200. Fresh opener, straight sets, 2-2.5 min rest." },
+        { name: "Leg Press", current: "185 lb", workSets: 2, reps: 10, target: "BANK 185 at RPE 7 \u2014 test passed 7/29 (185x10x2 @ RPE 8) but that's the rep ceiling. Two clean sessions at RPE 7, then TEST 200. Fresh opener, straight sets, 2-2.5 min rest." },
         { name: "Leg Extension", current: "150 lb", workSets: 2, reps: 10, target: "TEST 165 \u2014 broke the 8-rep wall: 150x10x2 @ RPE 8 (7/26) then @ RPE 7 (7/29). The old plateau was fatigue placement, not a ceiling." },
         { name: "Leg Curl", current: "90 lb", workSets: 2, reps: 10, target: "One more clean 10x10 @ 90, RPE \u22647, then TEST 105. Low-back compensation resolved (clean 7/26 and 7/29). Stop the set if the back takes over." },
         { name: "Goblet Squat", current: "50 lb", workSets: 2, reps: 10, target: "Two clean sessions at 50 (10 @ RPE 7 then 8 on 7/29), then 55. Controlled depth, knee-monitor." },
@@ -49,6 +50,7 @@ const BLOCK = {
       label: "Push",
       color: "#185FA5",
       bg: "#E6F1FB",
+      rest: "Opener 2 min · supersets 45–60s",
       movements: [
         { name: "Chest Press", current: "120 lb", workSets: 2, reps: 10, target: "TEST 135 \u2014 second clean 10/10 @ RPE 7-8 as fresh opener (7/28). Run this FIRST." },
         { name: "Shoulder Press", current: "90 lb", workSets: 2, reps: 10, target: "HOLD 90 \u2014 needs a FRESH lead to confirm. Hit 90x10x2 when run first (7/5), dropped to 75x8 @ RPE 8 when run second (7/28). Confirm then 105. Thumb watch." },
@@ -62,6 +64,7 @@ const BLOCK = {
       label: "Pull",
       color: "#3C3489",
       bg: "#EEEDFE",
+      rest: "Opener 2 min · supersets 45–60s",
       movements: [
         { name: "DB Row", current: "50 lb", workSets: 2, reps: 10, target: "Build 8-10 @ 50 \u2014 45x10 @ RPE 7 as fresh opener (7/25), best DB Row log to date. Keep LEADING the session with this; it's fatigue-sensitive." },
         { name: "Seated Row", current: "135 lb", workSets: 2, reps: 10, target: "Back to 135 \u2014 build clean 10/10 then 150. (7/25 was a deliberate deload to 120x10x2 @ RPE 7 on upper re-entry, not a regression.)" },
@@ -74,72 +77,6 @@ const BLOCK = {
     }
   }
 };
-
-// ── Session variants ──────────────────────────────────────────────────────────
-// Generic per-session-type variant list. Each variant is a per-movement
-// prescription overlay layered onto BLOCK.sessions[type].movements at
-// session-start/switch time (see buildSessionMovements). Variant movement
-// keys match BLOCK.sessions[type].movements names exactly, so progression
-// history (keyed by movement name) and `current` weights are shared across
-// variants of the same type — only what's PRESCRIBED for today's session
-// differs, never the tracked `current`/PR baseline (that's why the override
-// is a separate optional `weight`, not `current` itself — buildPlannedSetsBase
-// ramps off `mov.weight || mov.current`, but `mov.current` stays untouched so
-// the "current: X lb" label and progression tracking never split by variant).
-// workSets/reps/weight for today's working sets are the adjustable fields.
-// Legs carries two variants (A/B, prescription mechanics from TARGETS.md
-// "Legs A/B note for whoever implements the toggle"); Push and Pull each
-// carry a single default variant. A type's variant switcher only renders
-// when SESSION_VARIANTS[type].length > 1 — adding a second Push or Pull
-// variant later is a data addition here, not a structural change.
-const SESSION_VARIANTS = {
-  legs: [
-    {
-      id: "A",
-      label: "A",
-      rest: "Opener 2–2.5 min · accessories 60s",
-      movements: {
-        "Leg Press": { workSets: 2, reps: 10 },
-        "Leg Curl": { workSets: 2, reps: 10 },
-        "Leg Extension": { workSets: 2, reps: 10 },
-        "Goblet Squat": { workSets: 2, reps: 10 },
-        "Calf Raise": { workSets: 3, reps: 15 },
-      },
-    },
-    {
-      id: "B",
-      label: "B",
-      rest: "45–75s throughout",
-      movements: {
-        "Leg Press": { workSets: 2, reps: 15, weight: "150 lb" },
-        "Leg Curl": { workSets: 3, reps: 12, weight: "75 lb" },
-        "Leg Extension": { workSets: 2, reps: 15 },
-        "Goblet Squat": { workSets: 2, reps: 15, weight: "45 lb" },
-        "Calf Raise": { workSets: 3, reps: 20 },
-      },
-    },
-  ],
-  push: [
-    {
-      id: "standard",
-      label: "Standard",
-      rest: "Opener 2 min · supersets 45–60s",
-      movements: {},
-    },
-  ],
-  pull: [
-    {
-      id: "standard",
-      label: "Standard",
-      rest: "Opener 2 min · supersets 45–60s",
-      movements: {},
-    },
-  ],
-};
-function getVariant(type, variantId) {
-  const variants = SESSION_VARIANTS[type] || [];
-  return variants.find((v) => v.id === variantId) || variants[0];
-}
 
 // ── Movement metadata ──────────────────────────────────────────────────────────
 // Muscle group definitions — order within each group is fixed
@@ -257,11 +194,10 @@ function formatCardio(cardio) {
     .filter(Boolean)
     .join(" · ");
 }
-function saveDraft(type, movements, note, sessionDate, variant, cardio) {
+function saveDraft(type, movements, note, sessionDate, cardio) {
   try {
     const draft = {
       type,
-      variant: variant || null,
       note,
       cardio: hasCardioData(cardio) ? cardio : null,
       sessionDate,
@@ -326,17 +262,13 @@ function buildOrderedMovements(type, groupOrder, blockMovements) {
   });
   return result;
 }
-// Builds a fresh sessionMovements array for a given type/variant, applying
-// the variant's per-movement overrides and re-attaching any previously
-// logged sets and exercise note (keyed by movement name) so switching
-// variant mid-session, or resuming a draft, keeps logged data instead of
-// discarding it.
-function buildSessionMovements(type, variantId, carryMap) {
-  const variant = getVariant(type, variantId);
+// Builds a fresh sessionMovements array for a session type, re-attaching any
+// previously logged sets and exercise note (keyed by movement name, via
+// carryMap) so resuming a draft keeps logged data instead of discarding it.
+function buildSessionMovements(type, carryMap) {
   return BLOCK.sessions[type].movements.map((m) => {
     const mov = {
       ...m,
-      ...(variant.movements[m.name] || null),
       _group: groupLabelFor(m.name),
     };
     const carry = (carryMap && carryMap[m.name]) || {};
@@ -1033,10 +965,7 @@ function buildPlannedSets(mov, sessionType) {
   return out;
 }
 function buildPlannedSetsBase(mov, sessionType) {
-  // mov.weight is an optional variant-specific ramp anchor (see Session
-  // variants) — distinct from mov.current, which stays the shared
-  // progression baseline and must never be overridden per variant.
-  const working = parseFloat(parseCurrentWeight(mov.weight || mov.current));
+  const working = parseFloat(parseCurrentWeight(mov.current));
   if (!working) return [];
   const name = mov.name;
   const inc = machineInc(name);
@@ -1710,7 +1639,6 @@ function SessionScreen({ history, setHistory, syncLast, onSynced }) {
   );
   const [lastFinished, setLastFinished] = useState(null);
   const [autoPushStatus, setAutoPushStatus] = useState(null);
-  const [variant, setVariant] = useState(null);
   const [cardio, setCardio] = useState(EMPTY_CARDIO);
   const [copied, setCopied] = useState(false);
   const [groupOrders, setGroupOrders] = useState(null);
@@ -1730,31 +1658,14 @@ function SessionScreen({ history, setHistory, syncLast, onSynced }) {
   // Auto-save draft whenever session movements change OR any set is logged (tick)
   useEffect(() => {
     if (!active) return;
-    saveDraft(
-      active,
-      sessionMovements,
-      sessionNote,
-      sessionDate,
-      variant,
-      cardio,
-    );
-  }, [
-    sessionMovements,
-    sessionNote,
-    active,
-    tick,
-    sessionDate,
-    variant,
-    cardio,
-  ]);
+    saveDraft(active, sessionMovements, sessionNote, sessionDate, cardio);
+  }, [sessionMovements, sessionNote, active, tick, sessionDate, cardio]);
   const startSession = (type) => {
     BLOCK.sessions[type].movements.forEach((m) => {
       delete m._loggedSets;
     });
-    const initialVariant = SESSION_VARIANTS[type][0].id;
-    setSessionMovements(buildSessionMovements(type, initialVariant, null));
+    setSessionMovements(buildSessionMovements(type, null));
     setActive(type);
-    setVariant(initialVariant);
     setLastFinished(null);
     setAutoPushStatus(null);
     setSessionNote("");
@@ -1770,8 +1681,6 @@ function SessionScreen({ history, setHistory, syncLast, onSynced }) {
     blockMovs.forEach((m) => {
       delete m._loggedSets;
     });
-    const draftVariantId = draft.variant || SESSION_VARIANTS[draft.type][0].id;
-    const v = getVariant(draft.type, draftVariantId);
     const restored = draft.movements.map((dm) => {
       const blockMov = blockMovs.find((m) => m.name === dm.name) || {
         name: dm.name,
@@ -1782,13 +1691,11 @@ function SessionScreen({ history, setHistory, syncLast, onSynced }) {
       blockMov._exerciseNote = dm.note || "";
       return {
         ...blockMov,
-        ...(v.movements[dm.name] || null),
         _group: dm._group,
       };
     });
     setSessionMovements(restored);
     setActive(draft.type);
-    setVariant(draftVariantId);
     setSessionNote(draft.note || "");
     setCardio(draft.cardio || EMPTY_CARDIO);
     if (draft.sessionDate) setSessionDate(draft.sessionDate);
@@ -1797,31 +1704,6 @@ function SessionScreen({ history, setHistory, syncLast, onSynced }) {
   const discardDraft = () => {
     setDraft(null);
     clearDraft();
-  };
-  // Accidental-switch protection: freely switchable while no set has been
-  // logged; once any set carries logged data, require an explicit confirm.
-  // Switching changes today's targets (workSets/reps overlay) but keeps
-  // logged sets — see buildSessionMovements' loggedMap re-attachment.
-  const switchVariant = (variantId) => {
-    if (variantId === variant) return;
-    const hasLogged = sessionMovements.some(
-      (m) => (m._loggedSets || []).length > 0,
-    );
-    if (hasLogged) {
-      const ok = window.confirm(
-        "Switching variants changes today's targets. Logged sets are kept, not discarded. Continue?",
-      );
-      if (!ok) return;
-    }
-    const carryMap = {};
-    sessionMovements.forEach((m) => {
-      carryMap[m.name] = {
-        loggedSets: m._loggedSets || [],
-        note: m._exerciseNote || "",
-      };
-    });
-    setSessionMovements(buildSessionMovements(active, variantId, carryMap));
-    setVariant(variantId);
   };
   const moveMovementUp = (idx) => {
     if (idx <= 0) return;
@@ -1910,16 +1792,12 @@ function SessionScreen({ history, setHistory, syncLast, onSynced }) {
       day: "numeric",
       year: "numeric",
     });
-    const hasVariants = SESSION_VARIANTS[active].length > 1;
     const entry = {
       id: Date.now(),
       type: active,
-      label: hasVariants
-        ? s.label + " " + getVariant(active, variant).label
-        : s.label,
+      label: s.label,
       date: formattedDate,
       note: sessionNote,
-      variant: hasVariants ? variant : undefined,
       cardio: hasCardioData(cardio) ? cardio : undefined,
       movements,
     };
@@ -1995,12 +1873,7 @@ function SessionScreen({ history, setHistory, syncLast, onSynced }) {
         bg: "#eee",
         label: draft.type,
       };
-      const draftHasVariants =
-        (SESSION_VARIANTS[draft.type] || []).length > 1;
-      const draftLabel =
-        draftHasVariants && draft.variant
-          ? s.label + " " + getVariant(draft.type, draft.variant).label
-          : s.label;
+      const draftLabel = s.label;
       const loggedCount = draft.movements.reduce(
         (a, m) => a + (m._loggedSets?.length || 0),
         0,
@@ -2342,8 +2215,6 @@ function SessionScreen({ history, setHistory, syncLast, onSynced }) {
     );
   }
   const session = BLOCK.sessions[active];
-  const sessionVariants = SESSION_VARIANTS[active];
-  const hasVariants = sessionVariants.length > 1;
   const totalSets = sessionMovements.reduce(
     (a, m) => a + (m._loggedSets || []).length,
     0,
@@ -2368,9 +2239,7 @@ function SessionScreen({ history, setHistory, syncLast, onSynced }) {
             color: "#111",
           }}
         >
-          {hasVariants
-            ? session.label + " " + getVariant(active, variant).label
-            : session.label}
+          {session.label}
         </div>
         <input
           type="date"
@@ -2388,47 +2257,14 @@ function SessionScreen({ history, setHistory, syncLast, onSynced }) {
           }}
         />
       </div>
-      {hasVariants && (
-        /*#__PURE__*/ <div
-          style={{
-            display: "flex",
-            gap: 8,
-            marginBottom: 10,
-          }}
-        >
-          {sessionVariants.map((v) => (
-            /*#__PURE__*/ <button
-              key={v.id}
-              onClick={() => switchVariant(v.id)}
-              style={{
-                flex: 1,
-                padding: "8px 0",
-                border:
-                  variant === v.id
-                    ? "0.5px solid #111"
-                    : "0.5px solid #ddd",
-                borderRadius: 10,
-                background: variant === v.id ? "#111" : "#fff",
-                color: variant === v.id ? "#fff" : session.color,
-                fontSize: 13,
-                fontWeight: 600,
-                cursor: "pointer",
-              }}
-            >
-              {v.label}
-            </button>
-          ))}
-        </div>
-      )}
       <div
         style={{
           fontSize: 11,
           color: "#888",
           marginBottom: 14,
-          marginTop: hasVariants ? -8 : 0,
         }}
       >
-        rest {getVariant(active, variant).rest}
+        rest {session.rest}
       </div>
       <div
         style={{
@@ -2474,7 +2310,7 @@ function SessionScreen({ history, setHistory, syncLast, onSynced }) {
       </div>
       {sessionMovements.map((mov, idx) => (
         /*#__PURE__*/ <div
-          key={mov.name + ":" + variant}
+          key={mov.name}
           style={{
             marginTop: 10,
           }}
