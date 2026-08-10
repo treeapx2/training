@@ -220,6 +220,7 @@ function saveDraft(type, movements, note, sessionDate, cardio) {
         targetWeight: m._targetWeight != null ? m._targetWeight : null,
         chipChoice: m._chipChoice || null,
         suggested: m._suggested || null,
+        supersetId: m.supersetId || null,
       })),
     };
     localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
@@ -265,11 +266,47 @@ function buildOrderedMovements(type, groupOrder, blockMovements) {
   });
   return result;
 }
+// ── Supersets ────────────────────────────────────────────────────────────────
+// Pre-seeded pairs (see CHANGES.md Aug 10 2026, Phase 3) — the program's
+// prose already calls these out ("Superset with X" in BLOCK.target). Applied
+// at session-build time, not baked into BLOCK.sessions[type].movements'
+// declared order itself: reordering here is a session-construction concern,
+// while that array's order is authored training content (see CLAUDE.md
+// "Scope boundary") — none of these pairs are adjacent in it today.
+const SUPERSET_PAIRS = [
+  ["Pec Fly", "Lateral Raise"],
+  ["Rope Pushdown", "Skull Crusher"],
+  ["Cable Curl", "Reverse Fly"],
+  ["Leg Extension", "Calf Raise"],
+];
+// Moves the second movement of each known pair to sit immediately after the
+// first (a superset renders as one combined card, which requires the two
+// movements to be adjacent in sessionMovements) and assigns both a shared
+// supersetId. Pre-seeded pairs are unlinkable like any other — this only
+// establishes the default.
+function seedSupersets(movements) {
+  const list = movements.slice();
+  SUPERSET_PAIRS.forEach(([nameA, nameB], pairIdx) => {
+    const idxA = list.findIndex((m) => m.name === nameA);
+    const idxB = list.findIndex((m) => m.name === nameB);
+    if (idxA === -1 || idxB === -1) return;
+    const supersetId = "seed_" + pairIdx;
+    const [movB] = list.splice(idxB, 1);
+    const newIdxA = list.findIndex((m) => m.name === nameA);
+    list.splice(newIdxA + 1, 0, movB);
+    list[newIdxA] = { ...list[newIdxA], supersetId };
+    list[newIdxA + 1] = { ...list[newIdxA + 1], supersetId };
+  });
+  return list;
+}
 // Builds a fresh sessionMovements array for a session type, re-attaching any
 // previously logged sets and exercise note (keyed by movement name, via
 // carryMap) so resuming a draft keeps logged data instead of discarding it.
+// Pre-seeded superset pairs (see above) are applied fresh each time — only
+// called for a brand-new session start, never for draft resume, which
+// restores whatever pairing/unlinking was already saved with the draft.
 function buildSessionMovements(type, carryMap) {
-  return BLOCK.sessions[type].movements.map((m) => {
+  const withGroups = BLOCK.sessions[type].movements.map((m) => {
     const mov = {
       ...m,
       _group: groupLabelFor(m.name),
@@ -279,6 +316,7 @@ function buildSessionMovements(type, carryMap) {
     mov._exerciseNote = carry.note || "";
     return mov;
   });
+  return seedSupersets(withGroups);
 }
 // Single stable storage key — never changes
 const SYNC_KEY = "at_sync_cfg_v1";
@@ -1088,6 +1126,70 @@ const ci = (extra = {}) => ({
   boxSizing: "border-box",
   ...extra,
 });
+// Down/hold/up target-weight chips (see CHANGES.md Aug 10 2026, Phase 2).
+// Shared by SetLogger (single movement) and SupersetRow (linked pair —
+// "each movement in a pair keeps its own target chips").
+function ChipPicker({ mov, history, chipChoice, suggested, onChipTap }) {
+  const hold = deriveCurrentWeight(history, mov);
+  const chipValues = {
+    down: stepWeight(mov, hold, -1),
+    hold,
+    up: stepWeight(mov, hold, 1),
+  };
+  return (
+    /*#__PURE__*/ <div>
+      <div
+        style={{
+          display: "flex",
+          gap: 8,
+        }}
+      >
+        {["down", "hold", "up"].map((choice) => (
+          /*#__PURE__*/ <button
+            key={choice}
+            onClick={() => onChipTap(choice)}
+            style={{
+              flex: 1,
+              padding: "10px 0",
+              border:
+                chipChoice === choice ? "0.5px solid #111" : "0.5px solid #ddd",
+              borderRadius: 10,
+              background: chipChoice === choice ? "#111" : "#fff",
+              color: chipChoice === choice ? "#fff" : "#111",
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            {chipValues[choice]}
+            {suggested === choice ? " ★" : ""}
+          </button>
+        ))}
+      </div>
+      <div
+        style={{
+          display: "flex",
+          gap: 8,
+          marginTop: 4,
+        }}
+      >
+        {["down", "hold", "up"].map((choice) => (
+          /*#__PURE__*/ <div
+            key={choice}
+            style={{
+              flex: 1,
+              textAlign: "center",
+              fontSize: 10,
+              color: "#999",
+            }}
+          >
+            {choice}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 function SetLogger({
   mov,
   sets,
@@ -1103,12 +1205,6 @@ function SetLogger({
   const [showWhy, setShowWhy] = useState(false);
   const pr = history ? getMovementPR(history, mov.name) : null;
   const chartData = history ? getMovementHistory(history, mov.name) : [];
-  const hold = deriveCurrentWeight(history, mov);
-  const chipValues = {
-    down: stepWeight(mov, hold, -1),
-    hold,
-    up: stepWeight(mov, hold, 1),
-  };
   return (
     /*#__PURE__*/ <div
       style={{
@@ -1182,57 +1278,13 @@ function SetLogger({
             padding: "10px 12px",
           }}
         >
-          <div
-            style={{
-              display: "flex",
-              gap: 8,
-            }}
-          >
-            {["down", "hold", "up"].map((choice) => (
-              /*#__PURE__*/ <button
-                key={choice}
-                onClick={() => onChipTap(choice)}
-                style={{
-                  flex: 1,
-                  padding: "10px 0",
-                  border:
-                    chipChoice === choice
-                      ? "0.5px solid #111"
-                      : "0.5px solid #ddd",
-                  borderRadius: 10,
-                  background: chipChoice === choice ? "#111" : "#fff",
-                  color: chipChoice === choice ? "#fff" : "#111",
-                  fontSize: 14,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                }}
-              >
-                {chipValues[choice]}
-                {suggested === choice ? " ★" : ""}
-              </button>
-            ))}
-          </div>
-          <div
-            style={{
-              display: "flex",
-              gap: 8,
-              marginTop: 4,
-            }}
-          >
-            {["down", "hold", "up"].map((choice) => (
-              /*#__PURE__*/ <div
-                key={choice}
-                style={{
-                  flex: 1,
-                  textAlign: "center",
-                  fontSize: 10,
-                  color: "#999",
-                }}
-              >
-                {choice}
-              </div>
-            ))}
-          </div>
+          <ChipPicker
+            mov={mov}
+            history={history}
+            chipChoice={chipChoice}
+            suggested={suggested}
+            onChipTap={onChipTap}
+          />
         </div>
       ) : (
         /*#__PURE__*/ <>
@@ -1394,16 +1446,12 @@ function SetLogger({
     </div>
   );
 }
-function MovementRow({
-  mov,
-  sessionColor,
-  history,
-  sessionType,
-  position,
-  total,
-  onChange,
-}) {
-  const [open, setOpen] = useState(false);
+// Encapsulates one movement's chip/ramp/logging state (target picker +
+// per-set logging). Used by MovementRow directly, and twice over — once
+// per movement — by SupersetRow, so a linked pair still each "keeps its
+// own sets, weight, chips, and note" (see CHANGES.md Phase 3) while
+// sharing one card visually.
+function useMovementPicker(mov, history, position, total, onChange) {
   // One note per exercise (not per set) — see CHANGES.md Phase 4.
   const [exerciseNote, setExerciseNote] = useState(mov._exerciseNote || "");
   useEffect(() => {
@@ -1563,6 +1611,45 @@ function MovementRow({
       ),
     );
   };
+
+  return {
+    exerciseNote,
+    setExerciseNote,
+    suggested,
+    chipChoice,
+    targetWeight,
+    plannedSets,
+    loggedSets,
+    done,
+    handleChipTap,
+    handleLog,
+    handleUpdate,
+    handleDelete,
+  };
+}
+function MovementRow({
+  mov,
+  sessionColor,
+  history,
+  sessionType,
+  position,
+  total,
+  onChange,
+}) {
+  const [open, setOpen] = useState(false);
+  const {
+    exerciseNote,
+    setExerciseNote,
+    suggested,
+    chipChoice,
+    plannedSets,
+    loggedSets,
+    done,
+    handleChipTap,
+    handleLog,
+    handleUpdate,
+    handleDelete,
+  } = useMovementPicker(mov, history, position, total, onChange);
   return (
     /*#__PURE__*/ <div
       style={{
@@ -1706,6 +1793,324 @@ function MovementRow({
   );
 }
 
+// Two linked movements rendered as one card with interleaved set rows (see
+// CHANGES.md Phase 3). Each movement keeps its own sets/weight/chips/note —
+// two independent useMovementPicker instances — only the card is shared.
+function SupersetRow({
+  movA,
+  movB,
+  sessionColor,
+  history,
+  positionA,
+  positionB,
+  total,
+  onChange,
+  onUnlink,
+}) {
+  const [open, setOpen] = useState(false);
+  const pickerA = useMovementPicker(movA, history, positionA, total, onChange);
+  const pickerB = useMovementPicker(movB, history, positionB, total, onChange);
+  const doneCount =
+    (pickerA.loggedSets.length > 0 ? 1 : 0) +
+    (pickerB.loggedSets.length > 0 ? 1 : 0);
+  const rowInput = (picker, idx, field, extra) => (
+    /*#__PURE__*/ <input
+      type="number"
+      inputMode={field === "reps" ? "numeric" : "decimal"}
+      value={picker.plannedSets[idx][field]}
+      onChange={(e) => picker.handleUpdate(idx, field, e.target.value)}
+      disabled={picker.plannedSets[idx].logged}
+      style={{
+        ...ci(),
+        background: picker.plannedSets[idx].logged ? "#f5f5f3" : "#fff",
+        ...extra,
+      }}
+    />
+  );
+  const movementSetRow = (picker, mov, idx) => {
+    if (idx >= picker.plannedSets.length) {
+      return (
+        /*#__PURE__*/ <div
+          key={mov.name}
+          style={{
+            gridColumn: "1 / -1",
+          }}
+        />
+      );
+    }
+    const s = picker.plannedSets[idx];
+    const isLogged = !!s.logged;
+    const rc = rpeColor(s.rpe);
+    return (
+      /*#__PURE__*/ <div
+        key={mov.name}
+        style={{
+          display: "grid",
+          gridTemplateColumns: "60px 1fr 1fr 1fr 40px",
+          gap: 4,
+          alignItems: "center",
+          marginBottom: 3,
+        }}
+      >
+        <div
+          style={{
+            fontSize: 10,
+            color: "#999",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {mov.name}
+        </div>
+        {rowInput(picker, idx, "weight")}
+        {rowInput(picker, idx, "reps")}
+        {rowInput(picker, idx, "rpe", {
+          color: isLogged ? rc : "#111",
+          fontWeight: isLogged ? 700 : 400,
+        })}
+        {isLogged ? (
+          /*#__PURE__*/ <button
+            onClick={() => picker.handleDelete(idx)}
+            style={{
+              fontSize: 11,
+              color: "#ccc",
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              padding: 0,
+            }}
+          >
+            ✕
+          </button>
+        ) : (
+          /*#__PURE__*/ <button
+            onClick={() => picker.handleLog(idx)}
+            style={{
+              padding: "4px 0",
+              background: "#111",
+              color: "#fff",
+              border: "none",
+              borderRadius: 6,
+              fontSize: 11,
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            log
+          </button>
+        )}
+      </div>
+    );
+  };
+  const maxSets = Math.max(
+    pickerA.plannedSets.length,
+    pickerB.plannedSets.length,
+  );
+  return (
+    /*#__PURE__*/ <div
+      style={{
+        border: "0.5px solid #185FA5",
+        borderRadius: 10,
+        overflow: "hidden",
+      }}
+    >
+      <div
+        onClick={() => setOpen((o) => !o)}
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          padding: "11px 12px",
+          cursor: "pointer",
+          background: "#EEF5FC",
+          userSelect: "none",
+        }}
+      >
+        <div
+          style={{
+            fontSize: 12,
+            fontWeight: 700,
+            color: "#185FA5",
+          }}
+        >
+          SUPERSET · {movA.name} + {movB.name}
+        </div>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+          }}
+        >
+          {doneCount > 0 && (
+            /*#__PURE__*/ <span
+              style={{
+                fontSize: 11,
+                color: "#185FA5",
+                fontWeight: 600,
+              }}
+            >
+              {doneCount}/2
+            </span>
+          )}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onUnlink();
+            }}
+            style={{
+              fontSize: 11,
+              color: "#185FA5",
+              background: "none",
+              border: "none",
+              textDecoration: "underline",
+              cursor: "pointer",
+              padding: 0,
+            }}
+          >
+            unlink
+          </button>
+        </div>
+      </div>
+      {open && (
+        /*#__PURE__*/ <div
+          style={{
+            padding: "8px 12px 10px",
+            background: "#fff",
+          }}
+        >
+          <div
+            style={{
+              fontSize: 11,
+              color: "#888",
+              marginBottom: 8,
+            }}
+          >
+            Rest: none between · 60s after pair
+          </div>
+          {pickerA.plannedSets.length === 0 && (
+            /*#__PURE__*/ <div
+              style={{
+                marginBottom: 8,
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 600,
+                  color: "#111",
+                  marginBottom: 4,
+                }}
+              >
+                {movA.name}
+              </div>
+              <ChipPicker
+                mov={movA}
+                history={history}
+                chipChoice={pickerA.chipChoice}
+                suggested={pickerA.suggested}
+                onChipTap={pickerA.handleChipTap}
+              />
+            </div>
+          )}
+          {pickerB.plannedSets.length === 0 && (
+            /*#__PURE__*/ <div
+              style={{
+                marginBottom: 8,
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 600,
+                  color: "#111",
+                  marginBottom: 4,
+                }}
+              >
+                {movB.name}
+              </div>
+              <ChipPicker
+                mov={movB}
+                history={history}
+                chipChoice={pickerB.chipChoice}
+                suggested={pickerB.suggested}
+                onChipTap={pickerB.handleChipTap}
+              />
+            </div>
+          )}
+          {pickerA.plannedSets.length > 0 && pickerB.plannedSets.length > 0 && (
+            /*#__PURE__*/ <div>
+              {Array.from({ length: maxSets }).map((_, i) => (
+                /*#__PURE__*/ <div
+                  key={i}
+                  style={{
+                    marginBottom: 6,
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 10,
+                      color: "#bbb",
+                      fontWeight: 600,
+                      marginBottom: 2,
+                    }}
+                  >
+                    Set {i + 1}
+                  </div>
+                  {movementSetRow(pickerA, movA, i)}
+                  {movementSetRow(pickerB, movB, i)}
+                </div>
+              ))}
+            </div>
+          )}
+          <div
+            style={{
+              marginTop: 6,
+            }}
+          >
+            <textarea
+              value={pickerA.exerciseNote}
+              onChange={(e) => pickerA.setExerciseNote(e.target.value)}
+              placeholder={`note for ${movA.name}...`}
+              style={{
+                width: "100%",
+                padding: "6px 8px",
+                border: "0.5px solid #ddd",
+                borderRadius: 8,
+                fontSize: 13,
+                color: "#111",
+                background: "#f9f9f8",
+                resize: "none",
+                height: 36,
+                outline: "none",
+                marginBottom: 6,
+              }}
+            />
+            <textarea
+              value={pickerB.exerciseNote}
+              onChange={(e) => pickerB.setExerciseNote(e.target.value)}
+              placeholder={`note for ${movB.name}...`}
+              style={{
+                width: "100%",
+                padding: "6px 8px",
+                border: "0.5px solid #ddd",
+                borderRadius: 8,
+                fontSize: 13,
+                color: "#111",
+                background: "#f9f9f8",
+                resize: "none",
+                height: 36,
+                outline: "none",
+              }}
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Screens ───────────────────────────────────────────────────────────────────
 function SessionScreen({ history, setHistory, syncLast, onSynced }) {
   const [active, setActive] = useState(null);
@@ -1771,6 +2176,7 @@ function SessionScreen({ history, setHistory, syncLast, onSynced }) {
       return {
         ...blockMov,
         _group: dm._group,
+        supersetId: dm.supersetId || null,
       };
     });
     setSessionMovements(restored);
@@ -1800,6 +2206,29 @@ function SessionScreen({ history, setHistory, syncLast, onSynced }) {
       [a[idx + 1], a[idx]] = [a[idx], a[idx + 1]];
       return a;
     });
+    bumpTick();
+  };
+  // Superset linking (see CHANGES.md Phase 3) — an annotation on the
+  // existing flat list, not a nested structure. Links this movement with
+  // the one immediately below it; unlinking (pre-seeded pairs included)
+  // just clears supersetId on both — no logged data is touched either way.
+  const linkWithNext = (idx) => {
+    setSessionMovements((prev) => {
+      if (idx + 1 >= prev.length) return prev;
+      const supersetId = "link_" + Date.now();
+      const a = prev.slice();
+      a[idx] = { ...a[idx], supersetId };
+      a[idx + 1] = { ...a[idx + 1], supersetId };
+      return a;
+    });
+    bumpTick();
+  };
+  const unlinkSuperset = (supersetId) => {
+    setSessionMovements((prev) =>
+      prev.map((m) =>
+        m.supersetId === supersetId ? { ...m, supersetId: null } : m,
+      ),
+    );
     bumpTick();
   };
 
@@ -1866,6 +2295,7 @@ function SessionScreen({ history, setHistory, syncLast, onSynced }) {
           m._targetWeight != null ? String(m._targetWeight) : undefined,
         chipChoice: m._chipChoice || undefined,
         suggested: m._suggested || undefined,
+        supersetId: m.supersetId || undefined,
       }))
       .filter((m) => m.sets.length > 0 || m.note);
     const formattedDate = new Date(
@@ -2305,6 +2735,21 @@ function SessionScreen({ history, setHistory, syncLast, onSynced }) {
   const doneMov = sessionMovements.filter(
     (m) => (m._loggedSets || []).length > 0,
   ).length;
+  // Group consecutive movements sharing a supersetId into a pair for
+  // SupersetRow; everything else renders as a single MovementRow. Pairing
+  // only takes effect when the two are adjacent — see seedSupersets.
+  const renderGroups = [];
+  for (let i = 0; i < sessionMovements.length; ) {
+    const m = sessionMovements[i];
+    const next = sessionMovements[i + 1];
+    if (m.supersetId && next && next.supersetId === m.supersetId) {
+      renderGroups.push({ kind: "pair", movA: m, movB: next, idxA: i, idxB: i + 1 });
+      i += 2;
+    } else {
+      renderGroups.push({ kind: "single", mov: m, idx: i });
+      i += 1;
+    }
+  }
   return (
     /*#__PURE__*/ <div>
       <div
@@ -2391,95 +2836,140 @@ function SessionScreen({ history, setHistory, syncLast, onSynced }) {
           </div>
         ))}
       </div>
-      {sessionMovements.map((mov, idx) => (
-        /*#__PURE__*/ <div
-          key={mov.name}
-          style={{
-            marginTop: 10,
-          }}
-        >
-          <div
+      {renderGroups.map((g) => {
+        if (g.kind === "pair") {
+          return (
+            /*#__PURE__*/ <div
+              key={g.movA.name + "+" + g.movB.name}
+              style={{
+                marginTop: 10,
+              }}
+            >
+              <SupersetRow
+                movA={g.movA}
+                movB={g.movB}
+                sessionColor={session.color}
+                history={history}
+                positionA={g.idxA}
+                positionB={g.idxB}
+                total={sessionMovements.length}
+                onChange={bumpTick}
+                onUnlink={() => unlinkSuperset(g.movA.supersetId)}
+              />
+            </div>
+          );
+        }
+        const { mov, idx } = g;
+        const nextMov = sessionMovements[idx + 1];
+        const canLink = !!nextMov && !nextMov.supersetId;
+        return (
+          /*#__PURE__*/ <div
+            key={mov.name}
             style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              margin: "0 0 4px",
+              marginTop: 10,
             }}
           >
-            <span
-              style={{
-                fontSize: 10,
-                fontWeight: 700,
-                color: session.color,
-                textTransform: "uppercase",
-                letterSpacing: "0.08em",
-                background: session.bg,
-                padding: "2px 6px",
-                borderRadius: 6,
-              }}
-            >
-              {mov._group || "Other"}
-            </span>
             <div
               style={{
-                flex: 1,
-                height: "0.5px",
-                background: "#e5e5e3",
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                margin: "0 0 4px",
               }}
+            >
+              <span
+                style={{
+                  fontSize: 10,
+                  fontWeight: 700,
+                  color: session.color,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
+                  background: session.bg,
+                  padding: "2px 6px",
+                  borderRadius: 6,
+                }}
+              >
+                {mov._group || "Other"}
+              </span>
+              <div
+                style={{
+                  flex: 1,
+                  height: "0.5px",
+                  background: "#e5e5e3",
+                }}
+              />
+              <span
+                style={{
+                  fontSize: 10,
+                  color: "#bbb",
+                  marginRight: 4,
+                  fontWeight: 600,
+                }}
+              >
+                #{idx + 1}
+              </span>
+              <button
+                onClick={() => moveMovementUp(idx)}
+                disabled={idx === 0}
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: idx === 0 ? "default" : "pointer",
+                  fontSize: 12,
+                  color: idx === 0 ? "#e5e5e3" : "#bbb",
+                  padding: "2px 4px",
+                  lineHeight: 1,
+                }}
+              >
+                ▲
+              </button>
+              <button
+                onClick={() => moveMovementDown(idx)}
+                disabled={idx === sessionMovements.length - 1}
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor:
+                    idx === sessionMovements.length - 1 ? "default" : "pointer",
+                  fontSize: 12,
+                  color:
+                    idx === sessionMovements.length - 1 ? "#e5e5e3" : "#bbb",
+                  padding: "2px 4px",
+                  lineHeight: 1,
+                }}
+              >
+                ▼
+              </button>
+            </div>
+            <MovementRow
+              mov={mov}
+              sessionColor={session.color}
+              history={history}
+              sessionType={active}
+              position={idx}
+              total={sessionMovements.length}
+              onChange={bumpTick}
             />
-            <span
-              style={{
-                fontSize: 10,
-                color: "#bbb",
-                marginRight: 4,
-                fontWeight: 600,
-              }}
-            >
-              #{idx + 1}
-            </span>
-            <button
-              onClick={() => moveMovementUp(idx)}
-              disabled={idx === 0}
-              style={{
-                background: "none",
-                border: "none",
-                cursor: idx === 0 ? "default" : "pointer",
-                fontSize: 12,
-                color: idx === 0 ? "#e5e5e3" : "#bbb",
-                padding: "2px 4px",
-                lineHeight: 1,
-              }}
-            >
-              ▲
-            </button>
-            <button
-              onClick={() => moveMovementDown(idx)}
-              disabled={idx === sessionMovements.length - 1}
-              style={{
-                background: "none",
-                border: "none",
-                cursor:
-                  idx === sessionMovements.length - 1 ? "default" : "pointer",
-                fontSize: 12,
-                color: idx === sessionMovements.length - 1 ? "#e5e5e3" : "#bbb",
-                padding: "2px 4px",
-                lineHeight: 1,
-              }}
-            >
-              ▼
-            </button>
+            {canLink && (
+              /*#__PURE__*/ <button
+                onClick={() => linkWithNext(idx)}
+                style={{
+                  width: "100%",
+                  padding: "4px 0",
+                  marginTop: -6,
+                  background: "none",
+                  border: "none",
+                  fontSize: 11,
+                  color: "#bbb",
+                  cursor: "pointer",
+                }}
+              >
+                ⛓ link with {nextMov.name}
+              </button>
+            )}
           </div>
-          <MovementRow
-            mov={mov}
-            sessionColor={session.color}
-            history={history}
-            sessionType={active}
-            position={idx}
-            total={sessionMovements.length}
-            onChange={bumpTick}
-          />
-        </div>
-      ))}
+        );
+      })}
       <div style={S.label}>Session note</div>
       <textarea
         value={sessionNote}

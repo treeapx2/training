@@ -140,4 +140,16 @@ check("7. target picker behavior (test-target-picker.js)", () => {
   );
 });
 
+// 8. supersets (see CLAUDE.md "Supersets"): all four pre-seeded pairs render
+// as a combined card, each movement in a pair keeps its own chips/ramp,
+// finish() persists a shared supersetId, unlinking breaks the pair without
+// discarding logged data, and a non-pre-seeded pair can be linked manually.
+check("8. superset behavior (test-superset.js)", () => {
+  execFileSync(
+    process.execPath,
+    [path.join(repoRoot, "scripts", "test-superset.js")],
+    { stdio: "pipe" },
+  );
+});
+
 process.exit(failed ? 1 : 0);
