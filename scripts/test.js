@@ -128,4 +128,16 @@ check("6. sync-last timestamp behavior (test-sync-last.js)", () => {
   );
 });
 
+// 7. target picker (see CLAUDE.md "Target picker"): ramp shape/clamping/
+// trim-and-pad, deriveCurrentWeight/deriveSetCount history derivation, all
+// four suggestChip rules, the positional up->hold downgrade, and that
+// finishing a session persists targetWeight/chipChoice/suggested.
+check("7. target picker behavior (test-target-picker.js)", () => {
+  execFileSync(
+    process.execPath,
+    [path.join(repoRoot, "scripts", "test-target-picker.js")],
+    { stdio: "pipe" },
+  );
+});
+
 process.exit(failed ? 1 : 0);

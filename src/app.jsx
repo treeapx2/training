@@ -39,11 +39,11 @@ const BLOCK = {
       bg: "#EAF3DE",
       rest: "Opener 2\u20132.5 min \u00b7 accessories 60s",
       movements: [
-        { name: "Leg Press", current: "185 lb", workSets: 2, reps: 10, target: "BANK 185 at RPE 7 \u2014 test passed 7/29 (185x10x2 @ RPE 8) but that's the rep ceiling. Two clean sessions at RPE 7, then TEST 200. Fresh opener, straight sets, 2-2.5 min rest." },
-        { name: "Leg Extension", current: "150 lb", workSets: 2, reps: 10, target: "TEST 165 \u2014 broke the 8-rep wall: 150x10x2 @ RPE 8 (7/26) then @ RPE 7 (7/29). The old plateau was fatigue placement, not a ceiling." },
-        { name: "Leg Curl", current: "90 lb", workSets: 2, reps: 10, target: "One more clean 10x10 @ 90, RPE \u22647, then TEST 105. Low-back compensation resolved (clean 7/26 and 7/29). Stop the set if the back takes over." },
-        { name: "Goblet Squat", current: "50 lb", workSets: 2, reps: 10, target: "Two clean sessions at 50 (10 @ RPE 7 then 8 on 7/29), then 55. Controlled depth, knee-monitor." },
-        { name: "Calf Raise", current: "40 lb", workSets: 3, reps: 15, target: "TEST 45 \u2014 40x20x3 @ RPE 6-7 (7/29) was the easiest pass of the day. Superset with Leg Extension." }
+        { name: "Leg Press", current: "185 lb", increment: 15, reps: 10, target: "BANK 185 at RPE 7 \u2014 test passed 7/29 (185x10x2 @ RPE 8) but that's the rep ceiling. Two clean sessions at RPE 7, then TEST 200. Fresh opener, straight sets, 2-2.5 min rest." },
+        { name: "Leg Extension", current: "150 lb", increment: 15, reps: 10, target: "TEST 165 \u2014 broke the 8-rep wall: 150x10x2 @ RPE 8 (7/26) then @ RPE 7 (7/29). The old plateau was fatigue placement, not a ceiling." },
+        { name: "Leg Curl", current: "90 lb", increment: 15, reps: 10, target: "One more clean 10x10 @ 90, RPE \u22647, then TEST 105. Low-back compensation resolved (clean 7/26 and 7/29). Stop the set if the back takes over." },
+        { name: "Goblet Squat", current: "50 lb", increment: 5, reps: 10, target: "Two clean sessions at 50 (10 @ RPE 7 then 8 on 7/29), then 55. Controlled depth, knee-monitor." },
+        { name: "Calf Raise", current: "40 lb", increment: 5, reps: 15, target: "TEST 45 \u2014 40x20x3 @ RPE 6-7 (7/29) was the easiest pass of the day. Superset with Leg Extension." }
       ]
     },
     push: {
@@ -52,12 +52,12 @@ const BLOCK = {
       bg: "#E6F1FB",
       rest: "Opener 2 min · supersets 45–60s",
       movements: [
-        { name: "Chest Press", current: "120 lb", workSets: 2, reps: 10, target: "TEST 135 \u2014 second clean 10/10 @ RPE 7-8 as fresh opener (7/28). Run this FIRST." },
-        { name: "Shoulder Press", current: "90 lb", workSets: 2, reps: 10, target: "HOLD 90 \u2014 needs a FRESH lead to confirm. Hit 90x10x2 when run first (7/5), dropped to 75x8 @ RPE 8 when run second (7/28). Confirm then 105. Thumb watch." },
-        { name: "Pec Fly", current: "120 lb", workSets: 2, reps: 10, target: "TEST 135 \u2014 120x10x2 @ RPE 7 (7/28), room to spare. Superset with Lateral Raise." },
-        { name: "Rope Pushdown", current: "42.5 lb", workSets: 2, reps: 10, target: "Confirm 2nd clean 10/10 @ 42.5 then 47.5. Skipped 7/28 (machine in use). Superset with Skull Crusher." },
-        { name: "Lateral Raise", current: "15 lb", workSets: 2, reps: 12, target: "Back to 15 and run EARLIER \u2014 12x10x4 reached RPE 8 at position #4 (7/28). 15x10x2 already done 7/5." },
-        { name: "Skull Crusher", current: "20 lb", workSets: 2, reps: 10, target: "TEST 25 \u2014 20x10x4 @ RPE 6-7 (7/28), elbow quiet. Sharp pain = stop." }
+        { name: "Chest Press", current: "120 lb", increment: 15, reps: 10, target: "TEST 135 \u2014 second clean 10/10 @ RPE 7-8 as fresh opener (7/28). Run this FIRST." },
+        { name: "Shoulder Press", current: "90 lb", increment: 15, reps: 10, target: "HOLD 90 \u2014 needs a FRESH lead to confirm. Hit 90x10x2 when run first (7/5), dropped to 75x8 @ RPE 8 when run second (7/28). Confirm then 105. Thumb watch." },
+        { name: "Pec Fly", current: "120 lb", increment: 15, reps: 10, target: "TEST 135 \u2014 120x10x2 @ RPE 7 (7/28), room to spare. Superset with Lateral Raise." },
+        { name: "Rope Pushdown", current: "42.5 lb", increment: 5, reps: 10, target: "Confirm 2nd clean 10/10 @ 42.5 then 47.5. Skipped 7/28 (machine in use). Superset with Skull Crusher." },
+        { name: "Lateral Raise", current: "15 lb", steps: [12, 15, 20, 25], reps: 12, target: "Back to 15 and run EARLIER \u2014 12x10x4 reached RPE 8 at position #4 (7/28). 15x10x2 already done 7/5." },
+        { name: "Skull Crusher", current: "20 lb", increment: 5, reps: 10, target: "TEST 25 \u2014 20x10x4 @ RPE 6-7 (7/28), elbow quiet. Sharp pain = stop." }
       ]
     },
     pull: {
@@ -66,13 +66,13 @@ const BLOCK = {
       bg: "#EEEDFE",
       rest: "Opener 2 min · supersets 45–60s",
       movements: [
-        { name: "DB Row", current: "50 lb", workSets: 2, reps: 10, target: "Build 8-10 @ 50 \u2014 45x10 @ RPE 7 as fresh opener (7/25), best DB Row log to date. Keep LEADING the session with this; it's fatigue-sensitive." },
-        { name: "Seated Row", current: "135 lb", workSets: 2, reps: 10, target: "Back to 135 \u2014 build clean 10/10 then 150. (7/25 was a deliberate deload to 120x10x2 @ RPE 7 on upper re-entry, not a regression.)" },
-        { name: "Lat Pulldown", current: "135 lb", workSets: 2, reps: 10, target: "Confirm 2nd clean 10/10 @ 135 (7/13 clean) then 150." },
-        { name: "Cable Curl", current: "42.5 lb", workSets: 2, reps: 10, target: "TEST 47.5 \u2014 two clean sessions at 42.5 (7/4, and 7/25 4x10 @ RPE 6-7). Superset with Reverse Fly." },
-        { name: "Hammer Curl", current: "20 lb", workSets: 2, reps: 10, target: "HOLD 20 \u2014 read heavy cold (7/25: 20x8 @ RPE 8, dropped to 15). TEST 25 only on a day this LEADS the session." },
-        { name: "Zottman Curl", current: "20 lb", workSets: 2, reps: 10, target: "Chase 10 reps @ 20 (stuck at 6) \u2014 slow eccentric." },
-        { name: "Reverse Fly", current: "15 lb", workSets: 2, reps: 12, target: "TEST 20 for 8s \u2014 15x10x3 all @ RPE 6 (7/25) clears the consistency gate." }
+        { name: "DB Row", current: "50 lb", increment: 5, reps: 10, target: "Build 8-10 @ 50 \u2014 45x10 @ RPE 7 as fresh opener (7/25), best DB Row log to date. Keep LEADING the session with this; it's fatigue-sensitive." },
+        { name: "Seated Row", current: "135 lb", increment: 15, reps: 10, target: "Back to 135 \u2014 build clean 10/10 then 150. (7/25 was a deliberate deload to 120x10x2 @ RPE 7 on upper re-entry, not a regression.)" },
+        { name: "Lat Pulldown", current: "135 lb", increment: 15, reps: 10, target: "Confirm 2nd clean 10/10 @ 135 (7/13 clean) then 150." },
+        { name: "Cable Curl", current: "42.5 lb", increment: 5, reps: 10, target: "TEST 47.5 \u2014 two clean sessions at 42.5 (7/4, and 7/25 4x10 @ RPE 6-7). Superset with Reverse Fly." },
+        { name: "Hammer Curl", current: "20 lb", increment: 5, reps: 10, target: "HOLD 20 \u2014 read heavy cold (7/25: 20x8 @ RPE 8, dropped to 15). TEST 25 only on a day this LEADS the session." },
+        { name: "Zottman Curl", current: "20 lb", increment: 5, reps: 10, target: "Chase 10 reps @ 20 (stuck at 6) \u2014 slow eccentric." },
+        { name: "Reverse Fly", current: "15 lb", increment: 5, reps: 12, target: "TEST 20 for 8s \u2014 15x10x3 all @ RPE 6 (7/25) clears the consistency gate." }
       ]
     }
   }
@@ -217,6 +217,9 @@ function saveDraft(type, movements, note, sessionDate, cardio) {
         _group: m._group,
         _loggedSets: m._loggedSets || [],
         note: m._exerciseNote || "",
+        targetWeight: m._targetWeight != null ? m._targetWeight : null,
+        chipChoice: m._chipChoice || null,
+        suggested: m._suggested || null,
       })),
     };
     localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
@@ -913,238 +916,161 @@ function parseCurrentWeight(current) {
   return m ? m[1] : "";
 }
 
-// Machine increment — 15 lb for plate-loaded machines, 5 lb for cables/DBs
-function machineInc(name) {
-  const fiveIncMovements = [
-    "DB Row",
-    "Lateral Raise",
-    "Reverse Fly",
-    "Hammer Curl",
-    "Zottman Curl",
-    "Cable Curl",
-    "Goblet Squat",
-    "Glute Bridge",
-    "Calf Raise",
-    "RDL",
-    "Skull Crusher",
-    "Incline DB Curl",
-    "Face Pull",
-    "DB Skull Crusher",
-    "OHE",
-    "Rope Pushdown",
-    "Cable Pushdown",
-  ];
-  return fiveIncMovements.includes(name) ? 5 : 15;
-}
-
-// Generate planned sets — ramp by fixed increments, not percentages
-function buildPlannedSets(mov, sessionType) {
-  const base = buildPlannedSetsBase(mov, sessionType);
-  if (!base.length) return base;
-  let out = base;
-  const want = parseInt(mov.workSets, 10);
-  if (want && want > 0) {
-    const w = base.filter((x) => x.type === "W");
-    const nonW = base.filter((x) => x.type !== "W");
-    const ws = w.slice(0, want);
-    while (ws.length < want && w.length)
-      ws.push({
-        ...w[w.length - 1],
-      });
-    out = [...nonW, ...ws];
-  }
-  if (mov.reps)
-    out = out.map((x) =>
-      x.type === "W"
-        ? {
-            ...x,
-            reps: String(mov.reps),
-          }
-        : x,
-    );
+// ── Target picker ────────────────────────────────────────────────────────────
+// Per-session summary for a movement, most recent first. `targetReps` decides
+// which of that session's sets "count": prefer the heaviest weight that hit
+// targetReps; if none of that session's sets did, fall back to the heaviest
+// logged regardless of reps. History doesn't record which logged sets were
+// warmups vs. working sets, so "heaviest (qualifying) set" is the best
+// available proxy for "the working set" throughout this section.
+function movementSessionSummaries(history, movName, targetReps) {
+  const out = [];
+  history.forEach((session) => {
+    const mov = session.movements.find((m) => m.name === movName);
+    if (!mov || !mov.sets || !mov.sets.length) return;
+    const sets = mov.sets.filter((s) => s.weight && parseFloat(s.weight) > 0);
+    if (!sets.length) return;
+    // Evaluate the heaviest weight actually logged — not the heaviest
+    // among sets that merely happen to meet target reps. Warmup/build sets
+    // are pre-filled with the same target rep count as the working sets
+    // (see buildRamp), so if the real top-weight attempt missed its reps, a
+    // lighter warmup set "succeeding" at the same rep count must not mask
+    // that miss.
+    const topWeight = Math.max(...sets.map((s) => parseFloat(s.weight)));
+    const topSets = sets.filter((s) => parseFloat(s.weight) === topWeight);
+    const topReps = Math.max(...topSets.map((s) => parseInt(s.reps, 10) || 0));
+    const topRpe = Math.max(...topSets.map((s) => parseFloat(s.rpe) || 0));
+    out.push({
+      date: session.date,
+      ts: parseSessionDate(session.date).getTime(),
+      topWeight,
+      hitTarget: topReps >= targetReps,
+      topRpe,
+      totalSets: mov.sets.length,
+    });
+  });
+  out.sort((a, b) => b.ts - a.ts);
   return out;
 }
-function buildPlannedSetsBase(mov, sessionType) {
-  const working = parseFloat(parseCurrentWeight(mov.current));
-  if (!working) return [];
-  const name = mov.name;
-  const inc = machineInc(name);
-  const isAccessory = [
-    "Lateral Raise",
-    "Reverse Fly",
-    "Hammer Curl",
-    "Zottman Curl",
-    "Cable Curl",
-    "Goblet Squat",
-    "Glute Bridge",
-    "Calf Raise",
-    "RDL",
-    "OHE",
-    "Skull Crusher",
-    "Incline DB Curl",
-    "Face Pull",
-    "DB Skull Crusher",
-  ].includes(name);
 
-  // DB Row: 4-set ramp, 5 lb increments
-  if (name === "DB Row") {
-    const w1 = Math.max(working - 3 * inc, inc);
-    const w2 = Math.max(working - 2 * inc, inc);
-    return [
-      {
-        weight: String(w1),
-        reps: "10",
-        rpe: "",
-        note: "",
-        type: "WU",
-      },
-      {
-        weight: String(w2),
-        reps: "10",
-        rpe: "",
-        note: "",
-        type: "B1",
-      },
-      {
-        weight: String(w2),
-        reps: "10",
-        rpe: "",
-        note: "",
-        type: "B2",
-      },
-      {
-        weight: String(working),
-        reps: "10",
-        rpe: "",
-        note: "",
-        type: "W",
-      },
-    ];
+// The "hold" chip's weight — the heaviest weight completed at target reps in
+// the most recent session containing this movement. Falls back to
+// BLOCK.current if the movement has never been logged.
+function deriveCurrentWeight(history, mov) {
+  const summaries = movementSessionSummaries(history, mov.name, mov.reps);
+  if (summaries.length) return summaries[0].topWeight;
+  return parseFloat(parseCurrentWeight(mov.current)) || 0;
+}
+
+// Today's total set count — the modal (most frequent) total-set count across
+// the last three sessions containing this movement. No history -> default to
+// the full 5-slot ramp.
+function deriveSetCount(history, movName) {
+  const summaries = movementSessionSummaries(history, movName, 0).slice(0, 3);
+  if (!summaries.length) return 5;
+  const freq = {};
+  let best = summaries[0].totalSets;
+  let bestFreq = 0;
+  summaries.forEach((s) => {
+    freq[s.totalSets] = (freq[s.totalSets] || 0) + 1;
+    if (freq[s.totalSets] > bestFreq) {
+      bestFreq = freq[s.totalSets];
+      best = s.totalSets;
+    }
+  });
+  return best;
+}
+
+// down/hold/up suggestion, evaluated against the last two sessions
+// containing the movement.
+function suggestChip(history, movName, targetReps) {
+  const summaries = movementSessionSummaries(history, movName, targetReps);
+  if (summaries.length < 2) return "hold";
+  const [last, prev] = summaries;
+  if (!last.hitTarget || last.topRpe >= 9) return "down";
+  if (last.hitTarget && last.topRpe <= 7 && prev.hitTarget && prev.topRpe <= 7)
+    return "up";
+  if (last.hitTarget && last.topRpe === 8) return "hold";
+  return "hold";
+}
+
+// Positional modifier — queue position materially affects output (BLOCK.flags:
+// "run the lift you want to advance FIRST"). A movement run late in the
+// session is not a valid place to attempt a weight increase.
+function applyPositionalDowngrade(suggested, position, total) {
+  const isLastTwo = position >= total - 2;
+  return isLastTwo && suggested === "up" ? "hold" : suggested;
+}
+
+// Steps one chip position from `value`: n=-1 down, +1 up, 0 = same. Movements
+// with a `steps` array (irregular dumbbell progressions) walk the array;
+// everything else steps by its fixed `increment`, clamped at the increment
+// itself (never zero or negative).
+function stepWeight(mov, value, n) {
+  if (mov.steps) {
+    const steps = mov.steps;
+    let idx = steps.indexOf(value);
+    if (idx === -1) {
+      idx = 0;
+      let bestDiff = Infinity;
+      steps.forEach((s, i) => {
+        const diff = Math.abs(s - value);
+        if (diff < bestDiff) {
+          bestDiff = diff;
+          idx = i;
+        }
+      });
+    }
+    const newIdx = Math.min(Math.max(idx + n, 0), steps.length - 1);
+    return steps[newIdx];
   }
+  const inc = mov.increment || 5;
+  return Math.max(value + n * inc, inc);
+}
 
-  // Accessories: 3 straight sets
-  if (isAccessory) {
-    return [
-      {
-        weight: String(working),
-        reps: "10",
-        rpe: "",
-        note: "",
-        type: "W",
-      },
-      {
-        weight: String(working),
-        reps: "10",
-        rpe: "",
-        note: "",
-        type: "W",
-      },
-      {
-        weight: String(working),
-        reps: "10",
-        rpe: "",
-        note: "",
-        type: "W",
-      },
-    ];
-  }
-
-  // Machine compounds — ramp by fixed increments
-  const wu = Math.max(working - 2 * inc, inc); // working − 2 increments
-  const b = Math.max(working - 1 * inc, inc); // working − 1 increment
-
-  if (sessionType === "push") {
-    // Push: 3 WU + 2 working (WU, WU at b, WU at b)
-    return [
-      {
-        weight: String(wu),
-        reps: "10",
-        rpe: "",
-        note: "",
-        type: "WU",
-      },
-      {
-        weight: String(b),
-        reps: "10",
-        rpe: "",
-        note: "",
-        type: "WU",
-      },
-      {
-        weight: String(b),
-        reps: "10",
-        rpe: "",
-        note: "",
-        type: "WU",
-      },
-      {
-        weight: String(working),
-        reps: "10",
-        rpe: "",
-        note: "",
-        type: "W",
-      },
-      {
-        weight: String(working),
-        reps: "10",
-        rpe: "",
-        note: "",
-        type: "W",
-      },
-    ];
-  }
-
-  // Legs / Pull: 1 WU + 2 build + 2 working
-  return [
-    {
-      weight: String(wu),
-      reps: "10",
-      rpe: "",
-      note: "",
-      type: "WU",
-    },
-    {
-      weight: String(b),
-      reps: "10",
-      rpe: "",
-      note: "",
-      type: "B",
-    },
-    {
-      weight: String(b),
-      reps: "10",
-      rpe: "",
-      note: "",
-      type: "B",
-    },
-    {
-      weight: String(working),
-      reps: "10",
-      rpe: "",
-      note: "",
-      type: "W",
-    },
-    {
-      weight: String(working),
-      reps: "10",
-      rpe: "",
-      note: "",
-      type: "W",
-    },
+// Ramp shape is fixed: [T-2i, T-i, T-i, T, T] (warmup, 2 build, 2 working)
+// for a chosen target T. `setCount` (see deriveSetCount) trims or pads that
+// template to match how many sets this movement has actually run recently —
+// trimming drops build sets first, then the warmup, and never goes below one
+// working set at T; padding beyond 5 adds more working sets at T.
+function buildRamp(mov, targetWeight, setCount) {
+  const wu = stepWeight(mov, targetWeight, -2);
+  const b = stepWeight(mov, targetWeight, -1);
+  const full = [
+    { weight: wu, type: "WU" },
+    { weight: b, type: "B" },
+    { weight: b, type: "B" },
+    { weight: targetWeight, type: "W" },
+    { weight: targetWeight, type: "W" },
   ];
+  let sets;
+  if (setCount >= 5) {
+    sets = full.slice();
+    for (let i = 5; i < setCount; i++) {
+      sets.push({ weight: targetWeight, type: "W" });
+    }
+  } else {
+    const dropOrder = [2, 1, 0, 4]; // B2, B1, WU, then W2 as a last resort
+    const toDrop = 5 - Math.max(setCount, 1);
+    const dropIdx = new Set(dropOrder.slice(0, toDrop));
+    sets = full.filter((_, i) => !dropIdx.has(i));
+  }
+  return sets.map((s) => ({
+    weight: String(s.weight),
+    reps: String(mov.reps),
+    rpe: "",
+    note: "",
+    type: s.type,
+  }));
 }
 const SET_TYPE_COLOR = {
   WU: "#bbb",
   B: "#185FA5",
-  B1: "#185FA5",
-  B2: "#185FA5",
   W: "#111",
 };
 const SET_TYPE_LABEL = {
   WU: "WU",
   B: "B",
-  B1: "B",
-  B2: "B",
   W: "W",
 };
 
@@ -1170,9 +1096,19 @@ function SetLogger({
   onDelete,
   history,
   sessionColor,
+  chipChoice,
+  suggested,
+  onChipTap,
 }) {
+  const [showWhy, setShowWhy] = useState(false);
   const pr = history ? getMovementPR(history, mov.name) : null;
   const chartData = history ? getMovementHistory(history, mov.name) : [];
+  const hold = deriveCurrentWeight(history, mov);
+  const chipValues = {
+    down: stepWeight(mov, hold, -1),
+    hold,
+    up: stepWeight(mov, hold, 1),
+  };
   return (
     /*#__PURE__*/ <div
       style={{
@@ -1191,17 +1127,24 @@ function SetLogger({
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            marginBottom: chartData.length >= 2 ? 6 : 0,
+            marginBottom: chartData.length >= 2 || showWhy ? 6 : 0,
           }}
         >
-          <span
+          <button
+            onClick={() => setShowWhy((v) => !v)}
             style={{
               fontSize: 11,
-              color: "#999",
+              color: "#aaa",
+              background: "none",
+              border: "none",
+              padding: 0,
+              cursor: "pointer",
+              textDecoration: "underline",
+              textDecorationStyle: "dotted",
             }}
           >
-            {mov.target}
-          </span>
+            why?
+          </button>
           {pr && (
             /*#__PURE__*/ <span
               style={{
@@ -1214,6 +1157,17 @@ function SetLogger({
             </span>
           )}
         </div>
+        {showWhy && (
+          /*#__PURE__*/ <div
+            style={{
+              fontSize: 11,
+              color: "#999",
+              marginBottom: chartData.length >= 2 ? 6 : 0,
+            }}
+          >
+            {mov.target}
+          </div>
+        )}
         {chartData.length >= 2 && (
           /*#__PURE__*/ <MovementChart
             data={chartData}
@@ -1222,34 +1176,94 @@ function SetLogger({
           />
         )}
       </div>
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "28px 1fr 1fr 1fr 44px",
-          gap: 4,
-          padding: "4px 10px 2px",
-          alignItems: "center",
-        }}
-      >
-        {["", "lb", "reps", "RPE", ""].map((h, i) => (
-          /*#__PURE__*/ <div
-            key={i}
+      {sets.length === 0 ? (
+        /*#__PURE__*/ <div
+          style={{
+            padding: "10px 12px",
+          }}
+        >
+          <div
             style={{
-              fontSize: 10,
-              color: "#bbb",
-              textAlign: "center",
-              fontWeight: 600,
+              display: "flex",
+              gap: 8,
             }}
           >
-            {h}
+            {["down", "hold", "up"].map((choice) => (
+              /*#__PURE__*/ <button
+                key={choice}
+                onClick={() => onChipTap(choice)}
+                style={{
+                  flex: 1,
+                  padding: "10px 0",
+                  border:
+                    chipChoice === choice
+                      ? "0.5px solid #111"
+                      : "0.5px solid #ddd",
+                  borderRadius: 10,
+                  background: chipChoice === choice ? "#111" : "#fff",
+                  color: chipChoice === choice ? "#fff" : "#111",
+                  fontSize: 14,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                {chipValues[choice]}
+                {suggested === choice ? " ★" : ""}
+              </button>
+            ))}
           </div>
-        ))}
-      </div>
-      <div
-        style={{
-          padding: "2px 10px 8px",
-        }}
-      >
+          <div
+            style={{
+              display: "flex",
+              gap: 8,
+              marginTop: 4,
+            }}
+          >
+            {["down", "hold", "up"].map((choice) => (
+              /*#__PURE__*/ <div
+                key={choice}
+                style={{
+                  flex: 1,
+                  textAlign: "center",
+                  fontSize: 10,
+                  color: "#999",
+                }}
+              >
+                {choice}
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        /*#__PURE__*/ <>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "28px 1fr 1fr 1fr 44px",
+              gap: 4,
+              padding: "4px 10px 2px",
+              alignItems: "center",
+            }}
+          >
+            {["", "lb", "reps", "RPE", ""].map((h, i) => (
+              /*#__PURE__*/ <div
+                key={i}
+                style={{
+                  fontSize: 10,
+                  color: "#bbb",
+                  textAlign: "center",
+                  fontWeight: 600,
+                }}
+              >
+                {h}
+              </div>
+            ))}
+          </div>
+          <div
+            style={{
+              padding: "2px 10px 8px",
+            }}
+          >
         {sets.map((s, i) => {
           const isLogged = !!s.logged;
           const tc = SET_TYPE_COLOR[s.type] || "#111";
@@ -1375,10 +1389,20 @@ function SetLogger({
           + add set
         </button>
       </div>
+        </>
+      )}
     </div>
   );
 }
-function MovementRow({ mov, sessionColor, history, sessionType, onChange }) {
+function MovementRow({
+  mov,
+  sessionColor,
+  history,
+  sessionType,
+  position,
+  total,
+  onChange,
+}) {
   const [open, setOpen] = useState(false);
   // One note per exercise (not per set) — see CHANGES.md Phase 4.
   const [exerciseNote, setExerciseNote] = useState(mov._exerciseNote || "");
@@ -1386,23 +1410,32 @@ function MovementRow({ mov, sessionColor, history, sessionType, onChange }) {
     mov._exerciseNote = exerciseNote;
     if (onChange) onChange();
   }, [exerciseNote]);
-  // Initialize with planned sets — all editable, none logged yet
+
+  // Target picker (see CHANGES.md Aug 10 2026, Phase 2). `suggested` is a
+  // pure function of history + this movement's position in today's session
+  // (positional downgrade — a movement run late is not a valid place to
+  // attempt a weight increase), recomputed fresh each render since it's
+  // cheap and history/position don't change mid-session.
+  const suggested = applyPositionalDowngrade(
+    suggestChip(history, mov.name, mov.reps),
+    position,
+    total,
+  );
+  const [chipChoice, setChipChoice] = useState(mov._chipChoice || null);
+  const [targetWeight, setTargetWeight] = useState(mov._targetWeight || null);
+
+  // No chip tapped yet (fresh session, no draft) -> no planned sets; the
+  // chip picker renders instead of the set-rows grid until one is chosen.
   const [plannedSets, setPlannedSets] = useState(() => {
-    const planned = buildPlannedSets(mov, sessionType);
+    if (mov._targetWeight == null) return [];
+    const setCount = deriveSetCount(history, mov.name);
+    const planned = buildRamp(mov, mov._targetWeight, setCount);
     const prior = mov._loggedSets || [];
-    if (prior.length === 0)
-      return planned.map((s) => ({
-        ...s,
-        logged: false,
-      }));
+    if (prior.length === 0) return planned.map((s) => ({ ...s, logged: false }));
     // Restore logged state from prior sets (draft resume)
     return planned.map((s, i) => {
       const match = prior[i];
-      if (!match)
-        return {
-          ...s,
-          logged: false,
-        };
+      if (!match) return { ...s, logged: false };
       return {
         ...s,
         weight: match.weight || s.weight,
@@ -1432,6 +1465,46 @@ function MovementRow({ mov, sessionColor, history, sessionType, onChange }) {
     // Notify parent so it re-renders (warning calc + draft autosave depend on this)
     if (onChange) onChange();
   }, [plannedSets]);
+
+  // Chips stay tappable for as long as the movement is open. Freely
+  // switchable while no set has been logged; once any set carries logged
+  // data, switching requires an explicit confirm — the ramp regenerates
+  // around the new target, but logged sets are kept, not discarded.
+  const handleChipTap = (choice) => {
+    if (choice === chipChoice) return;
+    const hold = deriveCurrentWeight(history, mov);
+    const newWeight =
+      choice === "hold" ? hold : stepWeight(mov, hold, choice === "up" ? 1 : -1);
+    if (done) {
+      const ok = window.confirm(
+        "Changing the target weight regenerates today's ramp. Logged sets are kept, not discarded. Continue?",
+      );
+      if (!ok) return;
+    }
+    const setCount = deriveSetCount(history, mov.name);
+    const ramp = buildRamp(mov, newWeight, setCount);
+    const prior = plannedSets.filter((s) => s.logged);
+    const merged = ramp.map((s, i) => {
+      const match = prior[i];
+      if (!match) return { ...s, logged: false };
+      return {
+        ...s,
+        weight: match.weight,
+        reps: match.reps,
+        rpe: match.rpe,
+        note: match.note || "",
+        logged: true,
+      };
+    });
+    mov._chipChoice = choice;
+    mov._targetWeight = newWeight;
+    mov._suggested = suggested;
+    setChipChoice(choice);
+    setTargetWeight(newWeight);
+    setPlannedSets(merged);
+    if (onChange) onChange();
+  };
+
   const handleLog = (idx) => {
     setPlannedSets((prev) =>
       prev.map((s, i) =>
@@ -1446,17 +1519,17 @@ function MovementRow({ mov, sessionColor, history, sessionType, onChange }) {
   };
   const handleUpdate = (idx, field, val) => {
     if (idx === "_add") {
-      // append a new working set pre-filled with last working weight
+      // append a new working set pre-filled with the target weight
       setPlannedSets((prev) => {
         const working = prev.filter((s) => s.type === "W");
         const lastWeight = working.length
           ? working[working.length - 1].weight
-          : parseCurrentWeight(mov.current);
+          : targetWeight;
         return [
           ...prev,
           {
             weight: String(lastWeight),
-            reps: "10",
+            reps: String(mov.reps),
             rpe: "",
             note: "",
             type: "W",
@@ -1599,6 +1672,9 @@ function MovementRow({ mov, sessionColor, history, sessionType, onChange }) {
             history={history}
             sessionColor={sessionColor}
             sessionType={sessionType}
+            chipChoice={chipChoice}
+            suggested={suggested}
+            onChipTap={handleChipTap}
           />
           <div
             style={{
@@ -1689,6 +1765,9 @@ function SessionScreen({ history, setHistory, syncLast, onSynced }) {
       };
       blockMov._loggedSets = dm._loggedSets || [];
       blockMov._exerciseNote = dm.note || "";
+      blockMov._targetWeight = dm.targetWeight != null ? dm.targetWeight : null;
+      blockMov._chipChoice = dm.chipChoice || null;
+      blockMov._suggested = dm.suggested || null;
       return {
         ...blockMov,
         _group: dm._group,
@@ -1783,6 +1862,10 @@ function SessionScreen({ history, setHistory, syncLast, onSynced }) {
         sets: m._loggedSets || [],
         note: m._exerciseNote || "",
         order: sessionMovements.indexOf(m),
+        targetWeight:
+          m._targetWeight != null ? String(m._targetWeight) : undefined,
+        chipChoice: m._chipChoice || undefined,
+        suggested: m._suggested || undefined,
       }))
       .filter((m) => m.sets.length > 0 || m.note);
     const formattedDate = new Date(
@@ -2391,6 +2474,8 @@ function SessionScreen({ history, setHistory, syncLast, onSynced }) {
             sessionColor={session.color}
             history={history}
             sessionType={active}
+            position={idx}
+            total={sessionMovements.length}
             onChange={bumpTick}
           />
         </div>
