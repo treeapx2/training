@@ -165,4 +165,16 @@ check("9. skip behavior (test-skip.js)", () => {
   );
 });
 
+// 10. cardio machine default (see CLAUDE.md "Cardio finisher fields"): the
+// dropdown defaults to Stairmaster (full option list still available), an
+// otherwise-untouched session still omits the cardio key entirely, and
+// filling one field records the default machine alongside it.
+check("10. cardio machine default behavior (test-cardio-default.js)", () => {
+  execFileSync(
+    process.execPath,
+    [path.join(repoRoot, "scripts", "test-cardio-default.js")],
+    { stdio: "pipe" },
+  );
+});
+
 process.exit(failed ? 1 : 0);

@@ -157,13 +157,15 @@ function saveGroupOrders(orders) {
   } catch {}
 }
 const DRAFT_KEY = "at_session_draft";
-// Cardio finisher — first-class fields. machine is a fixed dropdown;
-// duration/level/rpe are numeric, entered consistent with how strength sets
-// are logged (rpe, not a closed easy/moderate/hard enum). Older records may
-// still carry the retired `effort` string — hasCardioData/formatCardio keep
-// reading it so history doesn't crash or silently drop it; new entries
-// always write rpe instead.
-const EMPTY_CARDIO = { machine: "", duration: "", level: "", rpe: "" };
+// Cardio finisher — first-class fields. machine is a fixed dropdown,
+// defaulted to Stairmaster (see CHANGES.md Aug 10 2026, Phase 5 — it came
+// through empty on a real record while duration/level/rpe were all filled)
+// but still fully changeable; duration/level/rpe are numeric, entered
+// consistent with how strength sets are logged (rpe, not a closed
+// easy/moderate/hard enum). Older records may still carry the retired
+// `effort` string — hasCardioData/formatCardio keep reading it so history
+// doesn't crash or silently drop it; new entries always write rpe instead.
+const EMPTY_CARDIO = { machine: "Stairmaster", duration: "", level: "", rpe: "" };
 const CARDIO_MACHINE_OPTIONS = [
   "Stairmaster",
   "Recumbent bike",
@@ -176,11 +178,16 @@ const CARDIO_MACHINE_OPTIONS = [
 function hasCardioData(cardio) {
   return !!(
     cardio &&
-    (cardio.machine ||
-      cardio.duration ||
+    (cardio.duration ||
       cardio.level ||
       cardio.rpe ||
-      cardio.effort)
+      cardio.effort ||
+      // machine alone only counts if it's been changed away from the
+      // default (Stairmaster) — the default by itself isn't "entered"
+      // cardio data, it's just the pre-filled dropdown value. A machine
+      // that isn't "Stairmaster" (including older records with a
+      // free-typed value) is a deliberate choice either way.
+      (cardio.machine && cardio.machine !== "Stairmaster"))
   );
 }
 function formatCardio(cardio) {
