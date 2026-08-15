@@ -1,5 +1,196 @@
 [
   {
+    "id": 1786801876694,
+    "type": "push",
+    "label": "Push",
+    "date": "Aug 11, 2026",
+    "note": "",
+    "cardio": {
+      "machine": "Stairmaster",
+      "duration": "12",
+      "level": "4",
+      "rpe": "6"
+    },
+    "movements": [
+      {
+        "name": "Chest Press",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "105",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "120",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "120",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 4,
+            "weight": "135",
+            "reps": "8",
+            "rpe": "8",
+            "note": ""
+          },
+          {
+            "set": 5,
+            "weight": "135",
+            "reps": "5",
+            "rpe": "9",
+            "note": ""
+          }
+        ],
+        "note": "",
+        "order": 0,
+        "targetWeight": "135",
+        "chipChoice": "up",
+        "suggested": "hold"
+      },
+      {
+        "name": "Pec Fly",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "105",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "120",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "120",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 4,
+            "weight": "135",
+            "reps": "8",
+            "rpe": "8",
+            "note": ""
+          },
+          {
+            "set": 5,
+            "weight": "135",
+            "reps": "5",
+            "rpe": "9",
+            "note": ""
+          }
+        ],
+        "note": "",
+        "order": 1,
+        "targetWeight": "135",
+        "chipChoice": "up",
+        "suggested": "up"
+      },
+      {
+        "name": "Rope Pushdown",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "27.5",
+            "reps": "15",
+            "rpe": "4",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "32.5",
+            "reps": "10",
+            "rpe": "5",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "32.5",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 4,
+            "weight": "37.5",
+            "reps": "10",
+            "rpe": "8",
+            "note": ""
+          },
+          {
+            "set": 5,
+            "weight": "37.5",
+            "reps": "10",
+            "rpe": "8",
+            "note": ""
+          }
+        ],
+        "note": "tough to push weight here unless we test as the very first exercise",
+        "order": 2,
+        "targetWeight": "37.5",
+        "chipChoice": "down",
+        "suggested": "down"
+      },
+      {
+        "name": "Skull Crusher",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "12",
+            "reps": "15",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "12",
+            "reps": "15",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "12",
+            "reps": "15",
+            "rpe": "7",
+            "note": ""
+          }
+        ],
+        "note": "15s not available and didnt want to push 20s. one weight or two pattern for this exercise",
+        "order": 3,
+        "targetWeight": "15",
+        "chipChoice": "down",
+        "suggested": "down"
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": [],
+        "note": "one weight or two weight pattern when doing machines at 4-sets or less",
+        "order": 4,
+        "targetWeight": "60",
+        "chipChoice": "hold",
+        "suggested": "hold",
+        "supersetId": "link_1786483276372"
+      }
+    ]
+  },
+  {
     "id": 1786398736958,
     "type": "legs",
     "label": "Legs",
