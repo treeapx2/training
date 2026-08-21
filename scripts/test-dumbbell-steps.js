@@ -132,10 +132,31 @@ async function checkMachineMovementUnaffectedInTheLiveApp() {
   window.close();
 }
 
+// Direct pure-function check that chips step through the 12 lb entry
+// specifically (CHANGES.md Aug 19 2026 verification: "assert dumbbell
+// chips step through the steps array including the 12 lb entry") --
+// stepWeight() reads whatever `steps` array is on the mov object passed
+// in, so this doesn't need DUMBBELL_STEPS itself to be reachable from
+// `window` (see checkSourceConfig's comment on why BLOCK/consts aren't).
+async function checkStepsThroughThe12lbEntry() {
+  const { window, errors } = await mount();
+  const mov = { steps: [5, 10, 12, 15, 20, 25, 30, 35, 40, 45, 50] };
+  if (window.stepWeight(mov, 15, -1) !== 12) {
+    throw new Error(`expected stepping down from 15 to land on 12, got ${window.stepWeight(mov, 15, -1)}`);
+  }
+  if (window.stepWeight(mov, 10, 1) !== 12) {
+    throw new Error(`expected stepping up from 10 to land on 12, got ${window.stepWeight(mov, 10, 1)}`);
+  }
+  if (errors.length) throw new Error("jsdom errors: " + errors.join("; "));
+  console.log("PASS: stepWeight steps through the 12 lb entry from both directions (15->12 down, 10->12 up)");
+  window.close();
+}
+
 async function main() {
   checkSourceConfig();
   await checkChipsStepThroughAdjacentEntriesInTheLiveApp();
   await checkMachineMovementUnaffectedInTheLiveApp();
+  await checkStepsThroughThe12lbEntry();
   console.log("ALL PASS");
 }
 
