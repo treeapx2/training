@@ -235,4 +235,16 @@ check("15. unavailable weight fallback behavior (test-unavailable-weight.js)", (
   );
 });
 
+// 16. cardio progress tracking (see CLAUDE.md "Cardio finisher fields"): a
+// Progress-tab trend grouped by machine with duration/level/RPE visible,
+// absent with no cardio data, and buildHandoff's CARDIO TRENDS section
+// mirrors both.
+check("16. cardio trend behavior (test-cardio-trend.js)", () => {
+  execFileSync(
+    process.execPath,
+    [path.join(repoRoot, "scripts", "test-cardio-trend.js")],
+    { stdio: "pipe" },
+  );
+});
+
 process.exit(failed ? 1 : 0);

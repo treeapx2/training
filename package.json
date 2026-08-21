@@ -16,6 +16,7 @@
     "test:superset-phase3": "node scripts/test-superset-phase3.js",
     "test:explicit-logging": "node scripts/test-explicit-logging.js",
     "test:unavailable-weight": "node scripts/test-unavailable-weight.js",
+    "test:cardio-trend": "node scripts/test-cardio-trend.js",
     "prepare": "git config core.hooksPath githooks"
   },
   "devDependencies": {

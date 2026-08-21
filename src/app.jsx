@@ -209,6 +209,39 @@ function formatCardio(cardio) {
     .filter(Boolean)
     .join(" · ");
 }
+// Cardio progress tracking (see CHANGES.md Aug 19 2026, Phase 6 — "are we
+// tracking stairmaster progress?"). Cardio has been logged as structured
+// fields since Aug 2 but was never surfaced beyond the individual session.
+// getCardioHistory flattens every session's cardio finisher into one
+// chronological (oldest first) list; groupCardioByMachine buckets it so
+// progress on one machine isn't diluted by entries from another — "the
+// signal that matters: output at a given RPE. Duration and level rising
+// while RPE stays flat is aerobic progress."
+function getCardioHistory(history) {
+  const entries = [];
+  history.forEach((session) => {
+    if (!hasCardioData(session.cardio)) return;
+    entries.push({
+      date: session.date,
+      ts: parseSessionDate(session.date).getTime(),
+      machine: session.cardio.machine || "Other",
+      duration: session.cardio.duration || "",
+      level: session.cardio.level || "",
+      rpe: session.cardio.rpe || "",
+      effort: session.cardio.effort || "",
+    });
+  });
+  entries.sort((a, b) => a.ts - b.ts);
+  return entries;
+}
+function groupCardioByMachine(entries) {
+  const groups = {};
+  entries.forEach((e) => {
+    if (!groups[e.machine]) groups[e.machine] = [];
+    groups[e.machine].push(e);
+  });
+  return groups;
+}
 function saveDraft(type, movements, note, sessionDate, cardio) {
   try {
     const draft = {
@@ -647,6 +680,25 @@ function buildHandoff(history) {
     skipEntries.forEach(([name, count]) =>
       lines.push(`  ${name}: ${count}×`),
     );
+  }
+  // Cardio trend, grouped by machine (see CHANGES.md Aug 19 2026, Phase 6)
+  // — "the coach has been reading it out of session notes." The signal
+  // that matters is output at a given RPE, so each line carries
+  // duration/level next to RPE, oldest first per machine so a run of
+  // entries reads as a trend rather than a shuffled list.
+  const cardioByMachine = groupCardioByMachine(getCardioHistory(history));
+  const cardioMachines = Object.keys(cardioByMachine).sort();
+  if (cardioMachines.length) {
+    lines.push("\nCARDIO TRENDS (by machine, oldest first, last 6):");
+    cardioMachines.forEach((machine) => {
+      lines.push(`  ${machine}:`);
+      cardioByMachine[machine].slice(-6).forEach((e) => {
+        let l = `    ${e.date}: ${e.duration ? e.duration + " min" : "—"}`;
+        if (e.level) l += `, L${e.level}`;
+        l += e.rpe ? `, RPE ${e.rpe}` : e.effort ? `, ${e.effort}` : "";
+        lines.push(l);
+      });
+    });
   }
   const recent = history.slice(0, 6);
   if (recent.length) {
@@ -4329,6 +4381,106 @@ function WeekCard({ week, history, defaultOpen }) {
     </div>
   );
 }
+// Cardio trend, grouped by machine (see CHANGES.md Aug 19 2026, Phase 6).
+// A plain chronological table rather than a chart: MovementChart is
+// weight-specific (fixed "lb" axis), and comparing duration/level/RPE
+// side-by-side per entry reads more directly as a table than a line chart
+// would for three loosely-related units.
+function CardioTrendCard({ history }) {
+  const byMachine = groupCardioByMachine(getCardioHistory(history));
+  const machines = Object.keys(byMachine).sort();
+  if (!machines.length) return null;
+  return (
+    /*#__PURE__*/ <div
+      style={{
+        ...S.card,
+        marginTop: 4,
+      }}
+    >
+      <div
+        style={{
+          fontSize: 13,
+          fontWeight: 600,
+          color: "#111",
+          marginBottom: 8,
+        }}
+      >
+        Cardio trend
+      </div>
+      {machines.map((machine) => {
+        // Most recent 8, oldest first, so a run of rows reads top-to-bottom
+        // as progress (duration/level rising while RPE holds flat).
+        const entries = byMachine[machine].slice(-8);
+        return (
+          /*#__PURE__*/ <div
+            key={machine}
+            style={{
+              marginBottom: 10,
+            }}
+          >
+            <div
+              style={{
+                fontSize: 11,
+                fontWeight: 600,
+                color: "#666",
+                marginBottom: 4,
+              }}
+            >
+              {machine}
+            </div>
+            {entries.map((e, i) => (
+              /*#__PURE__*/ <div
+                key={i}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  fontSize: 11,
+                  padding: "3px 0",
+                  borderBottom:
+                    i < entries.length - 1 ? "0.5px solid #f0f0ee" : "none",
+                }}
+              >
+                <span
+                  style={{
+                    color: "#999",
+                    width: 72,
+                    flexShrink: 0,
+                  }}
+                >
+                  {e.date}
+                </span>
+                <span
+                  style={{
+                    flex: 1,
+                    color: "#111",
+                  }}
+                >
+                  {e.duration ? e.duration + " min" : "—"}
+                </span>
+                <span
+                  style={{
+                    flex: 1,
+                    color: "#111",
+                  }}
+                >
+                  {e.level ? "L" + e.level : "—"}
+                </span>
+                <span
+                  style={{
+                    fontWeight: 600,
+                    color: e.rpe ? rpeColor(e.rpe) : "#999",
+                  }}
+                >
+                  {e.rpe ? "RPE " + e.rpe : e.effort || "—"}
+                </span>
+              </div>
+            ))}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 function ProgressScreen({ history }) {
   const [showHandoff, setShowHandoff] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -4421,6 +4573,7 @@ function ProgressScreen({ history }) {
           defaultOpen={i === 0}
         />
       ))}
+      <CardioTrendCard history={history} />
       <div
         style={{
           ...S.card,
