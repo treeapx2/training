@@ -17,6 +17,14 @@ function formatBuildStamp() {
   return "build " + BUILD_INFO.sha + " · " + when;
 }
 
+// Shared dumbbell rack: 5 lb plates to 50, plus one 12 lb pair as the only
+// exception to the 5 lb step (see CHANGES.md Aug 19 2026, Phase 1 — chips
+// were offering weights the rack doesn't actually have, e.g. Skull Crusher
+// bouncing 12 -> 15 -> 20). Every free-weight (dumbbell) movement uses this
+// `steps` array instead of a fixed `increment`; machine/cable movements are
+// unaffected and keep their plain `increment`.
+const DUMBBELL_STEPS = [5, 10, 12, 15, 20, 25, 30, 35, 40, 45, 50];
+
 // ── Block State ───────────────────────────────────────────────────────────────
 const BLOCK = {
   flags: [
@@ -42,7 +50,7 @@ const BLOCK = {
         { name: "Leg Press", current: "185 lb", increment: 15, reps: 10, target: "BANK 185 at RPE 7 \u2014 test passed 7/29 (185x10x2 @ RPE 8) but that's the rep ceiling. Two clean sessions at RPE 7, then TEST 200. Fresh opener, straight sets, 2-2.5 min rest." },
         { name: "Leg Extension", current: "150 lb", increment: 15, reps: 10, target: "TEST 165 \u2014 broke the 8-rep wall: 150x10x2 @ RPE 8 (7/26) then @ RPE 7 (7/29). The old plateau was fatigue placement, not a ceiling." },
         { name: "Leg Curl", current: "90 lb", increment: 15, reps: 10, target: "One more clean 10x10 @ 90, RPE \u22647, then TEST 105. Low-back compensation resolved (clean 7/26 and 7/29). Stop the set if the back takes over." },
-        { name: "Goblet Squat", current: "50 lb", increment: 5, reps: 10, target: "Two clean sessions at 50 (10 @ RPE 7 then 8 on 7/29), then 55. Controlled depth, knee-monitor." },
+        { name: "Goblet Squat", current: "50 lb", steps: DUMBBELL_STEPS, reps: 10, target: "Two clean sessions at 50 (10 @ RPE 7 then 8 on 7/29), then 55. Controlled depth, knee-monitor." },
         { name: "Calf Raise", current: "40 lb", increment: 5, reps: 15, target: "TEST 45 \u2014 40x20x3 @ RPE 6-7 (7/29) was the easiest pass of the day. Superset with Leg Extension." }
       ]
     },
@@ -56,8 +64,8 @@ const BLOCK = {
         { name: "Shoulder Press", current: "90 lb", increment: 15, reps: 10, target: "HOLD 90 \u2014 needs a FRESH lead to confirm. Hit 90x10x2 when run first (7/5), dropped to 75x8 @ RPE 8 when run second (7/28). Confirm then 105. Thumb watch." },
         { name: "Pec Fly", current: "120 lb", increment: 15, reps: 10, target: "TEST 135 \u2014 120x10x2 @ RPE 7 (7/28), room to spare. Superset with Lateral Raise." },
         { name: "Rope Pushdown", current: "42.5 lb", increment: 5, reps: 10, target: "Confirm 2nd clean 10/10 @ 42.5 then 47.5. Skipped 7/28 (machine in use). Superset with Skull Crusher." },
-        { name: "Lateral Raise", current: "15 lb", steps: [12, 15, 20, 25], reps: 12, target: "Back to 15 and run EARLIER \u2014 12x10x4 reached RPE 8 at position #4 (7/28). 15x10x2 already done 7/5." },
-        { name: "Skull Crusher", current: "20 lb", increment: 5, reps: 10, target: "TEST 25 \u2014 20x10x4 @ RPE 6-7 (7/28), elbow quiet. Sharp pain = stop." }
+        { name: "Lateral Raise", current: "15 lb", steps: DUMBBELL_STEPS, reps: 12, target: "Back to 15 and run EARLIER \u2014 12x10x4 reached RPE 8 at position #4 (7/28). 15x10x2 already done 7/5." },
+        { name: "Skull Crusher", current: "20 lb", steps: DUMBBELL_STEPS, reps: 10, target: "TEST 25 \u2014 20x10x4 @ RPE 6-7 (7/28), elbow quiet. Sharp pain = stop." }
       ]
     },
     pull: {
@@ -66,13 +74,13 @@ const BLOCK = {
       bg: "#EEEDFE",
       rest: "Opener 2 min · supersets 45–60s",
       movements: [
-        { name: "DB Row", current: "50 lb", increment: 5, reps: 10, target: "Build 8-10 @ 50 \u2014 45x10 @ RPE 7 as fresh opener (7/25), best DB Row log to date. Keep LEADING the session with this; it's fatigue-sensitive." },
+        { name: "DB Row", current: "50 lb", steps: DUMBBELL_STEPS, reps: 10, target: "Build 8-10 @ 50 \u2014 45x10 @ RPE 7 as fresh opener (7/25), best DB Row log to date. Keep LEADING the session with this; it's fatigue-sensitive." },
         { name: "Seated Row", current: "135 lb", increment: 15, reps: 10, target: "Back to 135 \u2014 build clean 10/10 then 150. (7/25 was a deliberate deload to 120x10x2 @ RPE 7 on upper re-entry, not a regression.)" },
         { name: "Lat Pulldown", current: "135 lb", increment: 15, reps: 10, target: "Confirm 2nd clean 10/10 @ 135 (7/13 clean) then 150." },
         { name: "Cable Curl", current: "42.5 lb", increment: 5, reps: 10, target: "TEST 47.5 \u2014 two clean sessions at 42.5 (7/4, and 7/25 4x10 @ RPE 6-7). Superset with Reverse Fly." },
-        { name: "Hammer Curl", current: "20 lb", increment: 5, reps: 10, target: "HOLD 20 \u2014 read heavy cold (7/25: 20x8 @ RPE 8, dropped to 15). TEST 25 only on a day this LEADS the session." },
-        { name: "Zottman Curl", current: "20 lb", increment: 5, reps: 10, target: "Chase 10 reps @ 20 (stuck at 6) \u2014 slow eccentric." },
-        { name: "Reverse Fly", current: "15 lb", increment: 5, reps: 12, target: "TEST 20 for 8s \u2014 15x10x3 all @ RPE 6 (7/25) clears the consistency gate." }
+        { name: "Hammer Curl", current: "20 lb", steps: DUMBBELL_STEPS, reps: 10, target: "HOLD 20 \u2014 read heavy cold (7/25: 20x8 @ RPE 8, dropped to 15). TEST 25 only on a day this LEADS the session." },
+        { name: "Zottman Curl", current: "20 lb", steps: DUMBBELL_STEPS, reps: 10, target: "Chase 10 reps @ 20 (stuck at 6) \u2014 slow eccentric." },
+        { name: "Reverse Fly", current: "15 lb", steps: DUMBBELL_STEPS, reps: 12, target: "TEST 20 for 8s \u2014 15x10x3 all @ RPE 6 (7/25) clears the consistency gate." }
       ]
     }
   }

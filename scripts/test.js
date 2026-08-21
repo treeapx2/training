@@ -177,4 +177,16 @@ check("10. cardio machine default behavior (test-cardio-default.js)", () => {
   );
 });
 
+// 11. shared dumbbell steps array (see CLAUDE.md "Target picker"): all 7
+// dumbbell movements use the rack's real available weights (5s to 50 plus
+// 12), machine/cable movements keep their plain increment, and chips step
+// through adjacent array entries in the live app.
+check("11. dumbbell steps behavior (test-dumbbell-steps.js)", () => {
+  execFileSync(
+    process.execPath,
+    [path.join(repoRoot, "scripts", "test-dumbbell-steps.js")],
+    { stdio: "pipe" },
+  );
+});
+
 process.exit(failed ? 1 : 0);

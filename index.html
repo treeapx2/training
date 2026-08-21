@@ -330,8 +330,8 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
 // see build.js) so a stale cached build is identifiable on the device
 // instead of silently running fixed-but-not-yet-deployed code.
 const BUILD_INFO = {
-  sha: "4e34c4a",
-  builtAt: "2026-08-21T16:57:10.229Z"
+  sha: "e19ff23",
+  builtAt: "2026-08-21T17:04:58.615Z"
 };
 function formatBuildStamp() {
   const d = new Date(BUILD_INFO.builtAt);
@@ -343,6 +343,14 @@ function formatBuildStamp() {
   });
   return "build " + BUILD_INFO.sha + " · " + when;
 }
+
+// Shared dumbbell rack: 5 lb plates to 50, plus one 12 lb pair as the only
+// exception to the 5 lb step (see CHANGES.md Aug 19 2026, Phase 1 — chips
+// were offering weights the rack doesn't actually have, e.g. Skull Crusher
+// bouncing 12 -> 15 -> 20). Every free-weight (dumbbell) movement uses this
+// `steps` array instead of a fixed `increment`; machine/cable movements are
+// unaffected and keep their plain `increment`.
+const DUMBBELL_STEPS = [5, 10, 12, 15, 20, 25, 30, 35, 40, 45, 50];
 
 // ── Block State ───────────────────────────────────────────────────────────────
 const BLOCK = {
@@ -374,7 +382,7 @@ const BLOCK = {
       }, {
         name: "Goblet Squat",
         current: "50 lb",
-        increment: 5,
+        steps: DUMBBELL_STEPS,
         reps: 10,
         target: "Two clean sessions at 50 (10 @ RPE 7 then 8 on 7/29), then 55. Controlled depth, knee-monitor."
       }, {
@@ -417,13 +425,13 @@ const BLOCK = {
       }, {
         name: "Lateral Raise",
         current: "15 lb",
-        steps: [12, 15, 20, 25],
+        steps: DUMBBELL_STEPS,
         reps: 12,
         target: "Back to 15 and run EARLIER \u2014 12x10x4 reached RPE 8 at position #4 (7/28). 15x10x2 already done 7/5."
       }, {
         name: "Skull Crusher",
         current: "20 lb",
-        increment: 5,
+        steps: DUMBBELL_STEPS,
         reps: 10,
         target: "TEST 25 \u2014 20x10x4 @ RPE 6-7 (7/28), elbow quiet. Sharp pain = stop."
       }]
@@ -436,7 +444,7 @@ const BLOCK = {
       movements: [{
         name: "DB Row",
         current: "50 lb",
-        increment: 5,
+        steps: DUMBBELL_STEPS,
         reps: 10,
         target: "Build 8-10 @ 50 \u2014 45x10 @ RPE 7 as fresh opener (7/25), best DB Row log to date. Keep LEADING the session with this; it's fatigue-sensitive."
       }, {
@@ -460,19 +468,19 @@ const BLOCK = {
       }, {
         name: "Hammer Curl",
         current: "20 lb",
-        increment: 5,
+        steps: DUMBBELL_STEPS,
         reps: 10,
         target: "HOLD 20 \u2014 read heavy cold (7/25: 20x8 @ RPE 8, dropped to 15). TEST 25 only on a day this LEADS the session."
       }, {
         name: "Zottman Curl",
         current: "20 lb",
-        increment: 5,
+        steps: DUMBBELL_STEPS,
         reps: 10,
         target: "Chase 10 reps @ 20 (stuck at 6) \u2014 slow eccentric."
       }, {
         name: "Reverse Fly",
         current: "15 lb",
-        increment: 5,
+        steps: DUMBBELL_STEPS,
         reps: 12,
         target: "TEST 20 for 8s \u2014 15x10x3 all @ RPE 6 (7/25) clears the consistency gate."
       }]
