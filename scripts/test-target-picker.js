@@ -189,8 +189,19 @@ async function checkFinishPersistsTargetPickerFields() {
   click(holdBtn);
   await sleep(30);
 
-  const logBtn = byText("button", "log");
-  click(logBtn);
+  // No explicit log button (see CHANGES.md Aug 19 2026, Phase 4) -- a set
+  // auto-logs when its RPE field is filled in and loses focus. Scope to
+  // Leg Press's own card -- other page-level number inputs (cardio
+  // finisher) sit before it in document order. React's onBlur listens on
+  // the native "focusout" event (not "blur", which doesn't bubble), so
+  // that's what a synthetic dispatchEvent needs to fire.
+  const card = node.parentElement;
+  const rpeInput = card.querySelectorAll('input[type="number"]')[2];
+  const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+  setter.call(rpeInput, "7");
+  rpeInput.dispatchEvent(new window.Event("input", { bubbles: true }));
+  await sleep(30);
+  rpeInput.dispatchEvent(new window.Event("focusout", { bubbles: true }));
   await sleep(30);
   click(byText("button", "finish session"));
   await sleep(80);

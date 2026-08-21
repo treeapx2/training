@@ -1364,7 +1364,7 @@ function ChipPicker({ mov, history, chipChoice, suggested, onChipTap }) {
 function SetLogger({
   mov,
   sets,
-  onLog,
+  onRpeCommit,
   onUpdate,
   onDelete,
   history,
@@ -1547,6 +1547,7 @@ function SetLogger({
                   placeholder="—"
                   value={s.rpe}
                   onChange={(e) => onUpdate(i, "rpe", e.target.value)}
+                  onBlur={() => onRpeCommit(i)}
                   disabled={isLogged}
                   min={1}
                   max={10}
@@ -1558,7 +1559,7 @@ function SetLogger({
                     fontWeight: isLogged ? 700 : 400,
                   }}
                 />
-                {isLogged ? (
+                {isLogged && (
                   /*#__PURE__*/ <button
                     onClick={() => onDelete(i)}
                     style={{
@@ -1572,23 +1573,6 @@ function SetLogger({
                     }}
                   >
                     ✕
-                  </button>
-                ) : (
-                  /*#__PURE__*/ <button
-                    onClick={() => onLog(i)}
-                    style={{
-                      padding: "5px 0",
-                      background: "#111",
-                      color: "#fff",
-                      border: "none",
-                      borderRadius: 6,
-                      fontSize: 12,
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      width: "100%",
-                    }}
-                  >
-                    log
                   </button>
                 )}
               </div>
@@ -1760,14 +1744,19 @@ function useMovementPicker(mov, history, position, total, onChange) {
     applyTarget(choice, weight);
   };
 
-  const handleLog = (idx) => {
+  // Auto-log (see CHANGES.md Aug 19 2026, Phase 4 — "selecting an RPE
+  // should log the set... as soon as an RPE is set, the log action
+  // executes and the button is replaced with an x"): fires on the RPE
+  // field's blur, not its onChange, so a multi-keystroke decimal entry
+  // (e.g. "7.5") doesn't get locked out mid-type by the row disabling
+  // itself after the first keystroke. A set with no RPE entered never
+  // auto-logs. The x (handleDelete) is the only way back to uncommitted —
+  // it already clears both `logged` and `rpe`.
+  const handleRpeCommit = (idx) => {
     setPlannedSets((prev) =>
       prev.map((s, i) =>
-        i === idx
-          ? {
-              ...s,
-              logged: true,
-            }
+        i === idx && !s.logged && s.rpe !== "" && s.rpe != null
+          ? { ...s, logged: true }
           : s,
       ),
     );
@@ -1829,7 +1818,7 @@ function useMovementPicker(mov, history, position, total, onChange) {
     loggedSets,
     done,
     handleChipTap,
-    handleLog,
+    handleRpeCommit,
     handleUpdate,
     handleDelete,
     skipped,
@@ -1859,7 +1848,7 @@ function MovementRow({
     loggedSets,
     done,
     handleChipTap,
-    handleLog,
+    handleRpeCommit,
     handleUpdate,
     handleDelete,
     skipped,
@@ -2052,7 +2041,7 @@ function MovementRow({
           <SetLogger
             mov={mov}
             sets={plannedSets}
-            onLog={handleLog}
+            onRpeCommit={handleRpeCommit}
             onUpdate={handleUpdate}
             onDelete={handleDelete}
             history={history}
@@ -2144,6 +2133,7 @@ function SupersetRow({
       inputMode={field === "reps" ? "numeric" : "decimal"}
       value={picker.plannedSets[idx][field]}
       onChange={(e) => picker.handleUpdate(idx, field, e.target.value)}
+      onBlur={field === "rpe" ? () => picker.handleRpeCommit(idx) : undefined}
       disabled={picker.plannedSets[idx].logged}
       style={{
         ...ci(),
@@ -2194,7 +2184,7 @@ function SupersetRow({
           color: isLogged ? rc : "#111",
           fontWeight: isLogged ? 700 : 400,
         })}
-        {isLogged ? (
+        {isLogged && (
           /*#__PURE__*/ <button
             onClick={() => picker.handleDelete(idx)}
             style={{
@@ -2207,22 +2197,6 @@ function SupersetRow({
             }}
           >
             ✕
-          </button>
-        ) : (
-          /*#__PURE__*/ <button
-            onClick={() => picker.handleLog(idx)}
-            style={{
-              padding: "4px 0",
-              background: "#111",
-              color: "#fff",
-              border: "none",
-              borderRadius: 6,
-              fontSize: 11,
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-          >
-            log
           </button>
         )}
       </div>

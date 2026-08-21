@@ -330,8 +330,8 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
 // see build.js) so a stale cached build is identifiable on the device
 // instead of silently running fixed-but-not-yet-deployed code.
 const BUILD_INFO = {
-  sha: "a14f9d2",
-  builtAt: "2026-08-21T17:27:05.200Z"
+  sha: "6665c22",
+  builtAt: "2026-08-21T18:01:52.583Z"
 };
 function formatBuildStamp() {
   const d = new Date(BUILD_INFO.builtAt);
@@ -1691,7 +1691,7 @@ function ChipPicker({
 function SetLogger({
   mov,
   sets,
-  onLog,
+  onRpeCommit,
   onUpdate,
   onDelete,
   history,
@@ -1847,6 +1847,7 @@ function SetLogger({
       placeholder: "—",
       value: s.rpe,
       onChange: e => onUpdate(i, "rpe", e.target.value),
+      onBlur: () => onRpeCommit(i),
       disabled: isLogged,
       min: 1,
       max: 10,
@@ -1857,7 +1858,7 @@ function SetLogger({
         color: isLogged ? rc : "#111",
         fontWeight: isLogged ? 700 : 400
       }
-    }), isLogged ?
+    }), isLogged &&
     /*#__PURE__*/
     /*#__PURE__*/
     React.createElement("button", {
@@ -1871,23 +1872,7 @@ function SetLogger({
         padding: 0,
         textAlign: "center"
       }
-    }, "✕") :
-    /*#__PURE__*/
-    /*#__PURE__*/
-    React.createElement("button", {
-      onClick: () => onLog(i),
-      style: {
-        padding: "5px 0",
-        background: "#111",
-        color: "#fff",
-        border: "none",
-        borderRadius: 6,
-        fontSize: 12,
-        fontWeight: 600,
-        cursor: "pointer",
-        width: "100%"
-      }
-    }, "log")));
+    }, "✕")));
   }), /*#__PURE__*/React.createElement("button", {
     onClick: () => onUpdate("_add", "_add", "_add"),
     style: {
@@ -2045,8 +2030,17 @@ function useMovementPicker(mov, history, position, total, onChange) {
     }
     applyTarget(choice, weight);
   };
-  const handleLog = idx => {
-    setPlannedSets(prev => prev.map((s, i) => i === idx ? {
+
+  // Auto-log (see CHANGES.md Aug 19 2026, Phase 4 — "selecting an RPE
+  // should log the set... as soon as an RPE is set, the log action
+  // executes and the button is replaced with an x"): fires on the RPE
+  // field's blur, not its onChange, so a multi-keystroke decimal entry
+  // (e.g. "7.5") doesn't get locked out mid-type by the row disabling
+  // itself after the first keystroke. A set with no RPE entered never
+  // auto-logs. The x (handleDelete) is the only way back to uncommitted —
+  // it already clears both `logged` and `rpe`.
+  const handleRpeCommit = idx => {
+    setPlannedSets(prev => prev.map((s, i) => i === idx && !s.logged && s.rpe !== "" && s.rpe != null ? {
       ...s,
       logged: true
     } : s));
@@ -2090,7 +2084,7 @@ function useMovementPicker(mov, history, position, total, onChange) {
     loggedSets,
     done,
     handleChipTap,
-    handleLog,
+    handleRpeCommit,
     handleUpdate,
     handleDelete,
     skipped,
@@ -2120,7 +2114,7 @@ function MovementRow({
     loggedSets,
     done,
     handleChipTap,
-    handleLog,
+    handleRpeCommit,
     handleUpdate,
     handleDelete,
     skipped,
@@ -2269,7 +2263,7 @@ function MovementRow({
   React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(SetLogger, {
     mov: mov,
     sets: plannedSets,
-    onLog: handleLog,
+    onRpeCommit: handleRpeCommit,
     onUpdate: handleUpdate,
     onDelete: handleDelete,
     history: history,
@@ -2352,6 +2346,7 @@ function SupersetRow({
     inputMode: field === "reps" ? "numeric" : "decimal",
     value: picker.plannedSets[idx][field],
     onChange: e => picker.handleUpdate(idx, field, e.target.value),
+    onBlur: field === "rpe" ? () => picker.handleRpeCommit(idx) : undefined,
     disabled: picker.plannedSets[idx].logged,
     style: {
       ...ci(),
@@ -2391,7 +2386,7 @@ function SupersetRow({
     }, mov.name), rowInput(picker, idx, "weight"), rowInput(picker, idx, "reps"), rowInput(picker, idx, "rpe", {
       color: isLogged ? rc : "#111",
       fontWeight: isLogged ? 700 : 400
-    }), isLogged ?
+    }), isLogged &&
     /*#__PURE__*/
     /*#__PURE__*/
     React.createElement("button", {
@@ -2404,22 +2399,7 @@ function SupersetRow({
         cursor: "pointer",
         padding: 0
       }
-    }, "✕") :
-    /*#__PURE__*/
-    /*#__PURE__*/
-    React.createElement("button", {
-      onClick: () => picker.handleLog(idx),
-      style: {
-        padding: "4px 0",
-        background: "#111",
-        color: "#fff",
-        border: "none",
-        borderRadius: 6,
-        fontSize: 11,
-        fontWeight: 600,
-        cursor: "pointer"
-      }
-    }, "log"));
+    }, "✕"));
   };
   const maxSets = Math.max(pickerA.plannedSets.length, pickerB.plannedSets.length);
   return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {

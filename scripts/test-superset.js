@@ -67,6 +67,18 @@ const expandMovement = async (window, name) => {
   click(window, node);
   await sleep(window, 40);
 };
+// No explicit log button (see CHANGES.md Aug 19 2026, Phase 4) -- a set
+// auto-logs when its RPE field is filled in and loses focus. React's
+// onBlur listens on the native "focusout" event (not "blur", which
+// doesn't bubble), so that's what a synthetic dispatchEvent needs to fire.
+const logViaRpe = async (window, rpeInput, value) => {
+  const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+  setter.call(rpeInput, value);
+  rpeInput.dispatchEvent(new window.Event("input", { bubbles: true }));
+  await sleep(window, 20);
+  rpeInput.dispatchEvent(new window.Event("focusout", { bubbles: true }));
+  await sleep(window, 20);
+};
 
 async function checkPreSeededPairsRenderForEveryType() {
   const { window, errors } = await mount();
@@ -110,26 +122,24 @@ async function checkChipsAndFinishPersistSupersetId() {
 
   const header = clickableWithText(window, "SUPERSET · Shoulder Press + Lateral Raiseunlink");
   if (!header) throw new Error("Shoulder Press + Lateral Raise superset header not found");
+  const card = header.parentElement;
   click(window, header);
   await sleep(window, 40);
 
-  const starred = Array.from(window.document.querySelectorAll("button")).filter((b) => b.textContent.includes("★"));
+  const starred = Array.from(card.querySelectorAll("button")).filter((b) => b.textContent.includes("★"));
   if (starred.length !== 2) throw new Error(`expected 2 suggested chips (one per movement), found ${starred.length}`);
   starred.forEach((b) => click(window, b));
   await sleep(window, 40);
 
-  const rootText = window.document.getElementById("root").textContent;
+  const rootText = card.textContent;
   if (!rootText.includes("Set 1")) throw new Error("interleaved set rows did not appear after both chips tapped");
 
-  const logBtns = () => Array.from(window.document.querySelectorAll("button")).filter((b) => b.textContent.trim() === "log");
-  // Log one set for each movement (first two "log" buttons belong to the
-  // two interleaved rows of Set 1 — Shoulder Press then Lateral Raise).
-  let lb = logBtns();
-  click(window, lb[0]);
-  await sleep(window, 30);
-  lb = logBtns();
-  click(window, lb[0]);
-  await sleep(window, 30);
+  // Log one set for each movement by entering an RPE on Set 1's rows —
+  // inputs alternate [A.weight, A.reps, A.rpe, B.weight, B.reps, B.rpe]
+  // per round, so indices 2 and 5 are the two movements' rpe fields.
+  const rpeInputs = card.querySelectorAll('input[type="number"]');
+  await logViaRpe(window, rpeInputs[2], "7");
+  await logViaRpe(window, rpeInputs[5], "7");
 
   click(window, byText(window, "button", "finish session"));
   await sleep(window, 80);
@@ -158,16 +168,17 @@ async function checkUnlinkPreservesLoggedDataAndBreaksThePair() {
   const { window, errors } = await mount();
   click(window, byText(window, "button", "Push"));
   await sleep(window, 40);
-  click(window, clickableWithText(window, "SUPERSET · Shoulder Press + Lateral Raiseunlink"));
+  const header = clickableWithText(window, "SUPERSET · Shoulder Press + Lateral Raiseunlink");
+  const card = header.parentElement;
+  click(window, header);
   await sleep(window, 40);
 
-  const starred = Array.from(window.document.querySelectorAll("button")).filter((b) => b.textContent.includes("★"));
+  const starred = Array.from(card.querySelectorAll("button")).filter((b) => b.textContent.includes("★"));
   starred.forEach((b) => click(window, b));
   await sleep(window, 40);
 
-  const logBtns = () => Array.from(window.document.querySelectorAll("button")).filter((b) => b.textContent.trim() === "log");
-  click(window, logBtns()[0]);
-  await sleep(window, 30);
+  const rpeInputs = card.querySelectorAll('input[type="number"]');
+  await logViaRpe(window, rpeInputs[2], "7");
 
   const unlinkBtns = Array.from(window.document.querySelectorAll("button")).filter((b) => b.textContent.trim() === "unlink");
   if (!unlinkBtns.length) throw new Error("no unlink button found");

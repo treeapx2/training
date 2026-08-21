@@ -211,4 +211,16 @@ check("13. superset Phase 3a/3b behavior (test-superset-phase3.js)", () => {
   );
 });
 
+// 14. explicit set logging (see CLAUDE.md "Explicit set logging"): no log
+// button exists, weight/reps alone never logs, filling in RPE and losing
+// focus auto-logs (locks inputs, shows x), x reverts to uncommitted, and
+// finish() only persists logged sets.
+check("14. explicit set logging behavior (test-explicit-logging.js)", () => {
+  execFileSync(
+    process.execPath,
+    [path.join(repoRoot, "scripts", "test-explicit-logging.js")],
+    { stdio: "pipe" },
+  );
+});
+
 process.exit(failed ? 1 : 0);
