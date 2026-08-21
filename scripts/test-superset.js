@@ -1,12 +1,14 @@
 #!/usr/bin/env node
 // Behavioral jsdom check for supersets (see CLAUDE.md "Supersets" —
-// CHANGES.md Aug 10 2026, Phase 3). Registered as validation bar check #8
-// so `npm test` alone still runs it; also runnable alone via
-// `npm run test:superset`.
+// CHANGES.md Aug 10 2026, Phase 3, revised Aug 19 2026 Phase 3c). Registered
+// as validation bar check #8 so `npm test` alone still runs it; also
+// runnable alone via `npm run test:superset`.
 //
 // Covers:
-//   - All four pre-seeded pairs render as a combined SUPERSET card by
-//     default, one button per session type still selects Legs/Push/Pull.
+//   - The three revised pre-seeded pairs (Shoulder Press+Lateral Raise,
+//     Rope Pushdown+Skull Crusher, Cable Curl+Reverse Fly) render as a
+//     combined SUPERSET card by default; Legs has none (Leg Extension +
+//     Calf Raise, a machine+machine pair, was removed).
 //   - Each movement in a pair keeps its own target chips (including a
 //     steps-based movement, Lateral Raise) and its own ramp.
 //   - Finishing persists a shared supersetId on both movements, plus each
@@ -14,6 +16,11 @@
 //   - Unlinking removes the pairing (both visually and in a subsequent
 //     finish()) and does not discard already-logged sets.
 //   - A non-pre-seeded pair can be linked manually.
+//
+// Shared-weight (3a) and add-round (3b) behavior for free-weight pairs is
+// covered separately in test-superset-phase3.js — this file is scoped to
+// the pre-existing superset-card mechanics that Phase 3c's pair reshuffle
+// touches.
 const fs = require("fs");
 const path = require("path");
 const { JSDOM } = require("jsdom");
@@ -64,9 +71,9 @@ const expandMovement = async (window, name) => {
 async function checkPreSeededPairsRenderForEveryType() {
   const { window, errors } = await mount();
   const expected = {
-    Push: ["SUPERSET · Pec Fly + Lateral Raiseunlink", "SUPERSET · Rope Pushdown + Skull Crusherunlink"],
+    Push: ["SUPERSET · Shoulder Press + Lateral Raiseunlink", "SUPERSET · Rope Pushdown + Skull Crusherunlink"],
     Pull: ["SUPERSET · Cable Curl + Reverse Flyunlink"],
-    Legs: ["SUPERSET · Leg Extension + Calf Raiseunlink"],
+    Legs: [],
   };
   for (const [typeLabel, headers] of Object.entries(expected)) {
     click(window, byText(window, "button", typeLabel));
@@ -74,6 +81,14 @@ async function checkPreSeededPairsRenderForEveryType() {
     for (const h of headers) {
       if (!clickableWithText(window, h)) {
         throw new Error(`expected pre-seeded superset header not found for ${typeLabel}: "${h}"`);
+      }
+    }
+    if (typeLabel === "Legs") {
+      const anySuperset = Array.from(window.document.querySelectorAll("div")).some((d) =>
+        d.textContent.trim().startsWith("SUPERSET ·"),
+      );
+      if (anySuperset) {
+        throw new Error("Legs should have no pre-seeded superset pairs (Leg Extension + Calf Raise was removed, machine+machine)");
       }
     }
     // Cancel back out to the type-selection screen for the next type.
@@ -84,7 +99,7 @@ async function checkPreSeededPairsRenderForEveryType() {
     }
   }
   if (errors.length) throw new Error("jsdom errors: " + errors.join("; "));
-  console.log("PASS: all four pre-seeded pairs render as combined cards, for every session type");
+  console.log("PASS: the three revised pre-seeded pairs render as combined cards; Legs has none");
   window.close();
 }
 
@@ -93,8 +108,8 @@ async function checkChipsAndFinishPersistSupersetId() {
   click(window, byText(window, "button", "Push"));
   await sleep(window, 40);
 
-  const header = clickableWithText(window, "SUPERSET · Pec Fly + Lateral Raiseunlink");
-  if (!header) throw new Error("Pec Fly + Lateral Raise superset header not found");
+  const header = clickableWithText(window, "SUPERSET · Shoulder Press + Lateral Raiseunlink");
+  if (!header) throw new Error("Shoulder Press + Lateral Raise superset header not found");
   click(window, header);
   await sleep(window, 40);
 
@@ -108,7 +123,7 @@ async function checkChipsAndFinishPersistSupersetId() {
 
   const logBtns = () => Array.from(window.document.querySelectorAll("button")).filter((b) => b.textContent.trim() === "log");
   // Log one set for each movement (first two "log" buttons belong to the
-  // two interleaved rows of Set 1 — Pec Fly then Lateral Raise).
+  // two interleaved rows of Set 1 — Shoulder Press then Lateral Raise).
   let lb = logBtns();
   click(window, lb[0]);
   await sleep(window, 30);
@@ -122,17 +137,17 @@ async function checkChipsAndFinishPersistSupersetId() {
 
   const stored = JSON.parse(window.localStorage.getItem("at_workout_stable") || "{}");
   const entry = stored.history[0];
-  const pecFly = entry.movements.find((m) => m.name === "Pec Fly");
+  const shoulderPress = entry.movements.find((m) => m.name === "Shoulder Press");
   const lateralRaise = entry.movements.find((m) => m.name === "Lateral Raise");
-  console.log("Persisted pair:", JSON.stringify({ pecFly, lateralRaise }));
-  if (!pecFly || !lateralRaise) throw new Error("both paired movements should be in the finished record");
-  if (!pecFly.supersetId || pecFly.supersetId !== lateralRaise.supersetId) {
-    throw new Error(`expected matching supersetId on both movements, got ${pecFly.supersetId} / ${lateralRaise.supersetId}`);
+  console.log("Persisted pair:", JSON.stringify({ shoulderPress, lateralRaise }));
+  if (!shoulderPress || !lateralRaise) throw new Error("both paired movements should be in the finished record");
+  if (!shoulderPress.supersetId || shoulderPress.supersetId !== lateralRaise.supersetId) {
+    throw new Error(`expected matching supersetId on both movements, got ${shoulderPress.supersetId} / ${lateralRaise.supersetId}`);
   }
-  if (pecFly.sets.length !== 1 || lateralRaise.sets.length !== 1) {
+  if (shoulderPress.sets.length !== 1 || lateralRaise.sets.length !== 1) {
     throw new Error("expected exactly 1 logged set per movement");
   }
-  if (!pecFly.targetWeight || !lateralRaise.targetWeight) {
+  if (!shoulderPress.targetWeight || !lateralRaise.targetWeight) {
     throw new Error("expected each movement to have its own targetWeight persisted");
   }
   console.log("PASS: chips work per-movement (incl. steps-based Lateral Raise) and finish persists a shared supersetId");
@@ -143,7 +158,7 @@ async function checkUnlinkPreservesLoggedDataAndBreaksThePair() {
   const { window, errors } = await mount();
   click(window, byText(window, "button", "Push"));
   await sleep(window, 40);
-  click(window, clickableWithText(window, "SUPERSET · Pec Fly + Lateral Raiseunlink"));
+  click(window, clickableWithText(window, "SUPERSET · Shoulder Press + Lateral Raiseunlink"));
   await sleep(window, 40);
 
   const starred = Array.from(window.document.querySelectorAll("button")).filter((b) => b.textContent.includes("★"));
@@ -159,14 +174,14 @@ async function checkUnlinkPreservesLoggedDataAndBreaksThePair() {
   click(window, unlinkBtns[0]);
   await sleep(window, 40);
 
-  if (clickableWithText(window, "SUPERSET · Pec Fly + Lateral Raiseunlink")) {
+  if (clickableWithText(window, "SUPERSET · Shoulder Press + Lateral Raiseunlink")) {
     throw new Error("superset card should be gone after unlinking");
   }
 
-  await expandMovement(window, "Pec Fly");
+  await expandMovement(window, "Shoulder Press");
   const rootText = window.document.getElementById("root").textContent;
   if (!rootText.includes("sets logged")) {
-    throw new Error("expected Pec Fly's logged set to survive unlinking");
+    throw new Error("expected Shoulder Press's logged set to survive unlinking");
   }
 
   click(window, byText(window, "button", "finish session"));
@@ -175,25 +190,28 @@ async function checkUnlinkPreservesLoggedDataAndBreaksThePair() {
 
   const stored = JSON.parse(window.localStorage.getItem("at_workout_stable") || "{}");
   const entry = stored.history[0];
-  const pecFly = entry.movements.find((m) => m.name === "Pec Fly");
-  if (!pecFly) throw new Error("Pec Fly should still be in the finished record after unlinking");
-  if (pecFly.supersetId) throw new Error(`expected no supersetId after unlinking, got ${pecFly.supersetId}`);
-  if (pecFly.sets.length !== 1) throw new Error("expected the pre-unlink logged set to survive");
+  const shoulderPress = entry.movements.find((m) => m.name === "Shoulder Press");
+  if (!shoulderPress) throw new Error("Shoulder Press should still be in the finished record after unlinking");
+  if (shoulderPress.supersetId) throw new Error(`expected no supersetId after unlinking, got ${shoulderPress.supersetId}`);
+  if (shoulderPress.sets.length !== 1) throw new Error("expected the pre-unlink logged set to survive");
   console.log("PASS: unlinking breaks the pair, keeps logged data, and finish() records no supersetId");
   window.close();
 }
 
 async function checkManualLinkOfNonSeededPair() {
   const { window, errors } = await mount();
-  click(window, byText(window, "button", "Push"));
+  // Legs has no pre-seeded pairs as of Phase 3c (Leg Extension + Calf Raise,
+  // a machine+machine pair, was removed) — Leg Press and Leg Extension are
+  // both unpaired and adjacent, so manual linking is exercised here.
+  click(window, byText(window, "button", "Legs"));
   await sleep(window, 40);
 
-  const linkBtn = byText(window, "button", "⛓ link with Shoulder Press");
-  if (!linkBtn) throw new Error("expected a manual link affordance between Chest Press and Shoulder Press");
+  const linkBtn = byText(window, "button", "⛓ link with Leg Extension");
+  if (!linkBtn) throw new Error("expected a manual link affordance between Leg Press and Leg Extension");
   click(window, linkBtn);
   await sleep(window, 40);
 
-  if (!clickableWithText(window, "SUPERSET · Chest Press + Shoulder Pressunlink")) {
+  if (!clickableWithText(window, "SUPERSET · Leg Press + Leg Extensionunlink")) {
     throw new Error("manually linked pair did not render as a combined card");
   }
   if (errors.length) throw new Error("jsdom errors: " + errors.join("; "));

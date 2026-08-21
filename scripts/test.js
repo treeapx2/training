@@ -200,4 +200,15 @@ check("12. ramp shape behavior (test-ramp-shapes.js)", () => {
   );
 });
 
+// 13. superset Phase 3a/3b (see CLAUDE.md "Supersets"): a free-weight pair
+// shares one weight (and unlink/link weights toggles it), a mixed pair
+// never shares weight, and "+ add round" appends a set to both movements.
+check("13. superset Phase 3a/3b behavior (test-superset-phase3.js)", () => {
+  execFileSync(
+    process.execPath,
+    [path.join(repoRoot, "scripts", "test-superset-phase3.js")],
+    { stdio: "pipe" },
+  );
+});
+
 process.exit(failed ? 1 : 0);

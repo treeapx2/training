@@ -284,17 +284,26 @@ function buildOrderedMovements(type, groupOrder, blockMovements) {
   return result;
 }
 // ── Supersets ────────────────────────────────────────────────────────────────
-// Pre-seeded pairs (see CHANGES.md Aug 10 2026, Phase 3) — the program's
+// Pre-seeded pairs (see CHANGES.md Aug 19 2026, Phase 3c) — the program's
 // prose already calls these out ("Superset with X" in BLOCK.target). Applied
 // at session-build time, not baked into BLOCK.sessions[type].movements'
 // declared order itself: reordering here is a session-construction concern,
 // while that array's order is authored training content (see CLAUDE.md
 // "Scope boundary") — none of these pairs are adjacent in it today.
+//
+// Revised Aug 19 2026 to stop pre-seeding machine+machine pairs ("no
+// supersets with machines out of respect for the gym goers" — Aug 16):
+// Leg Extension <-> Calf Raise (two machines) removed outright. Shoulder
+// Press <-> Lateral Raise replaces Pec Fly <-> Lateral Raise -- the owner
+// explicitly endorsed Shoulder Press/Lateral Raise as "the one superset
+// that can include a machine so far" (Aug 17), and neither CHANGES.md's
+// "remove" nor "keep" list for this phase mentions Pec Fly, so this is an
+// inference: Lateral Raise's partner changes, Pec Fly goes unpaired. Flag
+// this to the owner if the resulting Push order looks wrong.
 const SUPERSET_PAIRS = [
-  ["Pec Fly", "Lateral Raise"],
+  ["Shoulder Press", "Lateral Raise"],
   ["Rope Pushdown", "Skull Crusher"],
   ["Cable Curl", "Reverse Fly"],
-  ["Leg Extension", "Calf Raise"],
 ];
 // Moves the second movement of each known pair to sit immediately after the
 // first (a superset renders as one combined card, which requires the two
@@ -1700,17 +1709,7 @@ function useMovementPicker(mov, history, position, total, onChange) {
   // switchable while no set has been logged; once any set carries logged
   // data, switching requires an explicit confirm — the ramp regenerates
   // around the new target, but logged sets are kept, not discarded.
-  const handleChipTap = (choice) => {
-    if (choice === chipChoice) return;
-    const hold = deriveCurrentWeight(history, mov);
-    const newWeight =
-      choice === "hold" ? hold : stepWeight(mov, hold, choice === "up" ? 1 : -1);
-    if (done) {
-      const ok = window.confirm(
-        "Changing the target weight regenerates today's ramp. Logged sets are kept, not discarded. Continue?",
-      );
-      if (!ok) return;
-    }
+  const applyTarget = (choice, newWeight) => {
     const setCount = deriveSetCount(history, mov.name);
     const ramp = buildRamp(mov, newWeight, setCount);
     const prior = plannedSets.filter((s) => s.logged);
@@ -1733,6 +1732,32 @@ function useMovementPicker(mov, history, position, total, onChange) {
     setTargetWeight(newWeight);
     setPlannedSets(merged);
     if (onChange) onChange();
+  };
+  const handleChipTap = (choice) => {
+    if (choice === chipChoice) return;
+    const hold = deriveCurrentWeight(history, mov);
+    const newWeight =
+      choice === "hold" ? hold : stepWeight(mov, hold, choice === "up" ? 1 : -1);
+    if (done) {
+      const ok = window.confirm(
+        "Changing the target weight regenerates today's ramp. Logged sets are kept, not discarded. Continue?",
+      );
+      if (!ok) return;
+    }
+    applyTarget(choice, newWeight);
+  };
+  // Used by SupersetRow's shared-weight picker (see CHANGES.md Aug 19 2026,
+  // Phase 3a) to drive both movements in a free-weight pair to the same
+  // literal weight from one tap. `skipConfirm` lets the caller show a single
+  // confirm covering both movements instead of one per movement.
+  const handleSetWeight = (choice, weight, skipConfirm) => {
+    if (done && !skipConfirm) {
+      const ok = window.confirm(
+        "Changing the target weight regenerates today's ramp. Logged sets are kept, not discarded. Continue?",
+      );
+      if (!ok) return;
+    }
+    applyTarget(choice, weight);
   };
 
   const handleLog = (idx) => {
@@ -1811,6 +1836,7 @@ function useMovementPicker(mov, history, position, total, onChange) {
     skipReason,
     handleSkip,
     handleUnskip,
+    handleSetWeight,
   };
 }
 function MovementRow({
@@ -2083,6 +2109,32 @@ function SupersetRow({
   const [open, setOpen] = useState(false);
   const pickerA = useMovementPicker(movA, history, positionA, total, onChange);
   const pickerB = useMovementPicker(movB, history, positionB, total, onChange);
+  // Shared weight for free-weight supersets (see CHANGES.md Aug 19 2026,
+  // Phase 3a): "easier to keep the supersets with the same weight so im not
+  // going back and forth to the rack too often" — Calf Raise, Aug 10.
+  // Only offered when BOTH movements are dumbbell movements (`steps`, not
+  // `increment`) — the same literal dumbbell pair has to work for both
+  // exercises, which is meaningless for a machine/cable movement.
+  const isFreeWeightPair = !!movA.steps && !!movB.steps;
+  const [weightsLinked, setWeightsLinked] = useState(isFreeWeightPair);
+  const sharedHold = deriveCurrentWeight(history, movA);
+  const sharedChipValues = {
+    down: stepWeight(movA, sharedHold, -1),
+    hold: sharedHold,
+    up: stepWeight(movA, sharedHold, 1),
+  };
+  const handleSharedChipTap = (choice) => {
+    if (choice === pickerA.chipChoice && choice === pickerB.chipChoice) return;
+    const weight = sharedChipValues[choice];
+    if (pickerA.done || pickerB.done) {
+      const ok = window.confirm(
+        "Changing the shared target weight regenerates today's ramp for both movements. Logged sets are kept, not discarded. Continue?",
+      );
+      if (!ok) return;
+    }
+    pickerA.handleSetWeight(choice, weight, true);
+    pickerB.handleSetWeight(choice, weight, true);
+  };
   const doneCount =
     (pickerA.loggedSets.length > 0 ? 1 : 0) +
     (pickerB.loggedSets.length > 0 ? 1 : 0);
@@ -2262,7 +2314,9 @@ function SupersetRow({
           >
             Rest: none between · 60s after pair
           </div>
-          {pickerA.plannedSets.length === 0 && (
+          {isFreeWeightPair &&
+          weightsLinked &&
+          (pickerA.plannedSets.length === 0 || pickerB.plannedSets.length === 0) ? (
             /*#__PURE__*/ <div
               style={{
                 marginBottom: 8,
@@ -2270,47 +2324,167 @@ function SupersetRow({
             >
               <div
                 style={{
-                  fontSize: 11,
-                  fontWeight: 600,
-                  color: "#111",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
                   marginBottom: 4,
                 }}
               >
-                {movA.name}
+                <div
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 600,
+                    color: "#111",
+                  }}
+                >
+                  {movA.name} + {movB.name} (shared weight)
+                </div>
+                <button
+                  onClick={() => setWeightsLinked(false)}
+                  style={{
+                    fontSize: 11,
+                    color: "#185FA5",
+                    background: "none",
+                    border: "none",
+                    textDecoration: "underline",
+                    cursor: "pointer",
+                    padding: 0,
+                  }}
+                >
+                  unlink weights
+                </button>
               </div>
-              <ChipPicker
-                mov={movA}
-                history={history}
-                chipChoice={pickerA.chipChoice}
-                suggested={pickerA.suggested}
-                onChipTap={pickerA.handleChipTap}
-              />
-            </div>
-          )}
-          {pickerB.plannedSets.length === 0 && (
-            /*#__PURE__*/ <div
-              style={{
-                marginBottom: 8,
-              }}
-            >
               <div
                 style={{
-                  fontSize: 11,
-                  fontWeight: 600,
-                  color: "#111",
-                  marginBottom: 4,
+                  display: "flex",
+                  gap: 8,
                 }}
               >
-                {movB.name}
+                {["down", "hold", "up"].map((choice) => (
+                  /*#__PURE__*/ <button
+                    key={choice}
+                    onClick={() => handleSharedChipTap(choice)}
+                    style={{
+                      flex: 1,
+                      padding: "10px 0",
+                      border:
+                        pickerA.chipChoice === choice
+                          ? "0.5px solid #111"
+                          : "0.5px solid #ddd",
+                      borderRadius: 10,
+                      background: pickerA.chipChoice === choice ? "#111" : "#fff",
+                      color: pickerA.chipChoice === choice ? "#fff" : "#111",
+                      fontSize: 14,
+                      fontWeight: 600,
+                      cursor: "pointer",
+                    }}
+                  >
+                    {sharedChipValues[choice]}
+                    {pickerA.suggested === choice || pickerB.suggested === choice
+                      ? " ★"
+                      : ""}
+                  </button>
+                ))}
               </div>
-              <ChipPicker
-                mov={movB}
-                history={history}
-                chipChoice={pickerB.chipChoice}
-                suggested={pickerB.suggested}
-                onChipTap={pickerB.handleChipTap}
-              />
+              <div
+                style={{
+                  display: "flex",
+                  gap: 8,
+                  marginTop: 4,
+                }}
+              >
+                {["down", "hold", "up"].map((choice) => (
+                  /*#__PURE__*/ <div
+                    key={choice}
+                    style={{
+                      flex: 1,
+                      textAlign: "center",
+                      fontSize: 10,
+                      color: "#999",
+                    }}
+                  >
+                    {choice}
+                  </div>
+                ))}
+              </div>
             </div>
+          ) : (
+            /*#__PURE__*/ <>
+              {pickerA.plannedSets.length === 0 && (
+                /*#__PURE__*/ <div
+                  style={{
+                    marginBottom: 8,
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginBottom: 4,
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 600,
+                        color: "#111",
+                      }}
+                    >
+                      {movA.name}
+                    </div>
+                    {isFreeWeightPair && !weightsLinked && (
+                      /*#__PURE__*/ <button
+                        onClick={() => setWeightsLinked(true)}
+                        style={{
+                          fontSize: 11,
+                          color: "#185FA5",
+                          background: "none",
+                          border: "none",
+                          textDecoration: "underline",
+                          cursor: "pointer",
+                          padding: 0,
+                        }}
+                      >
+                        link weights
+                      </button>
+                    )}
+                  </div>
+                  <ChipPicker
+                    mov={movA}
+                    history={history}
+                    chipChoice={pickerA.chipChoice}
+                    suggested={pickerA.suggested}
+                    onChipTap={pickerA.handleChipTap}
+                  />
+                </div>
+              )}
+              {pickerB.plannedSets.length === 0 && (
+                /*#__PURE__*/ <div
+                  style={{
+                    marginBottom: 8,
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 600,
+                      color: "#111",
+                      marginBottom: 4,
+                    }}
+                  >
+                    {movB.name}
+                  </div>
+                  <ChipPicker
+                    mov={movB}
+                    history={history}
+                    chipChoice={pickerB.chipChoice}
+                    suggested={pickerB.suggested}
+                    onChipTap={pickerB.handleChipTap}
+                  />
+                </div>
+              )}
+            </>
           )}
           {pickerA.plannedSets.length > 0 && pickerB.plannedSets.length > 0 && (
             /*#__PURE__*/ <div>
@@ -2335,6 +2509,25 @@ function SupersetRow({
                   {movementSetRow(pickerB, movB, i)}
                 </div>
               ))}
+              <button
+                onClick={() => {
+                  pickerA.handleUpdate("_add", "_add", "_add");
+                  pickerB.handleUpdate("_add", "_add", "_add");
+                }}
+                style={{
+                  width: "100%",
+                  padding: "6px 0",
+                  marginTop: 2,
+                  background: "none",
+                  border: "0.5px dashed #ddd",
+                  borderRadius: 6,
+                  fontSize: 12,
+                  color: "#aaa",
+                  cursor: "pointer",
+                }}
+              >
+                + add round
+              </button>
             </div>
           )}
           <div

@@ -13,6 +13,7 @@
     "test:cardio-default": "node scripts/test-cardio-default.js",
     "test:dumbbell-steps": "node scripts/test-dumbbell-steps.js",
     "test:ramp-shapes": "node scripts/test-ramp-shapes.js",
+    "test:superset-phase3": "node scripts/test-superset-phase3.js",
     "prepare": "git config core.hooksPath githooks"
   },
   "devDependencies": {
