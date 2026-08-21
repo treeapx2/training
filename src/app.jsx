@@ -238,6 +238,7 @@ function saveDraft(type, movements, note, sessionDate, cardio) {
         supersetId: m.supersetId || null,
         skipped: m._skipped || false,
         skipReason: m._skipped ? m._skipReason || "" : "",
+        substituted: m._substituted || false,
       })),
     };
     localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
@@ -1372,6 +1373,8 @@ function SetLogger({
   chipChoice,
   suggested,
   onChipTap,
+  substituted,
+  onUnavailable,
 }) {
   const [showWhy, setShowWhy] = useState(false);
   const pr = history ? getMovementPR(history, mov.name) : null;
@@ -1412,17 +1415,53 @@ function SetLogger({
           >
             why?
           </button>
-          {pr && (
-            /*#__PURE__*/ <span
-              style={{
-                fontSize: 10,
-                color: pr.statusColor,
-                fontWeight: 600,
-              }}
-            >
-              {pr.reps < 10 ? `best ${pr.weight}lb×${pr.reps}` : pr.status}
-            </span>
-          )}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+            }}
+          >
+            {substituted && (
+              /*#__PURE__*/ <span
+                style={{
+                  fontSize: 10,
+                  color: "#b8860b",
+                  fontWeight: 600,
+                }}
+              >
+                substituted
+              </span>
+            )}
+            {sets.length > 0 && (
+              /*#__PURE__*/ <button
+                onClick={onUnavailable}
+                style={{
+                  fontSize: 11,
+                  color: "#aaa",
+                  background: "none",
+                  border: "none",
+                  padding: 0,
+                  cursor: "pointer",
+                  textDecoration: "underline",
+                  textDecorationStyle: "dotted",
+                }}
+              >
+                unavailable
+              </button>
+            )}
+            {pr && (
+              /*#__PURE__*/ <span
+                style={{
+                  fontSize: 10,
+                  color: pr.statusColor,
+                  fontWeight: 600,
+                }}
+              >
+                {pr.reps < 10 ? `best ${pr.weight}lb×${pr.reps}` : pr.status}
+              </span>
+            )}
+          </div>
         </div>
         {showWhy && (
           /*#__PURE__*/ <div
@@ -1634,6 +1673,18 @@ function useMovementPicker(mov, history, position, total, onChange) {
     setSkipReason("");
   };
 
+  // Unavailable weight fallback (see CHANGES.md Aug 19 2026, Phase 5): "15s
+  // not available and didnt want to push 20s" / "45s not available" / "20s
+  // not available" — four notes in ten days recording a wanted weight not
+  // being on the rack. `substituted` persists so a lighter session forced
+  // by rack availability is distinguishable from a deliberate deload in
+  // later analysis (see suggestChip/deriveCurrentWeight, Phase 7).
+  const [substituted, setSubstituted] = useState(!!mov._substituted);
+  useEffect(() => {
+    mov._substituted = substituted;
+    if (onChange) onChange();
+  }, [substituted]);
+
   // Target picker (see CHANGES.md Aug 10 2026, Phase 2). `suggested` is a
   // pure function of history + this movement's position in today's session
   // (positional downgrade — a movement run late is not a valid place to
@@ -1761,6 +1812,19 @@ function useMovementPicker(mov, history, position, total, onChange) {
       ),
     );
   };
+  // Shifts the whole generated ramp to the nearest available step down, in
+  // one tap, without hand-editing every set row — see CHANGES.md Aug 19
+  // 2026, Phase 5. Only meaningful once a ramp exists (a chip has already
+  // been tapped); re-tappable if the next weight down turns out to be
+  // unavailable too. Keeps whatever chip choice was already made — it's a
+  // rack-availability correction on top of the chosen target, not a new
+  // target decision.
+  const handleUnavailable = () => {
+    if (targetWeight == null) return;
+    const lower = stepWeight(mov, targetWeight, -1);
+    applyTarget(chipChoice, lower);
+    setSubstituted(true);
+  };
   const handleUpdate = (idx, field, val) => {
     if (idx === "_add") {
       // append a new working set pre-filled with the target weight
@@ -1826,6 +1890,8 @@ function useMovementPicker(mov, history, position, total, onChange) {
     handleSkip,
     handleUnskip,
     handleSetWeight,
+    substituted,
+    handleUnavailable,
   };
 }
 function MovementRow({
@@ -1855,6 +1921,8 @@ function MovementRow({
     skipReason,
     handleSkip,
     handleUnskip,
+    substituted,
+    handleUnavailable,
   } = useMovementPicker(mov, history, position, total, onChange);
 
   if (skipped) {
@@ -1965,6 +2033,7 @@ function MovementRow({
               }}
             >
               {loggedSets.length}/{plannedSets.length} sets logged
+              {substituted ? " · substituted" : ""}
             </div>
           )}
         </div>
@@ -2050,6 +2119,8 @@ function MovementRow({
             chipChoice={chipChoice}
             suggested={suggested}
             onChipTap={handleChipTap}
+            substituted={substituted}
+            onUnavailable={handleUnavailable}
           />
           <div
             style={{
@@ -2462,6 +2533,37 @@ function SupersetRow({
           )}
           {pickerA.plannedSets.length > 0 && pickerB.plannedSets.length > 0 && (
             /*#__PURE__*/ <div>
+              <div
+                style={{
+                  display: "flex",
+                  gap: 12,
+                  marginBottom: 4,
+                }}
+              >
+                {[
+                  { mov: movA, picker: pickerA },
+                  { mov: movB, picker: pickerB },
+                ].map(({ mov, picker }) => (
+                  /*#__PURE__*/ <button
+                    key={mov.name}
+                    onClick={picker.handleUnavailable}
+                    style={{
+                      fontSize: 10,
+                      color: picker.substituted ? "#b8860b" : "#aaa",
+                      fontWeight: picker.substituted ? 600 : 400,
+                      background: "none",
+                      border: "none",
+                      padding: 0,
+                      cursor: "pointer",
+                      textDecoration: "underline",
+                      textDecorationStyle: "dotted",
+                    }}
+                  >
+                    {mov.name}
+                    {picker.substituted ? " substituted" : " unavailable"}
+                  </button>
+                ))}
+              </div>
               {Array.from({ length: maxSets }).map((_, i) => (
                 /*#__PURE__*/ <div
                   key={i}
@@ -2615,6 +2717,7 @@ function SessionScreen({ history, setHistory, syncLast, onSynced }) {
       blockMov._suggested = dm.suggested || null;
       blockMov._skipped = dm.skipped || false;
       blockMov._skipReason = dm.skipReason || "";
+      blockMov._substituted = dm.substituted || false;
       return {
         ...blockMov,
         _group: dm._group,
@@ -2740,6 +2843,7 @@ function SessionScreen({ history, setHistory, syncLast, onSynced }) {
         supersetId: m.supersetId || undefined,
         skipped: m._skipped || undefined,
         skipReason: m._skipped ? m._skipReason || "" : undefined,
+        substituted: m._substituted || undefined,
       }))
       .filter((m) => m.sets.length > 0 || m.note || m.skipped);
     const formattedDate = new Date(

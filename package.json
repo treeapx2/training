@@ -15,6 +15,7 @@
     "test:ramp-shapes": "node scripts/test-ramp-shapes.js",
     "test:superset-phase3": "node scripts/test-superset-phase3.js",
     "test:explicit-logging": "node scripts/test-explicit-logging.js",
+    "test:unavailable-weight": "node scripts/test-unavailable-weight.js",
     "prepare": "git config core.hooksPath githooks"
   },
   "devDependencies": {

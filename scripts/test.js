@@ -223,4 +223,16 @@ check("14. explicit set logging behavior (test-explicit-logging.js)", () => {
   );
 });
 
+// 15. unavailable weight fallback (see CLAUDE.md "Target picker"): tapping
+// "unavailable" shifts the whole ramp to the nearest step down, is
+// re-tappable, finish() persists substituted: true only on the affected
+// movement, and it works per-movement inside a superset pair.
+check("15. unavailable weight fallback behavior (test-unavailable-weight.js)", () => {
+  execFileSync(
+    process.execPath,
+    [path.join(repoRoot, "scripts", "test-unavailable-weight.js")],
+    { stdio: "pipe" },
+  );
+});
+
 process.exit(failed ? 1 : 0);
