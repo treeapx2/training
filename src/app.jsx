@@ -1185,9 +1185,11 @@ function applyPositionalDowngrade(suggested, position, total) {
 }
 
 // Steps one chip position from `value`: n=-1 down, +1 up, 0 = same. Movements
-// with a `steps` array (irregular dumbbell progressions) walk the array;
-// everything else steps by its fixed `increment`, clamped at the increment
-// itself (never zero or negative).
+// with a `steps` array (every dumbbell movement shares DUMBBELL_STEPS, the
+// rack's actual available plates) walk the array, snapping to the nearest
+// entry first if `value` isn't itself in it; everything else steps by its
+// fixed `increment`, clamped at the increment itself (never zero or
+// negative).
 function stepWeight(mov, value, n) {
   if (mov.steps) {
     const steps = mov.steps;

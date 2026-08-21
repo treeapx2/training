@@ -330,8 +330,8 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
 // see build.js) so a stale cached build is identifiable on the device
 // instead of silently running fixed-but-not-yet-deployed code.
 const BUILD_INFO = {
-  sha: "2e94196",
-  builtAt: "2026-08-21T18:29:21.258Z"
+  sha: "b248f62",
+  builtAt: "2026-08-21T19:04:06.398Z"
 };
 function formatBuildStamp() {
   const d = new Date(BUILD_INFO.builtAt);
@@ -1503,9 +1503,11 @@ function applyPositionalDowngrade(suggested, position, total) {
 }
 
 // Steps one chip position from `value`: n=-1 down, +1 up, 0 = same. Movements
-// with a `steps` array (irregular dumbbell progressions) walk the array;
-// everything else steps by its fixed `increment`, clamped at the increment
-// itself (never zero or negative).
+// with a `steps` array (every dumbbell movement shares DUMBBELL_STEPS, the
+// rack's actual available plates) walk the array, snapping to the nearest
+// entry first if `value` isn't itself in it; everything else steps by its
+// fixed `increment`, clamped at the increment itself (never zero or
+// negative).
 function stepWeight(mov, value, n) {
   if (mov.steps) {
     const steps = mov.steps;
