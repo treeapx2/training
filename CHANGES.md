@@ -1,255 +1,207 @@
-# CHANGES.md — work order, Aug 10 2026
+# CHANGES.md — work order, Aug 19 2026
 
-Supersedes the previous version of this file. Read alongside CLAUDE.md.
+Supersedes the previous version. Read alongside CLAUDE.md.
 
-Six phases. Commit after each. `npm run build && npm test` must pass before every
-commit. Do not push — the owner pushes.
+Seven phases. Commit after each. `npm run build && npm test` must pass before
+every commit. Do not push — the owner pushes.
 
-These phases change behavior. Equivalence with the previous `index.html` will not
-hold. Verify each phase with targeted jsdom checks on real flows.
-
----
-
-## Background: why this refactor
-
-The prose `target` strings (`"TEST 165 — broke the 8-rep wall..."`) are authored
-by the coach every couple of weeks and displayed on each movement. **The owner
-does not read them** — his attention is on the pre-filled set defaults, which are
-generated from the hand-authored `current` field. That field goes stale between
-coach updates, producing repeated log notes like *"need to update the default for
-this exercise"* (Cable Curl, Aug 5 and Aug 9 — it had been at 47.5 for two
-sessions while the preset still ramped to 42.5).
-
-**Fix the direction of authority.** Defaults should derive from *logged history*,
-which is always current, rather than from a hand-maintained config string. Coach
-prose becomes optional commentary behind a tap, not the primary surface.
+Every item below comes from a note the owner wrote in the log between Aug 10 and
+Aug 19. Quoted notes are the source of truth for intent.
 
 ---
 
-## PHASE 1 — remove session variants
+## PHASE 1 — free-weight increments are wrong
 
-The A/B variant system is being removed. It solved "lighter day" at session
-granularity; Phase 2's per-movement down/hold/up chips solve it better and work
-for every session type without extra structure.
+> *"update this to use the same increments as other free weight exercises (5s up
+> to 50 with 12s the only extra weight available)"* — Skull Crusher, Aug 17
 
-- Remove the variant switcher UI. One button per session type: Legs, Push, Pull.
-- Remove `SESSION_VARIANTS` and the `weight` overlay mechanism it introduced.
-- **Historical records must still render.** Sessions from Aug 3 and Aug 7 carry
-  `variant: "A"`. Do not delete or rewrite that field in `sessions.json`. If a
-  record has a variant, history may display it as a small label; it must not
-  crash on records without one.
-- Rest target becomes **per session type** rather than per variant:
+The dumbbell rack is 5 lb increments to 50, plus a 12 lb pair. Several movements
+are configured with wrong increments, and Skull Crusher in particular has been
+bouncing 12 → 15 → 20 because the picker offered unavailable weights.
 
-| Session | Rest target |
+Set a shared `steps` array for **all dumbbell movements** — Skull Crusher, Hammer
+Curl, Zottman Curl, DB Row, Reverse Fly, Lateral Raise, Goblet Squat:
+
+```
+[5, 10, 12, 15, 20, 25, 30, 35, 40, 45, 50]
+```
+
+Chips step through adjacent entries in this array, not by a fixed number.
+Machine movements keep their 15 lb (or 5 lb cable) increments.
+
+---
+
+## PHASE 2 — ramp shape must scale with set count
+
+> *"no warmups for a three set exercise"* — Hammer Curl, Aug 15
+> *"one weight or two weight pattern when doing machines at 4-sets or less"* —
+> Shoulder Press, Aug 11
+
+The `[T-2i, T-i, T-i, T, T]` ramp is correct for 5 sets but wrong for short
+movements — it spends warmups the owner doesn't want on 3-set accessories.
+
+| Set count | Generated pattern |
 |---|---|
-| Legs | `Opener 2–2.5 min · accessories 60s` |
-| Push | `Opener 2 min · supersets 45–60s` |
-| Pull | `Opener 2 min · supersets 45–60s` |
+| 5 | `[T-2i, T-i, T-i, T, T]` (unchanged) |
+| 4 | `[T-i, T, T, T]` |
+| 3 | `[T, T, T]` — no warmups |
+| 2 | `[T, T]` |
 
-A future "lighter day" needs no code: it is a session where most movements are
-set to `down`. Because Phase 2 records the chip choice per movement, such
-sessions can be labelled retroactively from data.
-
----
-
-## PHASE 2 — target picker (the core change)
-
-Replace the pre-filled-from-`current` behavior with an explicit weight choice
-that generates the ramp.
-
-### UI
-
-Each movement, before any sets are logged, shows **three weight chips**:
-
-```
-Cable Curl                              Biceps ▸
-   [ 42.5 ]   [ 47.5 ]★  [ 52.5 ]
-    down       hold        up
-```
-
-- Left = one increment **down**, middle = **hold** at current working weight,
-  right = one increment **up**.
-- Exactly one chip carries a **suggested** highlight (see rules below).
-- Tapping a chip generates the full set ramp and fills the defaults.
-- Chips remain visible and re-tappable until a set is logged. After that,
-  changing requires the same confirmation pattern used elsewhere: targets change,
-  logged sets are preserved.
-- Labels under the chips are `down` / `hold` / `up`.
-
-### Increments
-
-Machine-determined and stable, so configure explicitly per movement rather than
-inferring. Add an `increment` field (number) or, for irregular dumbbell
-progressions, a `steps` array of available weights.
-
-Known values from history:
-
-| Movement | Increment |
-|---|---|
-| Leg Press, Leg Extension, Leg Curl | 15 |
-| Chest Press, Pec Fly, Shoulder Press | 15 |
-| Seated Row, Lat Pulldown | 15 |
-| Goblet Squat, Calf Raise | 5 |
-| Rope Pushdown, Cable Curl | 5 |
-| DB Row, Skull Crusher, Hammer Curl, Zottman Curl | 5 |
-| Lateral Raise | steps: `[12, 15, 20, 25]` |
-
-### Current working weight
-
-Derived from history, not from `BLOCK.current`: the **heaviest weight completed at
-target reps in the most recent session** containing that movement. If the movement
-has never been logged, fall back to `BLOCK.current`.
-
-### Ramp generation
-
-The established pattern across the log is, for a target `T` and increment `i`:
-
-```
-[ T-2i,  T-i,  T-i,  T,  T ]
-```
-
-- Set count comes from **history** — the modal number of sets across the last
-  three sessions containing that movement (e.g. Leg Press 5, Skull Crusher 4,
-  Calf Raise 3).
-- With fewer sets, drop build sets first, then warmups; never drop below one
-  working set at `T`.
-- Reps default to the movement's configured `reps`.
-- Never generate a negative or below-minimum weight; clamp at the lowest
-  available increment.
-
-### Suggestion rules
-
-Evaluate against the last two sessions containing the movement:
-
-| Condition | Suggest |
-|---|---|
-| Both sessions hit target reps at RPE ≤7 | **up** |
-| Last session hit target reps at RPE 8 | **hold** |
-| Last session missed target reps, or any working set at RPE ≥9 | **down** |
-| Fewer than two prior sessions | **hold** |
-
-Positional modifier — queue position materially affects output (documented in
-CLAUDE.md):
-
-- Movement in the **first two positions** of the session: keep the suggestion as
-  computed.
-- Movement in the **last two positions**: downgrade `up` to `hold`. A movement run
-  late is not a valid place to attempt a weight increase.
-
-### Persistence
-
-Store on each movement in the session record:
-- `targetWeight` — the weight chosen
-- `chipChoice` — `"down" | "hold" | "up"`
-- `suggested` — which chip was highlighted
-
-This makes suggestion quality auditable (how often is the suggestion accepted?)
-and enables retroactive session labelling.
-
-### Coach prose
-
-Demote `target` to a collapsed, tap-to-expand element (e.g. a small `why?`
-affordance). Do not show it expanded by default. Keep the text intact — it is
-still the reasoning behind the numbers, just no longer the primary surface.
+Confirmed by actual logs: Skull Crusher Aug 17 ran `15×10` four times; Hammer
+Curl Aug 19 ran `15×10` three times.
 
 ---
 
-## PHASE 3 — superset UI
+## PHASE 3 — superset improvements
 
-The program prescribes supersets throughout, but the data model has no concept of
-them, so pairing is lost to prose (Aug 8: *"did alternate shoulders: 4 sets 10
-raises then quickly into 10 presses"* — which is also why Lateral Raise shows only
-2 sets that day).
+Three separate notes:
 
-Implement as an **annotation on the existing flat movement list**. Do not
-introduce a nested structure; the flat list and `_order` semantics must be
-preserved.
+**3a. Shared weight for free-weight supersets.**
 
-- Each movement card gets a small chain affordance on its lower edge. Tapping it
-  links that movement with the one **below** it.
-- Linked movements render as a single card with interleaved set rows:
+> *"easier to keep the supersets with the same weight so im not going back and
+> forth to the rack too often"* — Calf Raise, Aug 10
+> *"keeping weights the same for a free weight superset"* — Reverse Fly, Aug 15
 
-```
-┌─ SUPERSET · Lateral Raise + Shoulder Press ──── unlink ─┐
-│  Rest: none between · 60s after pair                    │
-│  Set 1   Raise  [15] [10] [6]                           │
-│          Press  [60] [10] [6]                           │
-│  Set 2   Raise  [15] [10] [7]                           │
-│          Press  [60] [10] [7]                           │
-│  Note: ____________________________                     │
-└─────────────────────────────────────────────────────────┘
-```
+When both movements in a superset are dumbbell movements, offer a **single shared
+weight** for the pair — one set of chips governing both, rather than two
+independent pickers. Include a way to unlink the weights if the owner wants them
+different.
 
-- One rest target for the pair (rest *after* the pair, not between).
-- Unlink affordance on the card; unlinking preserves all logged data.
-- Data model: a shared `supersetId` on both movement entries. Each movement keeps
-  its own sets, weight, chips, and note.
-- Each movement in a pair keeps its own target chips from Phase 2.
+**3b. Add superset rounds.**
 
-**Pre-seed the program's intended pairs** so linking is not manual every session —
-this is what makes the feature actually get used:
+> *"need ability to add more superset rounds"* — Calf Raise, Aug 16
 
-- Pec Fly ⇄ Lateral Raise
-- Rope Pushdown ⇄ Skull Crusher
-- Cable Curl ⇄ Reverse Fly
-- Leg Extension ⇄ Calf Raise
+The merged superset card needs an "add round" action that appends a paired set
+row to both movements at once.
 
-Pre-seeded pairs must be unlinkable like any other.
+**3c. Do not pre-seed machine+machine pairs.**
+
+> *"no supersets with machines out of respect for the gym goers"* — Aug 16
+> *"this is the one superset that can include a machine so far"* — Lateral Raise
+> ⇄ Shoulder Press, Aug 17
+
+Occupying two machines at once is antisocial in a busy gym. Revise the pre-seeded
+pairs:
+
+- **Remove** Leg Extension ⇄ Calf Raise (two machines)
+- **Keep** Cable Curl ⇄ Reverse Fly, Rope Pushdown ⇄ Skull Crusher
+- **Keep** Lateral Raise ⇄ Shoulder Press — the owner has explicitly endorsed
+  this one as the acceptable machine-inclusive pair
+- Manual linking of any pair stays available
 
 ---
 
-## PHASE 4 — skip button
+## PHASE 4 — explicit set logging
 
-Movements are currently skipped by logging zero sets plus a freeform note
-(*"skipped — in use"*, *"benches weren't open"*). That makes a deliberate skip
-indistinguishable from an untouched movement in analysis.
+> *"selecting an RPE should log the set - need for a log button (can still use
+> the x to clear)"* — Lat Pulldown, Aug 15
 
-- Add a **skip** action to each movement card.
-- On skip, prompt for a reason as tappable chips: `machine in use`, `time`,
-  `pain`, `other`. `other` reveals a short text field.
-- Persist `skipped: true` and `skipReason` on the movement entry.
-- Skipped movements render collapsed with the reason visible, in the session and
-  in history.
-- Skipping is reversible within the session.
-- Include skip counts and reasons in the coach handoff export — repeated skips of
-  the same movement are a programming signal.
+**Confirm intent with the owner before implementing.** The likely reading: an
+explicit **Log** button should commit a set, rather than a set being implicitly
+complete once an RPE is tapped. The `x` continues to clear a logged set.
+
+Implement as: weight / reps / RPE are editable inputs; a **Log** action commits
+the set and visually marks it complete; `x` reverts it to uncommitted. Only
+committed sets count toward history-derived calculations.
 
 ---
 
-## PHASE 5 — cardio machine default
+## PHASE 5 — unavailable weight fallback
 
-`machine` came through empty on the Aug 5 record while duration, level, and rpe
-were all filled.
+Four notes in ten days record a wanted weight being unavailable:
 
-- Default `machine` to `Stairmaster`.
-- Keep the full dropdown available.
+> *"15s not available and didnt want to push 20s"* — Aug 11
+> *"45s not available"* — Aug 16
+> *"20s not available"* — Aug 19
+
+Add a quick action on a movement — e.g. a small `unavailable` affordance next to
+the chips — that shifts the whole generated ramp to the nearest available step
+**down**, in one tap, without hand-editing every set row.
+
+Record it: persist `substituted: true` when used, so a lighter session caused by
+rack availability is distinguishable from a deliberate deload in later analysis.
 
 ---
 
-## PHASE 6 — docs
+## PHASE 6 — cardio progress tracking
 
-- Update CLAUDE.md: remove the session-variants section; document the target
-  picker (increments, current-weight derivation, ramp shape, suggestion rules,
-  persisted fields), the superset annotation model, skip fields, and the new
-  session-record schema.
-- Note explicitly that `BLOCK.current` is now a **fallback only** for movements
-  with no logged history, and that `BLOCK.target` prose is secondary UI.
+> *"are we tracking stairmaster progress?"* — session note, Aug 17
+
+Cardio has been logged as structured fields since Aug 2 but is never surfaced
+beyond the individual session. Add a cardio view (Progress tab is the natural
+home):
+
+- Trend of the cardio finisher over time: duration, level, and RPE
+- Grouped by machine
+- Include cardio in the coach handoff export — currently absent, and the coach
+  has been reading it out of session notes
+
+The signal that matters: **output at a given RPE**. Duration and level rising
+while RPE stays flat is aerobic progress. Present it so that comparison is
+possible.
+
+---
+
+## PHASE 7 — suggestion logic: rep-range awareness
+
+The stored `suggested` vs `chipChoice` fields make the engine auditable. Across
+33 movement instances Aug 10–19, the owner accepted the suggestion 21 times
+(~64%). The disagreements cluster in one systematic failure:
+
+**The engine treats "missed target reps" as failure, when hitting fewer reps at a
+heavier weight is often progress.**
+
+Concrete case. Chest Press, Aug 11: `135×8 @8, 135×5 @9` after a 120→135 jump.
+The engine scored that a failure and suggested `down` on Aug 17. But 8 reps at
+135 is a genuine strength gain over 10 reps at 120 — the weight simply belongs in
+a lower rep range. The owner overrode to `hold` both times. Same for Pec Fly,
+which was suggested `down` on Aug 17 and then completed `135×10 @7, ×10 @8` — a
+clean pass the engine had advised against.
+
+Required change:
+
+- Treat a working set as **successful** if it reaches the **lower bound of the
+  movement's rep range**, not only the target rep count.
+- Where a weight was newly increased and reps landed in a lower but respectable
+  range (roughly 6–8 for a 10-rep target) at RPE ≤8, suggest **hold** — the load
+  is being consolidated — rather than `down`.
+- Reserve `down` for genuine failure: reps below the range's lower bound, or any
+  working set at RPE ≥9.
+
+Also add, in the same pass:
+
+- Do not fire the positional `up`→`hold` downgrade when the movement is in the
+  **first two positions**. (Rope Pushdown, Aug 17, position 3, was suggested
+  `hold`; the owner chose `up`. Related note, Aug 11: *"tough to push weight here
+  unless we test as the very first exercise"*.)
+- Ignore movements marked `substituted` (Phase 5) when deriving current working
+  weight — a rack-availability drop should not lower the baseline.
+
+Add a test asserting the Chest Press Aug 11 → Aug 17 fixture yields `hold`, not
+`down`.
+
+---
+
+## PHASE 8 — docs
+
+- CLAUDE.md: update the target-picker section for the new step arrays, ramp
+  shapes by set count, revised suggestion rules, and the `substituted` field.
+  Update the superset section for shared weights, added rounds, and the revised
+  pre-seed list. Document the cardio view and the explicit-log behavior.
+- Update the session-record schema block with `substituted` and any new fields.
 - Changelog entry.
-- Per the existing rule: any new test script must be registered in
-  `scripts/test.js`, not left standalone.
+- Register any new test script in `scripts/test.js`.
 
 ---
 
-## Verification for every phase
+## Verification
 
-- `npm run build && npm test` — all seven checks, both tiers
-- Targeted jsdom checks on real flows: start session → tap a target chip → confirm
-  the generated ramp matches `[T-2i, T-i, T-i, T, T]` → log sets → link/unlink a
-  superset → skip a movement with a reason → finish → assert the persisted record
-  shape
-- Assert the suggestion rules directly against fixture history, including the
-  positional downgrade of `up` to `hold` for late-position movements
-- Open the pre-existing `pull` / `May 22, 2026` record (id 39) and the
-  `legs` / `Aug 3, 2026` record (which has `variant: "A"`) and confirm both render
-  with no crash and no missing-field artifacts
+- `npm run build && npm test` — all checks, both tiers
+- Assert the four ramp shapes (5/4/3/2 sets) generate exactly as tabulated
+- Assert dumbbell chips step through the `steps` array including the 12 lb entry
+- Assert a free-weight superset shares one weight and that "add round" appends to
+  both movements
+- Assert the Chest Press rep-range fixture suggests `hold`
+- Open legacy records `pull` / `May 22, 2026` (id 39) and `legs` / `Aug 3, 2026`
+  (has `variant: "A"`) and confirm both render cleanly
 - `git status` — `sessions.json` must never appear
