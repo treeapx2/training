@@ -17,6 +17,7 @@
     "test:explicit-logging": "node scripts/test-explicit-logging.js",
     "test:unavailable-weight": "node scripts/test-unavailable-weight.js",
     "test:cardio-trend": "node scripts/test-cardio-trend.js",
+    "test:suggestion-rep-range": "node scripts/test-suggestion-rep-range.js",
     "prepare": "git config core.hooksPath githooks"
   },
   "devDependencies": {

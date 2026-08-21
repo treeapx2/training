@@ -133,12 +133,16 @@ async function checkSuggestionRules() {
   }
   console.log("PASS: last session hit target at RPE 8 -> hold");
 
-  // Rule: last session missed target reps -> down.
-  h = [legPressSession("Aug 1, 2026", 185, 10, 7, 5), legPressSession("Aug 4, 2026", 185, 8, 8, 5)];
+  // Rule: last session missed the rep range's floor (target - 2 = 8 for a
+  // 10-rep target) at the SAME weight as before (not a fresh jump) -> down.
+  // See test-suggestion-rep-range.js (CHANGES.md Aug 19 2026, Phase 7) for
+  // the full rep-range-aware ruleset -- a miss of the exact target but not
+  // the floor (e.g. 8 reps at a 10-rep target) is a pass now, not a miss.
+  h = [legPressSession("Aug 1, 2026", 185, 10, 7, 5), legPressSession("Aug 4, 2026", 185, 6, 8, 5)];
   if (window.suggestChip(h, "Leg Press", 10) !== "down") {
-    throw new Error("expected 'down' when last session missed target reps");
+    throw new Error("expected 'down' when last session missed the rep range's floor");
   }
-  console.log("PASS: last session missed target reps -> down");
+  console.log("PASS: last session missed the rep range's floor -> down");
 
   // Rule: any (qualifying) working set at RPE>=9 -> down, even if reps hit.
   h = [legPressSession("Aug 1, 2026", 185, 10, 7, 5), legPressSession("Aug 4, 2026", 185, 10, 9, 5)];

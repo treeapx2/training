@@ -247,4 +247,17 @@ check("16. cardio trend behavior (test-cardio-trend.js)", () => {
   );
 });
 
+// 17. rep-range-aware suggestion logic (see CLAUDE.md "Target picker"): the
+// named Chest Press Aug 11 fixture yields hold not down, the fresh-jump
+// consolidation carve-out and its jump-specific boundary, the first-two-
+// positions guard on the positional downgrade, and substituted movements
+// ignored when deriving the current working weight.
+check("17. rep-range suggestion behavior (test-suggestion-rep-range.js)", () => {
+  execFileSync(
+    process.execPath,
+    [path.join(repoRoot, "scripts", "test-suggestion-rep-range.js")],
+    { stdio: "pipe" },
+  );
+});
+
 process.exit(failed ? 1 : 0);

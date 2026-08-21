@@ -1070,6 +1070,11 @@ function movementSessionSummaries(history, movName, targetReps) {
   history.forEach((session) => {
     const mov = session.movements.find((m) => m.name === movName);
     if (!mov || !mov.sets || !mov.sets.length) return;
+    // Ignore movements marked substituted (Phase 5, "unavailable weight
+    // fallback") entirely when deriving current working weight, set count,
+    // or a suggestion — a rack-availability drop should not lower the
+    // baseline (see CHANGES.md Aug 19 2026, Phase 7).
+    if (mov.substituted) return;
     const sets = mov.sets.filter((s) => s.weight && parseFloat(s.weight) > 0);
     if (!sets.length) return;
     // Evaluate the heaviest weight actually logged — not the heaviest
@@ -1079,14 +1084,29 @@ function movementSessionSummaries(history, movName, targetReps) {
     // lighter warmup set "succeeding" at the same rep count must not mask
     // that miss.
     const topWeight = Math.max(...sets.map((s) => parseFloat(s.weight)));
-    const topSets = sets.filter((s) => parseFloat(s.weight) === topWeight);
-    const topReps = Math.max(...topSets.map((s) => parseInt(s.reps, 10) || 0));
-    const topRpe = Math.max(...topSets.map((s) => parseFloat(s.rpe) || 0));
+    // Evaluate the FIRST set logged at the top weight, not the worst across
+    // every set at that weight (see CHANGES.md Aug 19 2026, Phase 7). A
+    // second or third set at the same top weight is a fatigue backoff, not
+    // new evidence the top weight itself failed — the Chest Press Aug 11
+    // fixture is exactly this: 135x8 @8 then 135x5 @9. The first set is a
+    // clean pass; scoring the session by the worst of the two (as the old
+    // max-across-topSets logic did) is what produced the wrong "down" call
+    // the owner had to override.
+    const topSet = sets.find((s) => parseFloat(s.weight) === topWeight);
+    const topReps = parseInt(topSet.reps, 10) || 0;
+    const topRpe = parseFloat(topSet.rpe) || 0;
     out.push({
       date: session.date,
       ts: parseSessionDate(session.date).getTime(),
       topWeight,
+      topReps,
+      // A working set is "successful" once it reaches the rep range's
+      // lower bound (target - 2), not only the exact target rep count —
+      // 8 reps at a 10-rep target is a pass, not a miss (Phase 7).
+      // hitTarget is kept separately (exact target reps) since the "up"
+      // suggestion is intentionally stricter than a plain pass.
       hitTarget: topReps >= targetReps,
+      hitFloor: topReps >= Math.max(targetReps - 2, 1),
       topRpe,
       totalSets: mov.sets.length,
     });
@@ -1124,22 +1144,42 @@ function deriveSetCount(history, movName) {
 }
 
 // down/hold/up suggestion, evaluated against the last two sessions
-// containing the movement.
+// containing the movement. Rewritten Aug 19 2026 (CHANGES.md Phase 7) —
+// across 33 movement instances Aug 10-19 the owner overrode the engine's
+// suggestion 12 times (~36%), clustered in one failure: treating "missed
+// the exact target rep count" as failure, when fewer reps at a heavier
+// weight is often genuine progress (the weight just belongs in a lower rep
+// range). down is now reserved for reps below the rep range's floor, or
+// RPE>=9; a fresh weight jump landing in a lower-but-respectable range
+// (roughly target-4..target-2 reps) at RPE<=8 reads as the load being
+// consolidated, not a failure.
 function suggestChip(history, movName, targetReps) {
   const summaries = movementSessionSummaries(history, movName, targetReps);
   if (summaries.length < 2) return "hold";
   const [last, prev] = summaries;
-  if (!last.hitTarget || last.topRpe >= 9) return "down";
+  if (last.topRpe >= 9) return "down";
+  if (!last.hitFloor) {
+    const newlyIncreased = last.topWeight > prev.topWeight;
+    const consolidationFloor = Math.max(targetReps - 4, 1);
+    if (newlyIncreased && last.topReps >= consolidationFloor && last.topRpe <= 8) {
+      return "hold";
+    }
+    return "down";
+  }
   if (last.hitTarget && last.topRpe <= 7 && prev.hitTarget && prev.topRpe <= 7)
     return "up";
-  if (last.hitTarget && last.topRpe === 8) return "hold";
   return "hold";
 }
 
 // Positional modifier — queue position materially affects output (BLOCK.flags:
 // "run the lift you want to advance FIRST"). A movement run late in the
-// session is not a valid place to attempt a weight increase.
+// session is not a valid place to attempt a weight increase. The first two
+// positions are never downgraded (CHANGES.md Aug 19 2026, Phase 7) — for a
+// small `total` (e.g. a 2-3 movement session), "first two" and "last two"
+// otherwise overlap and the very first movement could get wrongly
+// downgraded.
 function applyPositionalDowngrade(suggested, position, total) {
+  if (position < 2) return suggested;
   const isLastTwo = position >= total - 2;
   return isLastTwo && suggested === "up" ? "hold" : suggested;
 }
