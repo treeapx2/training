@@ -330,8 +330,8 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
 // see build.js) so a stale cached build is identifiable on the device
 // instead of silently running fixed-but-not-yet-deployed code.
 const BUILD_INFO = {
-  sha: "e19ff23",
-  builtAt: "2026-08-21T17:04:58.615Z"
+  sha: "f1bb866",
+  builtAt: "2026-08-21T17:17:30.768Z"
 };
 function formatBuildStamp() {
   const d = new Date(BUILD_INFO.builtAt);
@@ -1425,46 +1425,86 @@ function stepWeight(mov, value, n) {
   return Math.max(value + n * inc, inc);
 }
 
-// Ramp shape is fixed: [T-2i, T-i, T-i, T, T] (warmup, 2 build, 2 working)
-// for a chosen target T. `setCount` (see deriveSetCount) trims or pads that
-// template to match how many sets this movement has actually run recently —
-// trimming drops build sets first, then the warmup, and never goes below one
-// working set at T; padding beyond 5 adds more working sets at T.
+// Ramp shape scales with `setCount` (see deriveSetCount) instead of always
+// spending a fixed warmup+build overhead — the old fixed 5-slot shape was
+// wrong for short movements (see CHANGES.md Aug 19 2026, Phase 2: "no
+// warmups for a three set exercise", confirmed by real logs — Skull
+// Crusher ran 15x10 four times, Hammer Curl ran 15x10 three times, neither
+// with a warmup). Table, for target T and step i:
+//   5 sets: [T-2i, T-i, T-i, T, T]  (unchanged — warmup, 2 build, 2 working)
+//   4 sets: [T-i, T, T, T]          (1 build, no warmup)
+//   3 sets: [T, T, T]               (no warmup, no build)
+//   2 sets: [T, T]
+//   1 set (floor, not in the table but never go below it): [T]
+// setCount > 5 pads more working sets at T onto the full 5-slot shape.
 function buildRamp(mov, targetWeight, setCount) {
   const wu = stepWeight(mov, targetWeight, -2);
   const b = stepWeight(mov, targetWeight, -1);
-  const full = [{
-    weight: wu,
-    type: "WU"
-  }, {
-    weight: b,
-    type: "B"
-  }, {
-    weight: b,
-    type: "B"
-  }, {
-    weight: targetWeight,
-    type: "W"
-  }, {
-    weight: targetWeight,
-    type: "W"
-  }];
-  let sets;
-  if (setCount >= 5) {
-    sets = full.slice();
+  const T = targetWeight;
+  let shape;
+  if (setCount <= 1) {
+    shape = [{
+      weight: T,
+      type: "W"
+    }];
+  } else if (setCount === 2) {
+    shape = [{
+      weight: T,
+      type: "W"
+    }, {
+      weight: T,
+      type: "W"
+    }];
+  } else if (setCount === 3) {
+    shape = [{
+      weight: T,
+      type: "W"
+    }, {
+      weight: T,
+      type: "W"
+    }, {
+      weight: T,
+      type: "W"
+    }];
+  } else if (setCount === 4) {
+    shape = [{
+      weight: b,
+      type: "B"
+    }, {
+      weight: T,
+      type: "W"
+    }, {
+      weight: T,
+      type: "W"
+    }, {
+      weight: T,
+      type: "W"
+    }];
+  } else {
+    shape = [{
+      weight: wu,
+      type: "WU"
+    }, {
+      weight: b,
+      type: "B"
+    }, {
+      weight: b,
+      type: "B"
+    }, {
+      weight: T,
+      type: "W"
+    }, {
+      weight: T,
+      type: "W"
+    }];
     for (let i = 5; i < setCount; i++) {
-      sets.push({
-        weight: targetWeight,
+      shape.push({
+        weight: T,
         type: "W"
       });
     }
-  } else {
-    const dropOrder = [2, 1, 0, 4]; // B2, B1, WU, then W2 as a last resort
-    const toDrop = 5 - Math.max(setCount, 1);
-    const dropIdx = new Set(dropOrder.slice(0, toDrop));
-    sets = full.filter((_, i) => !dropIdx.has(i));
   }
-  return sets.map(s => ({
+  return shape.map(s => ({
     weight: String(s.weight),
     reps: String(mov.reps),
     rpe: "",

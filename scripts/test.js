@@ -189,4 +189,15 @@ check("11. dumbbell steps behavior (test-dumbbell-steps.js)", () => {
   );
 });
 
+// 12. ramp shape scales with set count (see CLAUDE.md "Target picker"): the
+// four tabulated shapes (5/4/3/2 sets), the <=1 floor, padding beyond 5,
+// and a real history-driven no-warmup 3-set ramp in the live app.
+check("12. ramp shape behavior (test-ramp-shapes.js)", () => {
+  execFileSync(
+    process.execPath,
+    [path.join(repoRoot, "scripts", "test-ramp-shapes.js")],
+    { stdio: "pipe" },
+  );
+});
+
 process.exit(failed ? 1 : 0);

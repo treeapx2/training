@@ -12,6 +12,7 @@
     "test:skip": "node scripts/test-skip.js",
     "test:cardio-default": "node scripts/test-cardio-default.js",
     "test:dumbbell-steps": "node scripts/test-dumbbell-steps.js",
+    "test:ramp-shapes": "node scripts/test-ramp-shapes.js",
     "prepare": "git config core.hooksPath githooks"
   },
   "devDependencies": {

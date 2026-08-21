@@ -79,17 +79,7 @@ async function checkRampShape() {
   if (clamped.some((s) => Number(s.weight) < 15)) {
     throw new Error("ramp did not clamp at the lowest increment: " + JSON.stringify(clamped.map((s) => s.weight)));
   }
-  // Trim to 3 total: drop both build sets, keep warmup + 2 working.
-  const trimmed = window.buildRamp(mov, 185, 3);
-  if (JSON.stringify(trimmed.map((s) => s.type)) !== JSON.stringify(["WU", "W", "W"])) {
-    throw new Error("3-set trim shape wrong: " + JSON.stringify(trimmed.map((s) => s.type)));
-  }
-  // Trim to 1 total: floor at one working set, never zero.
-  const floor = window.buildRamp(mov, 185, 1);
-  if (floor.length !== 1 || floor[0].type !== "W") {
-    throw new Error("1-set floor wrong: " + JSON.stringify(floor));
-  }
-  console.log("PASS: buildRamp shape, clamping, and trim/pad behavior");
+  console.log("PASS: buildRamp 5-set shape and clamping (see test-ramp-shapes.js for the full 5/4/3/2/1-set table)");
   window.close();
 }
 
