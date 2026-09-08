@@ -278,4 +278,18 @@ check("18. superset-aware progression behavior (test-superset-progression.js)", 
   );
 });
 
+// 19. movement library and optional adds (see CLAUDE.md "Movement library"):
+// the library covers all 27 movements ever logged (derived from sessions.json
+// at test time, not hardcoded) and every entry is usable, overlapping
+// historical names stay distinct, an optional movement can be added to a live
+// session and gets working chips, a newly defined movement persists, and
+// dumbbell weight fields are labelled per hand while machine fields aren't.
+check("19. movement library behavior (test-movement-library.js)", () => {
+  execFileSync(
+    process.execPath,
+    [path.join(repoRoot, "scripts", "test-movement-library.js")],
+    { stdio: "pipe" },
+  );
+});
+
 process.exit(failed ? 1 : 0);

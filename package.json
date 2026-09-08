@@ -19,6 +19,7 @@
     "test:cardio-trend": "node scripts/test-cardio-trend.js",
     "test:suggestion-rep-range": "node scripts/test-suggestion-rep-range.js",
     "test:superset-progression": "node scripts/test-superset-progression.js",
+    "test:movement-library": "node scripts/test-movement-library.js",
     "prepare": "git config core.hooksPath githooks"
   },
   "devDependencies": {

@@ -373,6 +373,97 @@ function seedSupersets(movements) {
   });
   return list;
 }
+// ── Movement library ──────────────────────────────────────────────────────────
+// Every movement ever logged is available as an optional add, not just the
+// current defaults (CHANGES.md Sep 8 2026, Phase 4). sessions.json holds 27
+// distinct movement names: the Phase 3 session defaults cover 17, Chest Press
+// is a selectable alternate for the chest slot, and the remaining 9 are
+// optional adds. DB Bench Press was one of these until Phase 3 — it had been
+// logged twice as prose inside a zero-set movement note purely because it
+// wasn't selectable, which is the concrete cost of a closed movement list.
+//
+// SCOPE BOUNDARY (see CLAUDE.md): `target` prose is authored in the training
+// project, not invented here. Chest Press keeps the target it already had.
+// The nine optional adds have never had one authored, so their `target` says
+// so outright and carries only facts already in the log. Their `reps` is the
+// program's usual 10 for the same reason — a placeholder, not a prescription.
+// `current` is a no-history fallback only, and every one of these has history.
+//
+// DO NOT MERGE OR RENAME (Phase 4 item 4): `Rows` and `DB Row`,
+// `Flat DB Press` and `DB Bench Press`, `Shoulder Press` and
+// `Shoulder Press (DB)` may well be the same lift in practice, but merging
+// would rewrite history. They stay distinct; consolidation is the owner's call.
+//
+// Several of these are from an earlier home-gym setup and may not be
+// performable at the current gym — listed regardless, the owner decides.
+// Shoulder Press (DB) in particular was logged at 70 lb per hand, above the
+// current rack's 50 lb ceiling, so its chips snap to what the rack actually
+// has. Worth confirming with the owner.
+const NO_COACH_TARGET =
+  "NO COACH TARGET AUTHORED YET \u2014 optional add, restored to the library " +
+  "Sep 8 2026 (CHANGES.md Phase 4). The numbers below are from the log, not a " +
+  "prescription.";
+const OPTIONAL_MOVEMENTS = [
+  { name: "Chest Press", current: "120 lb", increment: 15, reps: 10, target: "TEST 135 \u2014 second clean 10/10 @ RPE 7-8 as fresh opener (7/28). Run this FIRST. Selectable alternate for the chest slot (CHANGES.md Sep 8 2026, Phase 3); DB Bench Press is the current default." },
+  { name: "Zottman Curl", current: "20 lb", steps: DUMBBELL_STEPS, reps: 10, target: "Chase 10 reps @ 20 (stuck at 6) \u2014 slow eccentric. Dropped from the Pull defaults Sep 8 2026 (skipped three of the last four Pull sessions: time, time, \"biceps crushed from superset\"); still available as an optional add." },
+  { name: "OHE", current: "20 lb", steps: DUMBBELL_STEPS, reps: 10, target: NO_COACH_TARGET + " Overhead extension; max 20, last logged May 2026." },
+  { name: "Shoulder Press (DB)", current: "70 lb", steps: DUMBBELL_STEPS, reps: 10, target: NO_COACH_TARGET + " Max 70 per hand, last logged May 15 2026 \u2014 above the current rack's 50 lb ceiling, so the chips snap to 50. Distinct from the machine Shoulder Press by design; do not merge." },
+  { name: "RDL", current: "25 lb", steps: DUMBBELL_STEPS, reps: 10, target: NO_COACH_TARGET + " Max 25, last logged Apr 24 2026. Hinge \u2014 low-back and knee flags apply." },
+  { name: "Glute Bridge", current: "35 lb", steps: DUMBBELL_STEPS, reps: 10, target: NO_COACH_TARGET + " Max 35, last logged Apr 24 2026." },
+  { name: "Incline DB Press", current: "40 lb", steps: DUMBBELL_STEPS, reps: 10, target: NO_COACH_TARGET + " Max 40, last logged Mar 29 2026." },
+  { name: "Flat DB Press", current: "45 lb", steps: DUMBBELL_STEPS, reps: 10, target: NO_COACH_TARGET + " Max 45, last logged Mar 29 2026. Distinct from DB Bench Press by design; do not merge." },
+  { name: "Floor Press", current: "35 lb", steps: DUMBBELL_STEPS, reps: 10, target: NO_COACH_TARGET + " Max 35, last logged Mar 16 2026." },
+  { name: "Rows", current: "35 lb", steps: DUMBBELL_STEPS, reps: 10, target: NO_COACH_TARGET + " Max 35, last logged Mar 16 2026. Distinct from DB Row by design; do not merge." }
+];
+
+// Movements the owner defines in-app (Phase 4 item 1). Persisted so a new
+// definition survives a reload, and merged into the library below.
+const CUSTOM_MOVEMENTS_KEY = "at_custom_movements_v1";
+function loadCustomMovements() {
+  try {
+    const raw = localStorage.getItem(CUSTOM_MOVEMENTS_KEY);
+    const list = raw ? JSON.parse(raw) : [];
+    return Array.isArray(list) ? list : [];
+  } catch {
+    return [];
+  }
+}
+function saveCustomMovements(list) {
+  try {
+    localStorage.setItem(CUSTOM_MOVEMENTS_KEY, JSON.stringify(list));
+  } catch (e) {
+    console.error("saveCustomMovements error:", e);
+  }
+}
+
+// The whole library, first definition per name winning: session defaults,
+// then the optional adds, then anything the owner defined in-app. Every
+// entry carries a _group label so an added movement gets a real group chip
+// instead of falling through to "Other".
+function getMovementLibrary(customs) {
+  const out = [];
+  const seen = {};
+  const add = (m, source) => {
+    if (!m || !m.name || seen[m.name]) return;
+    seen[m.name] = true;
+    out.push({ ...m, _group: m._group || groupLabelFor(m.name), _source: source });
+  };
+  Object.keys(BLOCK.sessions).forEach((t) =>
+    BLOCK.sessions[t].movements.forEach((m) => add(m, "default")),
+  );
+  OPTIONAL_MOVEMENTS.forEach((m) => add(m, "optional"));
+  (customs || []).forEach((m) => add(m, "custom"));
+  return out;
+}
+// Resolve one movement name to its definition. Used when adding a movement to
+// a session and when rebuilding a resumed draft — a draft can contain a
+// movement that isn't in BLOCK's session list at all (an optional add or a
+// custom definition), which a BLOCK-only lookup would silently strip of its
+// steps/increment/reps and leave with dead chips.
+function movementDefFor(name, customs) {
+  return getMovementLibrary(customs).find((m) => m.name === name) || null;
+}
+
 // Builds a fresh sessionMovements array for a session type, re-attaching any
 // previously logged sets and exercise note (keyed by movement name, via
 // carryMap) so resuming a draft keeps logged data instead of discarding it.
@@ -1394,6 +1485,17 @@ const SET_TYPE_LABEL = {
   W: "W",
 };
 
+// Dumbbell weights are logged PER HAND — the owner writes "35s" meaning 35 lb
+// in each hand (CHANGES.md Sep 8 2026, Phase 4 item 3). Every weight field
+// label goes through here so the two rendering sites (SetLogger's column
+// header and SupersetRow's per-round rows) can't drift apart. Keyed off
+// `steps`, which is exactly the dumbbell classification the rack array
+// encodes — machine and cable movements are a single loaded stack and stay
+// plain "lb".
+function weightLabelFor(mov) {
+  return mov && mov.steps ? "lb/hand" : "lb";
+}
+
 // Compact inline input — 16px prevents iOS zoom, minimal padding
 const ci = (extra = {}) => ({
   padding: "5px 6px",
@@ -1567,6 +1669,18 @@ function ChipPicker({ mov, history, chipChoice, suggested, onChipTap }) {
           </div>
         ))}
       </div>
+      {mov.steps && (
+        /*#__PURE__*/ <div
+          style={{
+            textAlign: "center",
+            fontSize: 10,
+            color: "#bbb",
+            marginTop: 2,
+          }}
+        >
+          lb per hand
+        </div>
+      )}
     </div>
   );
 }
@@ -1715,7 +1829,7 @@ function SetLogger({
               alignItems: "center",
             }}
           >
-            {["", "lb", "reps", "RPE", ""].map((h, i) => (
+            {["", weightLabelFor(mov), "reps", "RPE", ""].map((h, i) => (
               /*#__PURE__*/ <div
                 key={i}
                 style={{
@@ -2482,6 +2596,7 @@ function SupersetRow({
         }}
       >
         <div
+          title={mov.name + " (" + weightLabelFor(mov) + ")"}
           style={{
             fontSize: 10,
             color: "#999",
@@ -2807,6 +2922,54 @@ function SupersetRow({
                   </button>
                 ))}
               </div>
+              {/* Column header — SupersetRow had none, and the weight column
+                  needs a unit now that dumbbell weights are labelled per hand
+                  (CHANGES.md Sep 8 2026, Phase 4 item 3). A mixed pair can
+                  disagree on the unit, so the header stays plain "lb" there
+                  and the per-hand note below names the movement it applies
+                  to. */}
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "60px 1fr 1fr 1fr 40px",
+                  gap: 4,
+                  padding: "0 0 2px",
+                  alignItems: "center",
+                }}
+              >
+                {[
+                  "",
+                  weightLabelFor(movA) === weightLabelFor(movB)
+                    ? weightLabelFor(movA)
+                    : "lb",
+                  "reps",
+                  "RPE",
+                  "",
+                ].map((h, i) => (
+                  /*#__PURE__*/ <div
+                    key={i}
+                    style={{
+                      fontSize: 10,
+                      color: "#bbb",
+                      textAlign: "center",
+                      fontWeight: 600,
+                    }}
+                  >
+                    {h}
+                  </div>
+                ))}
+              </div>
+              {weightLabelFor(movA) !== weightLabelFor(movB) && (
+                /*#__PURE__*/ <div
+                  style={{
+                    fontSize: 10,
+                    color: "#bbb",
+                    marginBottom: 4,
+                  }}
+                >
+                  {(movA.steps ? movA.name : movB.name)} is per hand
+                </div>
+              )}
               {Array.from({ length: maxSets }).map((_, i) => (
                 /*#__PURE__*/ <div
                   key={i}
@@ -2896,6 +3059,195 @@ function SupersetRow({
   );
 }
 
+// ── Add movement ─────────────────────────────────────────────────────────────
+// "Every movement ever logged must be available as an optional add, not just
+// the current defaults" (CHANGES.md Sep 8 2026, Phase 4). Two paths: pick an
+// existing library movement, or define a new one. A new definition persists
+// (loadCustomMovements/saveCustomMovements) so it's there next session.
+const EQUIPMENT_OPTIONS = [
+  { label: "Dumbbell (rack steps, per hand)", value: "dumbbell" },
+  { label: "Machine (15 lb plates)", value: "machine" },
+  { label: "Cable (5 lb stack)", value: "cable" },
+];
+function equipmentConfigFor(value) {
+  if (value === "machine") return { increment: 15 };
+  if (value === "cable") return { increment: 5 };
+  return { steps: DUMBBELL_STEPS };
+}
+function AddMovementPicker({ sessionType, present, customs, onAdd, onCancel }) {
+  const [defining, setDefining] = useState(false);
+  const [name, setName] = useState("");
+  const [group, setGroup] = useState("");
+  const [equipment, setEquipment] = useState("dumbbell");
+  const [reps, setReps] = useState("10");
+  const library = getMovementLibrary(customs).filter((m) => !present.includes(m.name));
+  // Movements belonging to this session type's own muscle groups first —
+  // everything else stays listed (the owner decides what belongs where, not
+  // the app), just below a divider.
+  const typeGroups = (MUSCLE_GROUPS[sessionType] || []).map((g) => g.label);
+  const forThisType = library.filter((m) => typeGroups.includes(m._group));
+  const others = library.filter((m) => !typeGroups.includes(m._group));
+  const groupOptions = typeGroups.concat(["Other"]);
+  const submitNew = () => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    const def = {
+      name: trimmed,
+      current: "",
+      reps: parseInt(reps, 10) || 10,
+      target: "Defined in-app " + new Date().toLocaleDateString("en-US") + ". No coach target authored.",
+      _group: group || groupOptions[0],
+      ...equipmentConfigFor(equipment),
+    };
+    onAdd(def, true);
+  };
+  const rowBtn = (m) => (
+    /*#__PURE__*/ <button
+      key={m.name}
+      onClick={() => onAdd(m, false)}
+      style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        width: "100%",
+        padding: "9px 10px",
+        marginBottom: 4,
+        background: "#fff",
+        border: "0.5px solid #ddd",
+        borderRadius: 8,
+        fontSize: 13,
+        color: "#111",
+        cursor: "pointer",
+        textAlign: "left",
+      }}
+    >
+      <span>{m.name}</span>
+      <span style={{ fontSize: 10, color: "#bbb", fontWeight: 600 }}>
+        {m._group}
+        {m._source === "custom" ? " · custom" : ""}
+      </span>
+    </button>
+  );
+  return (
+    /*#__PURE__*/ <div
+      style={{
+        border: "0.5px solid #ddd",
+        borderRadius: 10,
+        padding: 10,
+        marginTop: 8,
+        background: "#f9f9f8",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 8,
+        }}
+      >
+        <div style={{ fontSize: 11, fontWeight: 700, color: "#666", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+          {defining ? "Define a movement" : "Add a movement"}
+        </div>
+        <button
+          onClick={onCancel}
+          style={{ fontSize: 11, color: "#999", background: "none", border: "none", cursor: "pointer" }}
+        >
+          cancel
+        </button>
+      </div>
+      {defining ? (
+        /*#__PURE__*/ <div>
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="movement name..."
+            style={{ width: "100%", padding: "8px 10px", border: "0.5px solid #ddd", borderRadius: 8, fontSize: 16, marginBottom: 6, boxSizing: "border-box" }}
+          />
+          <select
+            value={group}
+            onChange={(e) => setGroup(e.target.value)}
+            style={{ width: "100%", padding: "8px 10px", border: "0.5px solid #ddd", borderRadius: 8, fontSize: 16, marginBottom: 6, background: "#fff", boxSizing: "border-box" }}
+          >
+            {groupOptions.map((g) => (
+              /*#__PURE__*/ <option key={g} value={g}>
+                {g}
+              </option>
+            ))}
+          </select>
+          <select
+            value={equipment}
+            onChange={(e) => setEquipment(e.target.value)}
+            style={{ width: "100%", padding: "8px 10px", border: "0.5px solid #ddd", borderRadius: 8, fontSize: 16, marginBottom: 6, background: "#fff", boxSizing: "border-box" }}
+          >
+            {EQUIPMENT_OPTIONS.map((o) => (
+              /*#__PURE__*/ <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+          <input
+            type="number"
+            inputMode="numeric"
+            value={reps}
+            onChange={(e) => setReps(e.target.value)}
+            placeholder="target reps"
+            style={{ width: "100%", padding: "8px 10px", border: "0.5px solid #ddd", borderRadius: 8, fontSize: 16, marginBottom: 8, boxSizing: "border-box" }}
+          />
+          <button
+            onClick={submitNew}
+            disabled={!name.trim()}
+            style={{
+              width: "100%",
+              padding: "10px 0",
+              background: name.trim() ? "#111" : "#e5e5e3",
+              color: name.trim() ? "#fff" : "#bbb",
+              border: "none",
+              borderRadius: 8,
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: name.trim() ? "pointer" : "default",
+            }}
+          >
+            add to session
+          </button>
+        </div>
+      ) : (
+        /*#__PURE__*/ <div>
+          {forThisType.map(rowBtn)}
+          {others.length > 0 && (
+            /*#__PURE__*/ <div style={{ fontSize: 10, color: "#bbb", fontWeight: 600, margin: "8px 0 4px" }}>
+              OTHER SESSIONS
+            </div>
+          )}
+          {others.map(rowBtn)}
+          {!library.length && (
+            /*#__PURE__*/ <div style={{ fontSize: 12, color: "#999", padding: "4px 0 8px" }}>
+              Every movement in the library is already in this session.
+            </div>
+          )}
+          <button
+            onClick={() => setDefining(true)}
+            style={{
+              width: "100%",
+              padding: "8px 0",
+              marginTop: 4,
+              background: "none",
+              border: "0.5px dashed #ddd",
+              borderRadius: 8,
+              fontSize: 12,
+              color: "#888",
+              cursor: "pointer",
+            }}
+          >
+            + define a new movement
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Screens ───────────────────────────────────────────────────────────────────
 function SessionScreen({ history, setHistory, syncLast, onSynced }) {
   const [active, setActive] = useState(null);
@@ -2911,12 +3263,17 @@ function SessionScreen({ history, setHistory, syncLast, onSynced }) {
   const [sessionMovements, setSessionMovements] = useState([]);
   const [draft, setDraft] = useState(null);
   const [draftChecked, setDraftChecked] = useState(false);
+  // Movement library (see AddMovementPicker) — customs are loaded once on
+  // mount alongside the group orders and draft.
+  const [customMovements, setCustomMovements] = useState([]);
+  const [addingMovement, setAddingMovement] = useState(false);
   const [tick, setTick] = useState(0);
   const bumpTick = () => setTick((t) => t + 1);
   useEffect(() => {
     const go = loadGroupOrders();
     const dr = loadDraft();
     setGroupOrders(go);
+    setCustomMovements(loadCustomMovements());
     if (dr) setDraft(dr);
     setDraftChecked(true);
   }, []);
@@ -2932,6 +3289,7 @@ function SessionScreen({ history, setHistory, syncLast, onSynced }) {
     });
     setSessionMovements(buildSessionMovements(type, null));
     setActive(type);
+    setAddingMovement(false);
     setLastFinished(null);
     setAutoPushStatus(null);
     setSessionNote("");
@@ -2947,12 +3305,19 @@ function SessionScreen({ history, setHistory, syncLast, onSynced }) {
     blockMovs.forEach((m) => {
       delete m._loggedSets;
     });
+    // Resolve each drafted movement against the WHOLE library, not just this
+    // session type's BLOCK list — a draft can contain an optional add or a
+    // custom definition (CHANGES.md Sep 8 2026, Phase 4), and a BLOCK-only
+    // lookup would silently strip its steps/increment/reps and leave the
+    // resumed card with dead chips.
+    const customs = loadCustomMovements();
     const restored = draft.movements.map((dm) => {
-      const blockMov = blockMovs.find((m) => m.name === dm.name) || {
-        name: dm.name,
-        current: "",
-        target: "",
-      };
+      const blockMov = blockMovs.find((m) => m.name === dm.name) ||
+        movementDefFor(dm.name, customs) || {
+          name: dm.name,
+          current: "",
+          target: "",
+        };
       blockMov._loggedSets = dm._loggedSets || [];
       blockMov._exerciseNote = dm.note || "";
       blockMov._targetWeight = dm.targetWeight != null ? dm.targetWeight : null;
@@ -2994,6 +3359,41 @@ function SessionScreen({ history, setHistory, syncLast, onSynced }) {
       [a[idx + 1], a[idx]] = [a[idx], a[idx + 1]];
       return a;
     });
+    bumpTick();
+  };
+  // Adds a library movement (or a freshly defined one) to the end of today's
+  // session — CHANGES.md Sep 8 2026, Phase 4. Appended rather than inserted:
+  // position drives the ramp shape now (Phase 1), so where a movement lands
+  // is a real training decision, left to the owner's reorder controls.
+  // The definition is cloned, never referenced — BLOCK/library entries are
+  // shared consts and the session mutates _-prefixed fields onto its own copy.
+  const addMovement = (def, isNew) => {
+    if (isNew) {
+      const next = loadCustomMovements()
+        .filter((m) => m.name !== def.name)
+        .concat([def]);
+      saveCustomMovements(next);
+      setCustomMovements(next);
+    }
+    setSessionMovements((prev) => {
+      if (prev.some((m) => m.name === def.name)) return prev;
+      return prev.concat([
+        {
+          ...def,
+          _group: def._group || groupLabelFor(def.name),
+          _loggedSets: [],
+          _exerciseNote: "",
+          _targetWeight: null,
+          _chipChoice: null,
+          _suggested: null,
+          _skipped: false,
+          _skipReason: "",
+          _substituted: false,
+          supersetId: null,
+        },
+      ]);
+    });
+    setAddingMovement(false);
     bumpTick();
   };
   // Superset linking (see CHANGES.md Phase 3) — an annotation on the
@@ -3764,6 +4164,32 @@ function SessionScreen({ history, setHistory, syncLast, onSynced }) {
           </div>
         );
       })}
+      {addingMovement ? (
+        /*#__PURE__*/ <AddMovementPicker
+          sessionType={active}
+          present={sessionMovements.map((m) => m.name)}
+          customs={customMovements}
+          onAdd={addMovement}
+          onCancel={() => setAddingMovement(false)}
+        />
+      ) : (
+        /*#__PURE__*/ <button
+          onClick={() => setAddingMovement(true)}
+          style={{
+            width: "100%",
+            padding: "8px 0",
+            marginTop: 10,
+            background: "none",
+            border: "0.5px dashed #ddd",
+            borderRadius: 8,
+            fontSize: 12,
+            color: "#aaa",
+            cursor: "pointer",
+          }}
+        >
+          + add movement
+        </button>
+      )}
       <div style={S.label}>Session note</div>
       <textarea
         value={sessionNote}
