@@ -7,8 +7,10 @@
 // Covers, against fixture history:
 //   - buildRamp produces the exact opener shape [T-2i, T-i, T, T, T] and
 //     clamps at the lowest available increment.
-//   - deriveCurrentWeight: heaviest weight completed at target reps in the
-//     most recent session; falls back to BLOCK.current with no history.
+//   - deriveCurrentWeight: heaviest qualifying weight across the last three
+//     eligible sessions; falls back to BLOCK.current with no history. (See
+//     test-superset-progression.js for the windowing and superset-exclusion
+//     rules themselves.)
 //   - deriveSetCount: modal total-set count across the last three sessions.
 //   - suggestChip's four rules (up / hold / down / <2 sessions -> hold).
 //   - applyPositionalDowngrade: up -> hold only in the last two positions.
@@ -93,8 +95,8 @@ async function checkDeriveCurrentWeightAndSetCount() {
   const { window, errors } = await mount(history);
   const mov = { name: "Leg Press", reps: 10, increment: 15, current: "185 lb" };
   const current = window.deriveCurrentWeight(history, mov);
-  if (current !== 200) throw new Error(`expected deriveCurrentWeight 200 (most recent session), got ${current}`);
-  console.log("PASS: deriveCurrentWeight uses the most recent qualifying session (200)");
+  if (current !== 200) throw new Error(`expected deriveCurrentWeight 200 (best qualifying session in the window), got ${current}`);
+  console.log("PASS: deriveCurrentWeight uses the best qualifying session in the last three (200)");
 
   const setCount = window.deriveSetCount(history, "Leg Press");
   // Last 3 sessions: 5, 5, 4 -> modal is 5.

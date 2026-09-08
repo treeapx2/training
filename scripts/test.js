@@ -263,4 +263,19 @@ check("17. rep-range suggestion behavior (test-suggestion-rep-range.js)", () => 
   );
 });
 
+// 18. superset-aware progression (see CLAUDE.md "Target picker"): superset
+// sessions excluded from working-weight derivation (the Hammer Curl fixture
+// derives 25, not the 15 lb weight-matched superset round), the best
+// qualifying session in a three-session window rather than the most recent
+// one, substituted sessions confirmed excluded, a superset-only movement
+// still progressing, and the RPE-8 plateau rule (the Seated Row fixture
+// suggests up) without misfiring on a fresh jump or outranking RPE 9.
+check("18. superset-aware progression behavior (test-superset-progression.js)", () => {
+  execFileSync(
+    process.execPath,
+    [path.join(repoRoot, "scripts", "test-superset-progression.js")],
+    { stdio: "pipe" },
+  );
+});
+
 process.exit(failed ? 1 : 0);

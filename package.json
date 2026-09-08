@@ -18,6 +18,7 @@
     "test:unavailable-weight": "node scripts/test-unavailable-weight.js",
     "test:cardio-trend": "node scripts/test-cardio-trend.js",
     "test:suggestion-rep-range": "node scripts/test-suggestion-rep-range.js",
+    "test:superset-progression": "node scripts/test-superset-progression.js",
     "prepare": "git config core.hooksPath githooks"
   },
   "devDependencies": {
