@@ -330,8 +330,8 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
 // see build.js) so a stale cached build is identifiable on the device
 // instead of silently running fixed-but-not-yet-deployed code.
 const BUILD_INFO = {
-  sha: "21091d0",
-  builtAt: "2026-09-08T16:04:23.200Z"
+  sha: "4cf285c",
+  builtAt: "2026-09-08T16:12:09.964Z"
 };
 function formatBuildStamp() {
   const d = new Date(BUILD_INFO.builtAt);
@@ -1530,84 +1530,72 @@ function stepWeight(mov, value, n) {
   return Math.max(value + n * inc, inc);
 }
 
-// Ramp shape scales with `setCount` (see deriveSetCount) instead of always
-// spending a fixed warmup+build overhead — the old fixed 5-slot shape was
-// wrong for short movements (see CHANGES.md Aug 19 2026, Phase 2: "no
-// warmups for a three set exercise", confirmed by real logs — Skull
-// Crusher ran 15x10 four times, Hammer Curl ran 15x10 three times, neither
-// with a warmup). Table, for target T and step i:
-//   5 sets: [T-2i, T-i, T-i, T, T]  (unchanged — warmup, 2 build, 2 working)
-//   4 sets: [T-i, T, T, T]          (1 build, no warmup)
-//   3 sets: [T, T, T]               (no warmup, no build)
-//   2 sets: [T, T]
-//   1 set (floor, not in the table but never go below it): [T]
-// setCount > 5 pads more working sets at T onto the full 5-slot shape.
-function buildRamp(mov, targetWeight, setCount) {
+// Ramp shape scales with the movement's QUEUE POSITION, not with its
+// historical set count (see CLAUDE.md "Target picker" — CHANGES.md Sep 8
+// 2026, Phase 1, which replaces the Aug 19 set-count table outright).
+//
+// The correcting insight: warm-up is a per-session need, not a per-movement
+// need. Quads don't need re-warming three times inside one legs session, so
+// only the opener earns a full ramp. The old shape put just 2 of 5 sets at
+// working weight — 60% warm-up tax — against a target of ~20 working sets
+// per session inside a 45-minute lifting budget.
+//
+// Table, for target T and step i (one chip-step down):
+//   position 1 (opener): [T-2i, T-i, T, T, T]  5 sets, 3 working
+//   position 2+:         [T-i, T, T, T]        4 sets, 3 working
+//   superset member:     [T, T, T, T]          4 sets, 4 working
+//   2-set movement:      [T, T]                2 sets, 2 working
+//
+// `opts` is { position, isSuperset, setCount }:
+//   - `position` is the movement's index in the session's flat ordered list,
+//     so the opener is position 0.
+//   - `isSuperset` comes straight from the movement's `supersetId`. Superset
+//     members never carry warm-up sets — they sit at the end of a session by
+//     design and the muscle group is already fully warm — and they always get
+//     exactly 4 rounds regardless of derived set count, since SupersetRow
+//     interleaves the pair's rows and a mismatched count renders ragged.
+//   - `setCount` (from deriveSetCount) is now consulted for ONE case only:
+//     the table's "2-set movements" row. INFERENCE — the work order lists that
+//     row without saying what makes a movement a 2-set movement; reading it as
+//     "history says this movement is done in 2 sets" is the only reading that
+//     leaves the row with any work to do, so a derived count of <=2 overrides
+//     the positional shape (with a 1-set floor, never zero). Flag to the owner
+//     if a 2-set movement was meant to be an explicit per-movement setting
+//     instead.
+// Note there is no longer any padding beyond the tabulated counts: position
+// determines the set count now, which is the whole point of the restructure
+// (capping total sets against the time budget). "+ add round" / handleUpdate
+// ("_add") is still how extra sets get added by hand.
+function buildRamp(mov, targetWeight, opts) {
+  const o = opts || {};
+  const position = o.position || 0;
+  const isSuperset = !!o.isSuperset;
+  const setCount = o.setCount;
   const wu = stepWeight(mov, targetWeight, -2);
   const b = stepWeight(mov, targetWeight, -1);
   const T = targetWeight;
+  const W = {
+    weight: T,
+    type: "W"
+  };
   let shape;
-  if (setCount <= 1) {
-    shape = [{
-      weight: T,
-      type: "W"
-    }];
-  } else if (setCount === 2) {
-    shape = [{
-      weight: T,
-      type: "W"
-    }, {
-      weight: T,
-      type: "W"
-    }];
-  } else if (setCount === 3) {
-    shape = [{
-      weight: T,
-      type: "W"
-    }, {
-      weight: T,
-      type: "W"
-    }, {
-      weight: T,
-      type: "W"
-    }];
-  } else if (setCount === 4) {
-    shape = [{
-      weight: b,
-      type: "B"
-    }, {
-      weight: T,
-      type: "W"
-    }, {
-      weight: T,
-      type: "W"
-    }, {
-      weight: T,
-      type: "W"
-    }];
-  } else {
+  if (isSuperset) {
+    shape = [W, W, W, W];
+  } else if (setCount != null && setCount <= 2) {
+    shape = setCount <= 1 ? [W] : [W, W];
+  } else if (position === 0) {
     shape = [{
       weight: wu,
       type: "WU"
     }, {
       weight: b,
       type: "B"
-    }, {
+    }, W, W, W];
+  } else {
+    shape = [{
       weight: b,
       type: "B"
-    }, {
-      weight: T,
-      type: "W"
-    }, {
-      weight: T,
-      type: "W"
-    }];
-    for (let i = 5; i < setCount; i++) {
-      shape.push({
-        weight: T,
-        type: "W"
-      });
-    }
+    }, W, W, W];
   }
   return shape.map(s => ({
     weight: String(s.weight),
@@ -2071,10 +2059,19 @@ function useMovementPicker(mov, history, position, total, onChange) {
 
   // No chip tapped yet (fresh session, no draft) -> no planned sets; the
   // chip picker renders instead of the set-rows grid until one is chosen.
+  // Superset membership drives the ramp shape (see buildRamp — superset
+  // members get 4 working sets and never a warmup). Read straight off the
+  // movement, so linking/unlinking mid-session is picked up by the
+  // regeneration effect below without threading another prop through.
+  const isSuperset = !!mov.supersetId;
+  const rampOpts = () => ({
+    position,
+    isSuperset,
+    setCount: deriveSetCount(history, mov.name)
+  });
   const [plannedSets, setPlannedSets] = useState(() => {
     if (mov._targetWeight == null) return [];
-    const setCount = deriveSetCount(history, mov.name);
-    const planned = buildRamp(mov, mov._targetWeight, setCount);
+    const planned = buildRamp(mov, mov._targetWeight, rampOpts());
     const prior = mov._loggedSets || [];
     if (prior.length === 0) return planned.map(s => ({
       ...s,
@@ -2122,8 +2119,7 @@ function useMovementPicker(mov, history, position, total, onChange) {
   // data, switching requires an explicit confirm — the ramp regenerates
   // around the new target, but logged sets are kept, not discarded.
   const applyTarget = (choice, newWeight) => {
-    const setCount = deriveSetCount(history, mov.name);
-    const ramp = buildRamp(mov, newWeight, setCount);
+    const ramp = buildRamp(mov, newWeight, rampOpts());
     const prior = plannedSets.filter(s => s.logged);
     const merged = ramp.map((s, i) => {
       const match = prior[i];
@@ -2169,6 +2165,31 @@ function useMovementPicker(mov, history, position, total, onChange) {
     }
     applyTarget(choice, weight);
   };
+
+  // Reordering a movement changes its ramp shape (see buildRamp), so the
+  // ramp regenerates when its position — or its superset membership —
+  // changes (CHANGES.md Sep 8 2026, Phase 1). Before any set is logged this
+  // is silent; once sets are logged it goes through the same
+  // confirm-before-change pattern a chip switch uses, and cancelling keeps
+  // the existing ramp (the movement still moved; only its shape is left
+  // alone). The ref seeds itself on the first render so a freshly-mounted
+  // movement never regenerates just for existing.
+  const rampShapeKeyRef = useRef(null);
+  useEffect(() => {
+    const key = position + "|" + (isSuperset ? "1" : "0");
+    if (rampShapeKeyRef.current === null) {
+      rampShapeKeyRef.current = key;
+      return;
+    }
+    if (rampShapeKeyRef.current === key) return;
+    rampShapeKeyRef.current = key;
+    if (targetWeight == null) return;
+    if (done) {
+      const ok = window.confirm("This movement moved, which changes today's ramp shape. Logged sets are kept, not discarded. Regenerate?");
+      if (!ok) return;
+    }
+    applyTarget(chipChoice, targetWeight);
+  }, [position, isSuperset]);
 
   // Auto-log (see CHANGES.md Aug 19 2026, Phase 4 — "selecting an RPE
   // should log the set... as soon as an RPE is set, the log action

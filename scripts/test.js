@@ -128,8 +128,8 @@ check("6. sync-last timestamp behavior (test-sync-last.js)", () => {
   );
 });
 
-// 7. target picker (see CLAUDE.md "Target picker"): ramp shape/clamping/
-// trim-and-pad, deriveCurrentWeight/deriveSetCount history derivation, all
+// 7. target picker (see CLAUDE.md "Target picker"): opener ramp shape and
+// clamping, deriveCurrentWeight/deriveSetCount history derivation, all
 // four suggestChip rules, the positional up->hold downgrade, and that
 // finishing a session persists targetWeight/chipChoice/suggested.
 check("7. target picker behavior (test-target-picker.js)", () => {
@@ -189,9 +189,12 @@ check("11. dumbbell steps behavior (test-dumbbell-steps.js)", () => {
   );
 });
 
-// 12. ramp shape scales with set count (see CLAUDE.md "Target picker"): the
-// four tabulated shapes (5/4/3/2 sets), the <=1 floor, padding beyond 5,
-// and a real history-driven no-warmup 3-set ramp in the live app.
+// 12. ramp shape scales with QUEUE POSITION (see CLAUDE.md "Target picker"):
+// the four tabulated patterns (opener / position 2+ / superset member /
+// 2-set movement), the <=1 floor, and — in the live app — the opener's full
+// ramp, a position-2+ movement's single build set, a reorder regenerating
+// both the promoted and displaced movements' ramps, and a superset pair's
+// four warmup-free rounds.
 check("12. ramp shape behavior (test-ramp-shapes.js)", () => {
   execFileSync(
     process.execPath,

@@ -5,8 +5,8 @@
 // test-sync-last.js) so `npm test` alone still runs it.
 //
 // Covers, against fixture history:
-//   - buildRamp produces the exact [T-2i, T-i, T-i, T, T] shape and clamps
-//     at the lowest available increment.
+//   - buildRamp produces the exact opener shape [T-2i, T-i, T, T, T] and
+//     clamps at the lowest available increment.
 //   - deriveCurrentWeight: heaviest weight completed at target reps in the
 //     most recent session; falls back to BLOCK.current with no history.
 //   - deriveSetCount: modal total-set count across the last three sessions.
@@ -66,20 +66,21 @@ async function checkRampShape() {
   const { window, errors } = await mount(null);
   if (errors.length) throw new Error("jsdom errors on mount: " + errors.join("; "));
   const mov = { name: "Leg Press", reps: 10, increment: 15, current: "185 lb" };
-  const ramp = window.buildRamp(mov, 185, 5);
+  // Position 0 (the opener) is the only shape that still carries a warmup.
+  const ramp = window.buildRamp(mov, 185, { position: 0 });
   const shape = ramp.map((s) => s.weight);
-  if (JSON.stringify(shape) !== JSON.stringify(["155", "170", "170", "185", "185"])) {
+  if (JSON.stringify(shape) !== JSON.stringify(["155", "170", "185", "185", "185"])) {
     throw new Error("ramp shape wrong: " + JSON.stringify(shape));
   }
-  if (JSON.stringify(ramp.map((s) => s.type)) !== JSON.stringify(["WU", "B", "B", "W", "W"])) {
+  if (JSON.stringify(ramp.map((s) => s.type)) !== JSON.stringify(["WU", "B", "W", "W", "W"])) {
     throw new Error("ramp types wrong: " + JSON.stringify(ramp.map((s) => s.type)));
   }
   // Clamp: a target near the increment must not go negative/zero.
-  const clamped = window.buildRamp(mov, 20, 5);
+  const clamped = window.buildRamp(mov, 20, { position: 0 });
   if (clamped.some((s) => Number(s.weight) < 15)) {
     throw new Error("ramp did not clamp at the lowest increment: " + JSON.stringify(clamped.map((s) => s.weight)));
   }
-  console.log("PASS: buildRamp 5-set shape and clamping (see test-ramp-shapes.js for the full 5/4/3/2/1-set table)");
+  console.log("PASS: buildRamp opener shape and clamping (see test-ramp-shapes.js for the full position table)");
   window.close();
 }
 

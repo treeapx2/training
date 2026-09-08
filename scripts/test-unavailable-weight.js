@@ -75,11 +75,12 @@ function weights(card) {
 async function checkUnavailableShiftsWholeRampDownAndIsRetappable() {
   const { window, errors } = await mount();
   const card = await openLegPress(window);
-  // No history -> hold chip = BLOCK.current (185), increment 15 ->
-  // 5-set ramp [155, 170, 170, 185, 185].
+  // No history -> hold chip = BLOCK.current (185), increment 15. Leg Press is
+  // the Legs opener (position 1), so it gets the full 5-set ramp
+  // [155, 170, 185, 185, 185] (CHANGES.md Sep 8 2026, Phase 1).
   const before = weights(card);
   console.log("Leg Press ramp before unavailable:", JSON.stringify(before));
-  if (JSON.stringify(before) !== JSON.stringify(["155", "170", "170", "185", "185"])) {
+  if (JSON.stringify(before) !== JSON.stringify(["155", "170", "185", "185", "185"])) {
     throw new Error(`unexpected starting ramp: ${JSON.stringify(before)}`);
   }
 
@@ -91,8 +92,8 @@ async function checkUnavailableShiftsWholeRampDownAndIsRetappable() {
   const afterOne = weights(card);
   console.log("Leg Press ramp after 1 unavailable tap:", JSON.stringify(afterOne));
   // Target steps down one increment (185 -> 170); whole ramp regenerates
-  // around the new target: [140, 155, 155, 170, 170].
-  if (JSON.stringify(afterOne) !== JSON.stringify(["140", "155", "155", "170", "170"])) {
+  // around the new target: [140, 155, 170, 170, 170].
+  if (JSON.stringify(afterOne) !== JSON.stringify(["140", "155", "170", "170", "170"])) {
     throw new Error(`expected the whole ramp to shift down one step, got ${JSON.stringify(afterOne)}`);
   }
   if (!card.textContent.includes("substituted")) {
@@ -105,7 +106,7 @@ async function checkUnavailableShiftsWholeRampDownAndIsRetappable() {
   await sleep(window, 40);
   const afterTwo = weights(card);
   console.log("Leg Press ramp after 2nd unavailable tap:", JSON.stringify(afterTwo));
-  if (JSON.stringify(afterTwo) !== JSON.stringify(["125", "140", "140", "155", "155"])) {
+  if (JSON.stringify(afterTwo) !== JSON.stringify(["125", "140", "155", "155", "155"])) {
     throw new Error(`expected a second tap to shift down again, got ${JSON.stringify(afterTwo)}`);
   }
   if (errors.length) throw new Error("jsdom errors: " + errors.join("; "));
