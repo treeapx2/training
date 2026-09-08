@@ -330,8 +330,8 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
 // see build.js) so a stale cached build is identifiable on the device
 // instead of silently running fixed-but-not-yet-deployed code.
 const BUILD_INFO = {
-  sha: "afb1326",
-  builtAt: "2026-09-08T17:44:04.381Z"
+  sha: "f3c491b",
+  builtAt: "2026-09-08T17:47:13.056Z"
 };
 function formatBuildStamp() {
   const d = new Date(BUILD_INFO.builtAt);
@@ -562,11 +562,21 @@ const EMPTY_CARDIO = {
   machine: "Stairmaster",
   duration: "",
   level: "",
-  rpe: ""
+  rpe: "",
+  // Cardio skip (CHANGES.md Sep 8 2026, Phase 7), mirroring the per-movement
+  // skip: a finisher deliberately skipped with a reason is distinguishable
+  // from one that was never tracked.
+  skipped: false,
+  skipReason: ""
 };
 const CARDIO_MACHINE_OPTIONS = ["Stairmaster", "Recumbent bike", "Spin bike", "Elliptical", "Treadmill (incline walk)", "Rower", "Other"];
 function hasCardioData(cardio) {
-  return !!(cardio && (cardio.duration || cardio.level || cardio.rpe || cardio.effort ||
+  return !!(cardio && (
+  // A deliberately skipped finisher is data, not an absence — that is the
+  // whole point of Phase 7 (CHANGES.md Sep 8 2026): cardio was skipped
+  // outright on Aug 25 ("stairmaster taken") and the session simply lost
+  // its finisher, indistinguishable from one that was never tracked.
+  cardio.skipped || cardio.duration || cardio.level || cardio.rpe || cardio.effort ||
   // machine alone only counts if it's been changed away from the
   // default (Stairmaster) — the default by itself isn't "entered"
   // cardio data, it's just the pre-filled dropdown value. A machine
@@ -576,6 +586,9 @@ function hasCardioData(cardio) {
 }
 function formatCardio(cardio) {
   if (!hasCardioData(cardio)) return "";
+  if (cardio.skipped) {
+    return "skipped \u2014 " + (cardio.skipReason || "no reason given");
+  }
   return [cardio.machine, cardio.duration ? cardio.duration + " min" : "", cardio.level ? "L" + cardio.level : "", cardio.rpe ? "RPE " + cardio.rpe : cardio.effort || ""].filter(Boolean).join(" · ");
 }
 // Cardio progress tracking (see CHANGES.md Aug 19 2026, Phase 6 — "are we
@@ -590,6 +603,10 @@ function getCardioHistory(history) {
   const entries = [];
   history.forEach(session => {
     if (!hasCardioData(session.cardio)) return;
+    // A skipped finisher carries no duration/level/RPE, so it has nothing to
+    // contribute to a trend — it stays out of the chart while remaining
+    // visible in the session record and the handoff (Phase 7).
+    if (session.cardio.skipped) return;
     entries.push({
       date: session.date,
       ts: parseSessionDate(session.date).getTime(),
@@ -3664,6 +3681,9 @@ function SessionScreen({
   // shape; `timerNow` exists only to re-render the running clock once a
   // second — the elapsed time itself is always recomputed from wall clock,
   // never accumulated tick by tick.
+  // Cardio skip picker visibility (CHANGES.md Sep 8 2026, Phase 7). The skip
+  // itself lives on `cardio` so it rides the existing draft/finish plumbing.
+  const [cardioSkipping, setCardioSkipping] = useState(false);
   const [timer, setTimer] = useState(EMPTY_TIMER);
   const [timerNow, setTimerNow] = useState(() => Date.now());
   useEffect(() => {
@@ -3701,6 +3721,7 @@ function SessionScreen({
     setAutoPushStatus(null);
     setSessionNote("");
     setCardio(EMPTY_CARDIO);
+    setCardioSkipping(false);
     setSessionDate(new Date().toISOString().split("T")[0]);
   };
   const resumeDraft = () => {
@@ -3748,6 +3769,7 @@ function SessionScreen({
     setTimerNow(Date.now());
     setSessionNote(draft.note || "");
     setCardio(draft.cardio || EMPTY_CARDIO);
+    setCardioSkipping(false);
     if (draft.sessionDate) setSessionDate(draft.sessionDate);
     setDraft(null);
   };
@@ -4575,10 +4597,120 @@ function SessionScreen({
     }
   }), /*#__PURE__*/React.createElement("div", {
     style: {
-      ...S.label,
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "baseline",
       marginTop: 12
     }
-  }, "Cardio finisher"), /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("div", {
+    style: S.label
+  }, "Cardio finisher"), !cardio.skipped && !cardioSkipping &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
+    onClick: () => setCardioSkipping(true),
+    style: {
+      fontSize: 11,
+      color: "#aaa",
+      background: "none",
+      border: "none",
+      padding: 0,
+      cursor: "pointer",
+      textDecoration: "underline",
+      textDecorationStyle: "dotted"
+    }
+  }, "skip")), cardio.skipped ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    style: {
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      padding: "9px 10px",
+      marginBottom: 14,
+      border: "0.5px solid #ddd",
+      borderRadius: 10,
+      background: "#f9f9f8"
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 12,
+      color: "#999"
+    }
+  }, "skipped — ", cardio.skipReason || "no reason given"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setCardio(c => ({
+      ...c,
+      skipped: false,
+      skipReason: ""
+    })),
+    style: {
+      fontSize: 11,
+      color: "#888",
+      background: "none",
+      border: "none",
+      padding: 0,
+      cursor: "pointer",
+      textDecoration: "underline",
+      textDecorationStyle: "dotted"
+    }
+  }, "un-skip")) : cardioSkipping ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    style: {
+      marginBottom: 14
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 11,
+      color: "#999",
+      marginBottom: 4
+    }
+  }, "Machine taken? Switch instead of skipping:"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      flexWrap: "wrap",
+      gap: 6,
+      marginBottom: 8
+    }
+  }, CARDIO_MACHINE_OPTIONS.filter(m => m !== cardio.machine).map(m =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
+    key: m,
+    onClick: () => {
+      setCardio(c => ({
+        ...c,
+        machine: m,
+        skipped: false,
+        skipReason: ""
+      }));
+      setCardioSkipping(false);
+    },
+    style: {
+      padding: "6px 10px",
+      border: "0.5px solid #ddd",
+      borderRadius: 8,
+      background: "#fff",
+      fontSize: 12,
+      color: "#111",
+      cursor: "pointer"
+    }
+  }, m))), /*#__PURE__*/React.createElement(SkipPicker, {
+    onSkip: reason => {
+      setCardio(c => ({
+        ...c,
+        skipped: true,
+        skipReason: reason
+      }));
+      setCardioSkipping(false);
+    },
+    onCancel: () => setCardioSkipping(false)
+  })) :
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 11,
       color: "#999",
@@ -4648,7 +4780,7 @@ function SessionScreen({
       outline: "none",
       minWidth: 0
     }
-  })))), /*#__PURE__*/React.createElement("div", {
+  }))))), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       gap: 8,

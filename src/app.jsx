@@ -184,7 +184,17 @@ const DRAFT_KEY = "at_session_draft";
 // easy/moderate/hard enum). Older records may still carry the retired
 // `effort` string — hasCardioData/formatCardio keep reading it so history
 // doesn't crash or silently drop it; new entries always write rpe instead.
-const EMPTY_CARDIO = { machine: "Stairmaster", duration: "", level: "", rpe: "" };
+const EMPTY_CARDIO = {
+  machine: "Stairmaster",
+  duration: "",
+  level: "",
+  rpe: "",
+  // Cardio skip (CHANGES.md Sep 8 2026, Phase 7), mirroring the per-movement
+  // skip: a finisher deliberately skipped with a reason is distinguishable
+  // from one that was never tracked.
+  skipped: false,
+  skipReason: "",
+};
 const CARDIO_MACHINE_OPTIONS = [
   "Stairmaster",
   "Recumbent bike",
@@ -197,7 +207,12 @@ const CARDIO_MACHINE_OPTIONS = [
 function hasCardioData(cardio) {
   return !!(
     cardio &&
-    (cardio.duration ||
+    // A deliberately skipped finisher is data, not an absence — that is the
+    // whole point of Phase 7 (CHANGES.md Sep 8 2026): cardio was skipped
+    // outright on Aug 25 ("stairmaster taken") and the session simply lost
+    // its finisher, indistinguishable from one that was never tracked.
+    (cardio.skipped ||
+      cardio.duration ||
       cardio.level ||
       cardio.rpe ||
       cardio.effort ||
@@ -211,6 +226,9 @@ function hasCardioData(cardio) {
 }
 function formatCardio(cardio) {
   if (!hasCardioData(cardio)) return "";
+  if (cardio.skipped) {
+    return "skipped \u2014 " + (cardio.skipReason || "no reason given");
+  }
   return [
     cardio.machine,
     cardio.duration ? cardio.duration + " min" : "",
@@ -232,6 +250,10 @@ function getCardioHistory(history) {
   const entries = [];
   history.forEach((session) => {
     if (!hasCardioData(session.cardio)) return;
+    // A skipped finisher carries no duration/level/RPE, so it has nothing to
+    // contribute to a trend — it stays out of the chart while remaining
+    // visible in the session record and the handoff (Phase 7).
+    if (session.cardio.skipped) return;
     entries.push({
       date: session.date,
       ts: parseSessionDate(session.date).getTime(),
@@ -3484,6 +3506,9 @@ function SessionScreen({ history, setHistory, syncLast, onSynced }) {
   // shape; `timerNow` exists only to re-render the running clock once a
   // second — the elapsed time itself is always recomputed from wall clock,
   // never accumulated tick by tick.
+  // Cardio skip picker visibility (CHANGES.md Sep 8 2026, Phase 7). The skip
+  // itself lives on `cardio` so it rides the existing draft/finish plumbing.
+  const [cardioSkipping, setCardioSkipping] = useState(false);
   const [timer, setTimer] = useState(EMPTY_TIMER);
   const [timerNow, setTimerNow] = useState(() => Date.now());
   useEffect(() => {
@@ -3521,6 +3546,7 @@ function SessionScreen({ history, setHistory, syncLast, onSynced }) {
     setAutoPushStatus(null);
     setSessionNote("");
     setCardio(EMPTY_CARDIO);
+    setCardioSkipping(false);
     setSessionDate(new Date().toISOString().split("T")[0]);
   };
   const resumeDraft = () => {
@@ -3569,6 +3595,7 @@ function SessionScreen({ history, setHistory, syncLast, onSynced }) {
     setTimerNow(Date.now());
     setSessionNote(draft.note || "");
     setCardio(draft.cardio || EMPTY_CARDIO);
+    setCardioSkipping(false);
     if (draft.sessionDate) setSessionDate(draft.sessionDate);
     setDraft(null);
   };
@@ -4564,12 +4591,115 @@ function SessionScreen({ history, setHistory, syncLast, onSynced }) {
       />
       <div
         style={{
-          ...S.label,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "baseline",
           marginTop: 12,
         }}
       >
-        Cardio finisher
+        <div style={S.label}>Cardio finisher</div>
+        {!cardio.skipped && !cardioSkipping && (
+          /*#__PURE__*/ <button
+            onClick={() => setCardioSkipping(true)}
+            style={{
+              fontSize: 11,
+              color: "#aaa",
+              background: "none",
+              border: "none",
+              padding: 0,
+              cursor: "pointer",
+              textDecoration: "underline",
+              textDecorationStyle: "dotted",
+            }}
+          >
+            skip
+          </button>
+        )}
       </div>
+      {cardio.skipped ? (
+        /*#__PURE__*/ <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            padding: "9px 10px",
+            marginBottom: 14,
+            border: "0.5px solid #ddd",
+            borderRadius: 10,
+            background: "#f9f9f8",
+          }}
+        >
+          <span style={{ fontSize: 12, color: "#999" }}>
+            skipped — {cardio.skipReason || "no reason given"}
+          </span>
+          <button
+            onClick={() =>
+              setCardio((c) => ({ ...c, skipped: false, skipReason: "" }))
+            }
+            style={{
+              fontSize: 11,
+              color: "#888",
+              background: "none",
+              border: "none",
+              padding: 0,
+              cursor: "pointer",
+              textDecoration: "underline",
+              textDecorationStyle: "dotted",
+            }}
+          >
+            un-skip
+          </button>
+        </div>
+      ) : cardioSkipping ? (
+        /*#__PURE__*/ <div style={{ marginBottom: 14 }}>
+          {/* Substitution before abandonment (CHANGES.md Sep 8 2026, Phase 7).
+              Cardio was skipped outright on Aug 25 ("stairmaster taken") when
+              switching machines would have kept the finisher, so the machine
+              alternatives are offered here, one tap each, ABOVE the skip
+              reasons — the dropdown already existed, it just wasn't in front
+              of the owner at the moment they were deciding to give up. */}
+          <div style={{ fontSize: 11, color: "#999", marginBottom: 4 }}>
+            Machine taken? Switch instead of skipping:
+          </div>
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 6,
+              marginBottom: 8,
+            }}
+          >
+            {CARDIO_MACHINE_OPTIONS.filter((m) => m !== cardio.machine).map((m) => (
+              /*#__PURE__*/ <button
+                key={m}
+                onClick={() => {
+                  setCardio((c) => ({ ...c, machine: m, skipped: false, skipReason: "" }));
+                  setCardioSkipping(false);
+                }}
+                style={{
+                  padding: "6px 10px",
+                  border: "0.5px solid #ddd",
+                  borderRadius: 8,
+                  background: "#fff",
+                  fontSize: 12,
+                  color: "#111",
+                  cursor: "pointer",
+                }}
+              >
+                {m}
+              </button>
+            ))}
+          </div>
+          <SkipPicker
+            onSkip={(reason) => {
+              setCardio((c) => ({ ...c, skipped: true, skipReason: reason }));
+              setCardioSkipping(false);
+            }}
+            onCancel={() => setCardioSkipping(false)}
+          />
+        </div>
+      ) : (
+        /*#__PURE__*/ <>
       <div
         style={{
           fontSize: 11,
@@ -4658,6 +4788,8 @@ function SessionScreen({ history, setHistory, syncLast, onSynced }) {
           </div>
         ))}
       </div>
+        </>
+      )}
       <div
         style={{
           display: "flex",

@@ -321,4 +321,17 @@ check("21. chart windowing behavior (test-chart-windowing.js)", () => {
   );
 });
 
+// 22. cardio skip and substitution (see CLAUDE.md "Cardio finisher fields"):
+// a skipped finisher counts as data while an untouched one still doesn't, the
+// skip is excluded from the trend but kept on the record and in the handoff,
+// skipping offers one-tap machine substitution first, the skip is reversible,
+// and finish() persists it without breaking the omitted-when-empty contract.
+check("22. cardio skip behavior (test-cardio-skip.js)", () => {
+  execFileSync(
+    process.execPath,
+    [path.join(repoRoot, "scripts", "test-cardio-skip.js")],
+    { stdio: "pipe" },
+  );
+});
+
 process.exit(failed ? 1 : 0);

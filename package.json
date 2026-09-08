@@ -22,6 +22,7 @@
     "test:movement-library": "node scripts/test-movement-library.js",
     "test:session-timer": "node scripts/test-session-timer.js",
     "test:chart-windowing": "node scripts/test-chart-windowing.js",
+    "test:cardio-skip": "node scripts/test-cardio-skip.js",
     "prepare": "git config core.hooksPath githooks"
   },
   "devDependencies": {
