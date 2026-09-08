@@ -292,4 +292,19 @@ check("19. movement library behavior (test-movement-library.js)", () => {
   );
 });
 
+// 20. session timer (see CLAUDE.md "Session timer"): the wall-clock
+// arithmetic (pause banks, resume continues, lifting/cardio accrue
+// separately), the timer starting automatically alongside the rest target,
+// a reload mid-session coming back with its paused state and elapsed time
+// intact, a timer left running counting the time the app was away, and
+// finish() persisting durationMin/liftingMin/cardioMin into history and the
+// coach handoff while pre-timer records render nothing.
+check("20. session timer behavior (test-session-timer.js)", () => {
+  execFileSync(
+    process.execPath,
+    [path.join(repoRoot, "scripts", "test-session-timer.js")],
+    { stdio: "pipe" },
+  );
+});
+
 process.exit(failed ? 1 : 0);

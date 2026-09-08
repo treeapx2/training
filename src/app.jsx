@@ -253,13 +253,18 @@ function groupCardioByMachine(entries) {
   });
   return groups;
 }
-function saveDraft(type, movements, note, sessionDate, cardio) {
+function saveDraft(type, movements, note, sessionDate, cardio, timer) {
   try {
     const draft = {
       type,
       note,
       cardio: hasCardioData(cardio) ? cardio : null,
       sessionDate,
+      // Session timer (CHANGES.md Sep 8 2026, Phase 5). Saved as accumulated
+      // ms plus the running stretch's start timestamp, so a reload or an
+      // iOS background freeze resumes with the right elapsed time rather
+      // than however long the app happened to be in the foreground.
+      timer: timer || null,
       date: sessionDate
         ? new Date(sessionDate + "T12:00:00").toLocaleDateString("en-US", {
             month: "short",
@@ -759,7 +764,7 @@ function buildHandoff(history) {
     "HOCKEY: SUSPENDED (~3 wks, blood-thinner/PE precaution) — legs unblocked, cardio substituted",
   );
   lines.push(
-    "SESSION STRUCTURE: warm-ups + 2 working (3 on emphasis lift). Fresh opener = progression lift, straight sets/full rest; accessories antagonist-supersetted 45-60s to keep HR up. 60-min cap.\n",
+    "SESSION STRUCTURE: three muscle groups x two movements, one superset last. Opener ramps (warm-up + build + 3 working); everything after starts at one build set; superset members are 4 straight working rounds. Target ~20 working sets in 45 min of lifting, then a separate ~15 min cardio finisher.\n",
   );
   lines.push("CURRENT WORKING WEIGHTS + TARGETS:");
   Object.entries(BLOCK.sessions).forEach(([key, s]) => {
@@ -826,6 +831,11 @@ function buildHandoff(history) {
       });
       if (hasCardioData(h.cardio))
         lines.push(`  Cardio: ${formatCardio(h.cardio)}`);
+      // Session duration (CHANGES.md Sep 8 2026, Phase 5) — the coach needs
+      // the 45/15 split, not just the lift log. Empty for records that
+      // predate the timer, which is every session before Sep 8 2026.
+      const dur = formatSessionDuration(h);
+      if (dur) lines.push(`  Duration: ${dur}`);
       if (h.note) lines.push(`  Session note: ${h.note}`);
     });
   }
@@ -3059,6 +3069,90 @@ function SupersetRow({
   );
 }
 
+// ── Session timer ────────────────────────────────────────────────────────────
+// "would be helpful to automatically start a timer when a session is selected
+// — would need pause and resume functionality and a record of the total
+// workout time — this would be for the full session" (Cable Curl note, Aug
+// 26; CHANGES.md Sep 8 2026, Phase 5).
+//
+// Shape: accumulated milliseconds per PHASE plus, while running, the wall
+// clock the current stretch started at. Storing a start timestamp rather than
+// a running counter is what makes the timer survive app backgrounding and
+// reload — iOS freezes timers in a backgrounded PWA, so a tick-based counter
+// would silently under-count a session the owner walked away from. On resume
+// the elapsed time is recomputed from the clock, not replayed.
+//
+// Two phases because the budget has two parts: 45 minutes of lifting, then a
+// separate ~15-minute cardio finisher that is NOT inside the lifting budget.
+// Tracking them separately is what makes the 45/15 split visible instead of a
+// single 60-minute total.
+const LIFTING_TARGET_MIN = 45;
+const CARDIO_TARGET_MIN = 15;
+const EMPTY_TIMER = {
+  phase: "lifting",
+  liftingMs: 0,
+  cardioMs: 0,
+  running: false,
+  startedAt: null,
+};
+function startedTimer(now) {
+  return { ...EMPTY_TIMER, running: true, startedAt: now != null ? now : Date.now() };
+}
+// Milliseconds banked in each phase, including the stretch currently running.
+function timerElapsed(timer, now) {
+  const t = timer || EMPTY_TIMER;
+  const at = now != null ? now : Date.now();
+  const live = t.running && t.startedAt ? Math.max(at - t.startedAt, 0) : 0;
+  return {
+    liftingMs: t.liftingMs + (t.phase === "lifting" ? live : 0),
+    cardioMs: t.cardioMs + (t.phase === "cardio" ? live : 0),
+  };
+}
+// Bank the running stretch into its phase and stop the clock. Every
+// transition (pause, phase switch, finish) goes through this so a running
+// stretch can never be dropped or double-counted.
+function timerBanked(timer, now) {
+  const t = timer || EMPTY_TIMER;
+  const e = timerElapsed(t, now);
+  return { ...t, liftingMs: e.liftingMs, cardioMs: e.cardioMs, running: false, startedAt: null };
+}
+function timerPaused(timer, now) {
+  return timerBanked(timer, now);
+}
+function timerResumed(timer, now) {
+  const t = timer || EMPTY_TIMER;
+  if (t.running) return t;
+  return { ...t, running: true, startedAt: now != null ? now : Date.now() };
+}
+// Close the lifting block and start the cardio one. Irreversible within a
+// session by design — the split is a record of what happened, not a mode
+// toggle.
+function timerCardioStarted(timer, now) {
+  const banked = timerBanked(timer, now);
+  return { ...banked, phase: "cardio", running: true, startedAt: now != null ? now : Date.now() };
+}
+function formatDuration(ms) {
+  const total = Math.max(Math.round(ms / 1000), 0);
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return m + ":" + String(s).padStart(2, "0");
+}
+// Minutes, rounded, for the persisted record and the handoff.
+function durationMinutes(ms) {
+  return Math.max(Math.round(ms / 60000), 0);
+}
+// One line of session duration for display sites that have a record, not a
+// live timer. Returns "" when the record predates the timer (Phase 5) — every
+// session logged before Sep 8 2026 does — so nothing renders a bare "0 min".
+function formatSessionDuration(entry) {
+  if (!entry || entry.durationMin == null) return "";
+  const parts = [];
+  if (entry.liftingMin != null) parts.push(entry.liftingMin + "m lifting");
+  if (entry.cardioMin) parts.push(entry.cardioMin + "m cardio");
+  if (!parts.length) return entry.durationMin + " min";
+  return entry.durationMin + " min (" + parts.join(" + ") + ")";
+}
+
 // ── Add movement ─────────────────────────────────────────────────────────────
 // "Every movement ever logged must be available as an optional add, not just
 // the current defaults" (CHANGES.md Sep 8 2026, Phase 4). Two paths: pick an
@@ -3267,6 +3361,17 @@ function SessionScreen({ history, setHistory, syncLast, onSynced }) {
   // mount alongside the group orders and draft.
   const [customMovements, setCustomMovements] = useState([]);
   const [addingMovement, setAddingMovement] = useState(false);
+  // Session timer (CHANGES.md Sep 8 2026, Phase 5). `timer` is the persisted
+  // shape; `timerNow` exists only to re-render the running clock once a
+  // second — the elapsed time itself is always recomputed from wall clock,
+  // never accumulated tick by tick.
+  const [timer, setTimer] = useState(EMPTY_TIMER);
+  const [timerNow, setTimerNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!active || !timer.running) return;
+    const id = setInterval(() => setTimerNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [active, timer.running]);
   const [tick, setTick] = useState(0);
   const bumpTick = () => setTick((t) => t + 1);
   useEffect(() => {
@@ -3281,8 +3386,8 @@ function SessionScreen({ history, setHistory, syncLast, onSynced }) {
   // Auto-save draft whenever session movements change OR any set is logged (tick)
   useEffect(() => {
     if (!active) return;
-    saveDraft(active, sessionMovements, sessionNote, sessionDate, cardio);
-  }, [sessionMovements, sessionNote, active, tick, sessionDate, cardio]);
+    saveDraft(active, sessionMovements, sessionNote, sessionDate, cardio, timer);
+  }, [sessionMovements, sessionNote, active, tick, sessionDate, cardio, timer]);
   const startSession = (type) => {
     BLOCK.sessions[type].movements.forEach((m) => {
       delete m._loggedSets;
@@ -3290,6 +3395,9 @@ function SessionScreen({ history, setHistory, syncLast, onSynced }) {
     setSessionMovements(buildSessionMovements(type, null));
     setActive(type);
     setAddingMovement(false);
+    // "Timer starts automatically when a session is started."
+    setTimer(startedTimer());
+    setTimerNow(Date.now());
     setLastFinished(null);
     setAutoPushStatus(null);
     setSessionNote("");
@@ -3334,6 +3442,12 @@ function SessionScreen({ history, setHistory, syncLast, onSynced }) {
     });
     setSessionMovements(restored);
     setActive(draft.type);
+    // A resumed draft keeps whatever the timer was doing when the app closed:
+    // still running (and now counting the time the app was away), or still
+    // paused. A draft from before Phase 5 has no timer — start a fresh one
+    // rather than pretending to know when that session began.
+    setTimer(draft.timer || startedTimer());
+    setTimerNow(Date.now());
     setSessionNote(draft.note || "");
     setCardio(draft.cardio || EMPTY_CARDIO);
     if (draft.sessionDate) setSessionDate(draft.sessionDate);
@@ -3496,6 +3610,11 @@ function SessionScreen({ history, setHistory, syncLast, onSynced }) {
       day: "numeric",
       year: "numeric",
     });
+    // Bank whatever the clock is still running before reading it, so the
+    // final stretch isn't dropped (CHANGES.md Sep 8 2026, Phase 5).
+    const finalTimer = timerBanked(timer);
+    const liftingMin = durationMinutes(finalTimer.liftingMs);
+    const cardioMin = durationMinutes(finalTimer.cardioMs);
     const entry = {
       id: Date.now(),
       type: active,
@@ -3503,6 +3622,12 @@ function SessionScreen({ history, setHistory, syncLast, onSynced }) {
       date: formattedDate,
       note: sessionNote,
       cardio: hasCardioData(cardio) ? cardio : undefined,
+      // Session duration, split so the 45/15 budget is visible rather than
+      // collapsed into one number. Omitted entirely (like `cardio`) when the
+      // clock never ran, so a record can't claim a bogus 0-minute session.
+      durationMin: liftingMin + cardioMin > 0 ? liftingMin + cardioMin : undefined,
+      liftingMin: liftingMin + cardioMin > 0 ? liftingMin : undefined,
+      cardioMin: cardioMin > 0 ? cardioMin : undefined,
       movements,
     };
     const updated = [entry, ...history];
@@ -3929,6 +4054,12 @@ function SessionScreen({ history, setHistory, syncLast, onSynced }) {
   const doneMov = sessionMovements.filter(
     (m) => (m._loggedSets || []).length > 0,
   ).length;
+  // Live timer readout. timerNow is only a re-render trigger; the elapsed
+  // time is always recomputed from the wall clock (see the Session timer
+  // helpers) so a backgrounded PWA doesn't under-count.
+  const elapsed = timerElapsed(timer, timer.running ? timerNow : undefined);
+  const overBudget =
+    timer.phase === "lifting" && elapsed.liftingMs >= LIFTING_TARGET_MIN * 60000;
   // Group consecutive movements sharing a supersetId into a pair for
   // SupersetRow; everything else renders as a single MovementRow. Pairing
   // only takes effect when the two are adjacent — see seedSupersets.
@@ -3981,12 +4112,117 @@ function SessionScreen({ history, setHistory, syncLast, onSynced }) {
       </div>
       <div
         style={{
-          fontSize: 11,
-          color: "#888",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          gap: 10,
           marginBottom: 14,
         }}
       >
-        rest {session.rest}
+        <div
+          style={{
+            fontSize: 11,
+            color: "#888",
+            flex: 1,
+          }}
+        >
+          rest {session.rest}
+        </div>
+        {/* Session timer (CHANGES.md Sep 8 2026, Phase 5), sat alongside the
+            rest target. Past the 45-minute lifting budget the clock just
+            turns amber — "no alarms, no blocking". */}
+        <div
+          style={{
+            textAlign: "right",
+            whiteSpace: "nowrap",
+          }}
+        >
+          <div
+            style={{
+              fontSize: 15,
+              fontWeight: 700,
+              fontVariantNumeric: "tabular-nums",
+              color: overBudget ? "#b8860b" : "#111",
+            }}
+          >
+            {formatDuration(
+              timer.phase === "cardio" ? elapsed.cardioMs : elapsed.liftingMs,
+            )}
+            {!timer.running && (
+              /*#__PURE__*/ <span
+                style={{
+                  fontSize: 10,
+                  fontWeight: 600,
+                  color: "#bbb",
+                  marginLeft: 4,
+                }}
+              >
+                paused
+              </span>
+            )}
+          </div>
+          <div
+            style={{
+              fontSize: 10,
+              color: "#bbb",
+              marginTop: 1,
+            }}
+          >
+            {timer.phase === "cardio"
+              ? "cardio · lifting " +
+                formatDuration(elapsed.liftingMs) +
+                " / " +
+                CARDIO_TARGET_MIN +
+                "m target"
+              : "lifting / " + LIFTING_TARGET_MIN + "m target"}
+          </div>
+          <div
+            style={{
+              display: "flex",
+              gap: 8,
+              justifyContent: "flex-end",
+              marginTop: 3,
+            }}
+          >
+            <button
+              onClick={() =>
+                setTimer((t) => (t.running ? timerPaused(t) : timerResumed(t)))
+              }
+              style={{
+                fontSize: 11,
+                color: "#888",
+                background: "none",
+                border: "none",
+                padding: 0,
+                cursor: "pointer",
+                textDecoration: "underline",
+                textDecorationStyle: "dotted",
+              }}
+            >
+              {timer.running ? "pause" : "resume"}
+            </button>
+            {timer.phase === "lifting" && (
+              /*#__PURE__*/ <button
+                onClick={() => {
+                  setTimer((t) => timerCardioStarted(t));
+                  setTimerNow(Date.now());
+                }}
+                style={{
+                  fontSize: 11,
+                  color: "#888",
+                  background: "none",
+                  border: "none",
+                  padding: 0,
+                  cursor: "pointer",
+                  textDecoration: "underline",
+                  textDecorationStyle: "dotted",
+                }}
+              >
+                start cardio
+              </button>
+            )}
+          </div>
+        </div>
       </div>
       <div
         style={{
@@ -4811,6 +5047,17 @@ function WeekCard({ week, history, defaultOpen }) {
                     >
                       {session.label} · {session.date}
                     </div>
+                    {formatSessionDuration(session) && (
+                      /*#__PURE__*/ <div
+                        style={{
+                          fontSize: 10,
+                          color: "#bbb",
+                          marginTop: 1,
+                        }}
+                      >
+                        ⏱ {formatSessionDuration(session)}
+                      </div>
+                    )}
                     <div
                       style={{
                         display: "flex",
@@ -5630,6 +5877,9 @@ function HistoryScreen({ history, setHistory }) {
                   }}
                 >
                   {entry.movements.length} movements · {totalSets} sets
+                  {formatSessionDuration(entry)
+                    ? " · ⏱ " + formatSessionDuration(entry)
+                    : ""}
                 </div>
               </div>
               <div
