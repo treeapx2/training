@@ -330,8 +330,8 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
 // see build.js) so a stale cached build is identifiable on the device
 // instead of silently running fixed-but-not-yet-deployed code.
 const BUILD_INFO = {
-  sha: "7c106fc",
-  builtAt: "2026-09-08T17:53:27.792Z"
+  sha: "3087020",
+  builtAt: "2026-09-08T18:08:55.922Z"
 };
 function formatBuildStamp() {
   const d = new Date(BUILD_INFO.builtAt);
@@ -354,7 +354,13 @@ const DUMBBELL_STEPS = [5, 10, 12, 15, 20, 25, 30, 35, 40, 45, 50];
 
 // ── Block State ───────────────────────────────────────────────────────────────
 const BLOCK = {
-  flags: ["ON BLOOD THINNERS (PE precaution, likely false positive) — NO contact or fall-risk activity. No failure/grinding reps: strains bruise and bleed more. Keep working sets RPE \u22648; a 'test' is a controlled top set leaving 2+ in reserve. No restriction on aerobic conditioning.", "Hockey SUSPENDED. Weekly TENNIS is the skating-prep substitute (repeated-sprint + lateral movement). Ease in — 60 min hitting, not hard competitive singles.", "LEGS A/B: A = heavy 8-10, quad emphasis. B = higher-rep 12-15, posterior emphasis (Leg Press ~140-155, Leg Curl ~75). Keep \u226548h apart.", "STAIRMASTER FINISHER on every session. Hard on push/pull days (12-15 min, L4-5 steady). EASY on legs days (8-10 min, L2-3) — don't tax what you just trained. Build duration before level. Change ONE variable at a time.", "PROGRESSION VALIDITY: run the lift you want to advance FIRST, while fresh. Reps logged late in a session are fatigue artifacts, not regressions. Confirmed repeatedly: shoulder press 90\u219275 and lateral raise RPE 8 both came from queue position, not loss of strength.", "Groin asymmetry (L>R) — daily butterfly + lateral lunge holds. Extra relevant now that tennis is in: adductor strain is the classic first-week-back injury.", "Left knee below patella — monitor all squat/hinge. Bilateral leg press only. Bail on Leg Press or Goblet if it bites.", "Hamstring / low back — RESOLVED, keep monitoring. Leg Curl 90 collapsed to 6 reps with low-back compensation on 7/22, then hit clean 10s on both 7/26 and 7/29. Keep foam rolling before legs; stop the set if the back starts taking over.", "Thumb — watch on Shoulder Press; prior 75 ceiling, now clean at 90.", "Elbow — Skull Crusher pull/stretch is normal adaptation; sharp pain is a stop signal.", "Core stack on any non-lifting day: dead bug, bird dog, side plank, Pallof press, RKC plank."],
+  // Authored in the training project and handed in whole (see CLAUDE.md
+  // "Scope boundary"). Replaced entirely Sep 8 2026: the blood-thinner
+  // precaution and the hockey suspension are both retired (PE workup came
+  // back clear), the Legs A/B flag went with the variants, and the schedule /
+  // time budget / volume target / superset placement are now written down
+  // here rather than living only in the work order.
+  flags: ["Hockey is BACK \u2014 1-2x/week on unpredictable days since 8/24. PE workup came back clear. First session back: best speed and stamina in months.", "SCHEDULE: 4 gym days/week, doubling either Push or Pull. Legs 1x/week \u2014 skating supplies additional lower-body load. Hockey 1-2x, 1-2 rest/travel days.", "TIME: 45 min lifting, then a separate ~15 min cardio finisher. Rests: opener 150s, movement 2 120s, movements 3-4 90s, superset 60s after each pair.", "VOLUME TARGET: ~6-8 working sets per muscle group (supersedes the old 100-reps-per-group target). 3 muscle groups x 2 movements per session.", "ONE superset per session, always in the final slots, to finish a muscle group under fatigue. Sub-maximal output there is intended \u2014 it does not count against progression.", "PROGRESSION VALIDITY: run the lift you want to advance FIRST. Confirmed repeatedly \u2014 Shoulder Press 90 to 75, Cable Curl 52.5 to 47.5, Rope Pushdown 42.5 to 37.5 all came from queue position, not lost strength.", "LEG PRESS: 185 has been RPE 8 for six sessions. The limiter is unracking off the hinges, not the working reps \u2014 do NOT add weight. Use a 3-second eccentric at 185 instead, or check whether the carriage start height is adjustable.", "Left knee below patella \u2014 monitor squat/hinge, bilateral leg press only. Tightness on 8/10 traced to neglected mobility: 5 min quad/hip-flexor stretch + foam roll before legs.", "Groin asymmetry (L>R) \u2014 daily butterfly + lateral lunge holds. Extra relevant with hockey back and tennis in rotation.", "Thumb \u2014 watch on Shoulder Press. Elbow \u2014 Skull Crusher pull/stretch is normal, sharp pain is a stop signal.", "Dumbbell rack: 5 lb increments to 50, plus a 12 lb pair. No other weights available.", "Chest: DB Bench Press preferred over the Chest Press machine. Both remain available."],
   sessions: {
     legs: {
       label: "Legs",
@@ -403,7 +409,7 @@ const BLOCK = {
         current: "35 lb",
         steps: DUMBBELL_STEPS,
         reps: 10,
-        target: "NO COACH TARGET AUTHORED YET \u2014 restored to the default chest slot Sep 8 2026 (CHANGES.md Phase 3/4). Logged 45 lb on 4/6, then twice as prose in a zero-set note because it wasn't selectable: 30s x10 x3 @ RPE 5-6 (8/27) and 35s x10 x2 @ RPE 7 (9/5). The 35 fallback comes from that last note, not from a prescription."
+        target: "Build clean 10/10 at 35 per hand \u2192 then 40. Logged 30s\u00d710\u00d73 @ RPE 5-6 and 35s\u00d710\u00d72 @ RPE 7 (9/5). Currently the preferred chest movement over the Chest Press machine."
       }, {
         name: "Pec Fly",
         current: "120 lb",
@@ -1173,7 +1179,10 @@ function buildHandoff(history) {
     year: "numeric"
   }));
   lines.push("\nSPLIT: Legs → Push → Pull");
-  lines.push("HOCKEY: SUSPENDED (~3 wks, blood-thinner/PE precaution) — legs unblocked, cardio substituted");
+  // Conditioning/injury status is authored in BLOCK.flags and printed below
+  // under ACTIVE FLAGS. A hardcoded status line here duplicated it and then
+  // went stale — it was still telling the coach hockey was suspended for a
+  // blood-thinner precaution weeks after both were retired.
   lines.push("SESSION STRUCTURE: three muscle groups x two movements, one superset last. Opener ramps (warm-up + build + 3 working); everything after starts at one build set; superset members are 4 straight working rounds. Target ~20 working sets in 45 min of lifting, then a separate ~15 min cardio finisher.\n");
   lines.push("CURRENT WORKING WEIGHTS + TARGETS:");
   Object.entries(BLOCK.sessions).forEach(([key, s]) => {

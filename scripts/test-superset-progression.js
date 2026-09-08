@@ -235,8 +235,7 @@ async function checkRpe8PlateauSuggestsUp() {
   }
   console.log("PASS: a freshly increased weight at RPE 8 still holds (consolidation, not a plateau)");
 
-  // RPE 9 is a genuine failure signal and still outranks the plateau rule —
-  // BLOCK.flags keeps working sets at RPE <= 8 while on blood thinners.
+  // RPE 9 is a genuine failure signal and still outranks the plateau rule.
   const rpe9 = [
     session("Aug 9, 2026", "Seated Row", 135, 10, 8),
     session("Aug 15, 2026", "Seated Row", 135, 10, 8),

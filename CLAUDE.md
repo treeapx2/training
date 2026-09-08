@@ -1472,30 +1472,43 @@ order was ambiguous or self-contradictory, plus one data-sync gap.
     Earlier entries annotated rather than rewritten, same reasoning as items
     20 and 28.
 
-**Open questions for the owner**, all flagged at the code as well:
+**Readings the owner has since confirmed** (Sep 8 2026). Three places where
+the work order was ambiguous or self-contradictory and this session had to
+pick — all resolved, kept here because the code comments still flag them as
+interpretations and a future reader will want to know they were ratified:
 
-- Phase 1's "2-set movements" row doesn't say what makes a movement a 2-set
-  movement; read as "history says 2 sets". Should it be an explicit
-  per-movement setting instead?
-- Phase 2's superset-only fallback is implemented as "use superset history
-  when it's the only history there is" rather than the literal "fall back to
-  `BLOCK.current`", which would freeze all six permanent superset members.
-- Phase 2's plateau rule is implemented as RPE ≤8 at the same weight, not
-  RPE exactly 8 (see item 31).
-- DB Bench Press and the nine optional adds have no coach-authored `target`;
-  they say so in place of one. Shoulder Press (DB)'s 70 lb log is above the
-  current rack's 50 lb ceiling.
-- `BLOCK.flags` still says "Hockey SUSPENDED. Weekly TENNIS is the
-  skating-prep substitute", but the Sep 8 work order's weekly context has
-  hockey back at one to two times a week. `flags` is authored in the training
-  project (see **Scope boundary**), so it was left alone — it needs an update
-  from there.
-- `sessions.json` in this repo ends **Aug 19 2026**, but the Sep 8 work
-  order cites sessions through Sep 7 (Sep 3 legs, Sep 5 Lateral Raise and DB
-  Bench Press, Sep 7 Zottman Curl, Aug 25-27). Those sessions are on the
-  phone and haven't been synced/committed. Everything here derives from live
-  history at runtime, so it's not blocking, but the committed log is a
-  few weeks behind the notes the work order is written from.
+- Phase 1's **"2-set movements" row** stays history-derived; no per-movement
+  setting. Under the new architecture positions 1-4 get 4-5 sets and superset
+  members get 4, so the 2-set case is nearly vestigial — it is the floor.
+- Phase 2's **superset-only fallback** stands as implemented ("use superset
+  history when it's the only history there is"), not the literal "fall back
+  to `BLOCK.current`". Freezing the six permanent superset members on a
+  hand-authored string is exactly the staleness the picker exists to kill.
+- Phase 2's **plateau rule** stands as RPE ≤8 at the same top weight for
+  three sessions, not RPE exactly 8. The literal form fires for neither
+  movement it was written to fix (Seated Row is 8/8/7).
+
+**Known conflict — Leg Press.** `BLOCK.flags` now says 185 has been RPE 8 for
+six sessions and to **not** add weight, because the limiter is unracking off
+the hinges rather than the working reps. The plateau rule reads exactly that
+pattern and suggests `up`. The engine does not read `flags` (they're coach
+prose), so the two genuinely disagree on screen; the star is a suggestion and
+the owner overrides it. Deliberately not special-cased — encoding "this
+movement is exempt" would need a real per-movement field, which is a
+programming decision for the training project, not something to invent here.
+Worth revisiting if it turns out to be more than one movement.
+
+**Still open:**
+
+- The nine optional adds other than DB Bench Press have no coach-authored
+  `target`; they say so in place of one, and stay that way until one gets
+  used. Shoulder Press (DB)'s 70 lb log is above the current rack's 50 lb
+  ceiling, so its chips snap to 50.
+- `sessions.json` **in this working copy** ends Aug 19 2026 while `origin`
+  has through Sep 7 — the app auto-pushes it on every finished session, so
+  origin is ahead by one commit per session. Pull before relying on the
+  committed log. Everything derives from live history at runtime, so this
+  never blocked the work above.
 
 Add new items here as they come up.
 
