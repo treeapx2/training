@@ -21,6 +21,7 @@
     "test:superset-progression": "node scripts/test-superset-progression.js",
     "test:movement-library": "node scripts/test-movement-library.js",
     "test:session-timer": "node scripts/test-session-timer.js",
+    "test:chart-windowing": "node scripts/test-chart-windowing.js",
     "prepare": "git config core.hooksPath githooks"
   },
   "devDependencies": {

@@ -307,4 +307,18 @@ check("20. session timer behavior (test-session-timer.js)", () => {
   );
 });
 
+// 21. chart windowing (see CLAUDE.md "Chart windowing"): windowSlice's
+// newest-12 default, half-window pan with overlap, clamping at both ends and
+// the 12/25/all presets; a per-movement window counting sessions CONTAINING
+// that movement rather than calendar sessions; the live Block-tab chart
+// re-windowing on preset and pan; no controls when everything already fits;
+// and the cardio trend view windowed the same way.
+check("21. chart windowing behavior (test-chart-windowing.js)", () => {
+  execFileSync(
+    process.execPath,
+    [path.join(repoRoot, "scripts", "test-chart-windowing.js")],
+    { stdio: "pipe" },
+  );
+});
+
 process.exit(failed ? 1 : 0);

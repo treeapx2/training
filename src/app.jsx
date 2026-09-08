@@ -987,7 +987,118 @@ function getMovementPR(history, movName) {
 }
 
 // ── Chart ─────────────────────────────────────────────────────────────────────
+// ── Chart windowing ──────────────────────────────────────────────────────────
+// Charts became unreadable as history grew — date labels overlapping, months
+// of data crushed into 320px (CHANGES.md Sep 8 2026, Phase 6). Each chart now
+// shows the most recent 12 points by default, with 12 / 25 / all presets and
+// a pan control for going further back.
+//
+// Windowed by DATA POINTS, not calendar dates, and deliberately so: for a
+// per-movement chart, 12 means 12 sessions CONTAINING THAT MOVEMENT. Twelve
+// calendar sessions is only about four legs sessions (legs runs once a week),
+// which would make leg charts far sparser than cardio charts for no reason
+// the reader could see.
+//
+// The "all" preset exists because the zoomed-out view answers a question the
+// windowed one can't: am I trending up over months.
+const CHART_RANGES = [12, 25, "all"];
+const DEFAULT_CHART_RANGE = 12;
+// `offset` counts points back from the newest. Half-window pan steps rather
+// than whole pages, so consecutive views overlap and a trend running across a
+// window boundary stays readable.
+function chartPanStep(range) {
+  return range === "all" ? 0 : Math.max(Math.floor(range / 2), 1);
+}
+function maxChartOffset(total, range) {
+  if (range === "all") return 0;
+  return Math.max(total - range, 0);
+}
+function windowSlice(arr, range, offset) {
+  if (range === "all" || arr.length <= range) return arr;
+  const end = Math.max(arr.length - offset, 1);
+  return arr.slice(Math.max(end - range, 0), end);
+}
+// Shared 12 / 25 / all + pan control. Rendered by both the per-movement
+// progression charts and the cardio trend view so the two can't drift.
+function ChartWindowControls({ total, range, offset, onRange, onOffset, compact }) {
+  if (total <= DEFAULT_CHART_RANGE) return null;
+  const maxOffset = maxChartOffset(total, range);
+  const step = chartPanStep(range);
+  const canOlder = range !== "all" && offset < maxOffset;
+  const canNewer = offset > 0;
+  const btn = (label, enabled, onClick, active) => (
+    /*#__PURE__*/ <button
+      key={label}
+      onClick={enabled ? onClick : undefined}
+      disabled={!enabled}
+      style={{
+        padding: compact ? "1px 6px" : "2px 8px",
+        border: "0.5px solid " + (active ? "#111" : "#e5e5e3"),
+        borderRadius: 6,
+        background: active ? "#111" : "#fff",
+        color: active ? "#fff" : enabled ? "#888" : "#e5e5e3",
+        fontSize: 10,
+        fontWeight: 600,
+        cursor: enabled ? "pointer" : "default",
+        lineHeight: 1.6,
+      }}
+    >
+      {label}
+    </button>
+  );
+  return (
+    /*#__PURE__*/ <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 6,
+        padding: compact ? "2px 0 0" : "4px 0 0",
+      }}
+    >
+      <div style={{ display: "flex", gap: 4 }}>
+        {CHART_RANGES.map((r) =>
+          btn(
+            String(r),
+            true,
+            () => {
+              onRange(r);
+              // Keep the new window anchored to the newest data rather than
+              // stranding the reader mid-history at an offset the new range
+              // may not even reach.
+              onOffset(0);
+            },
+            r === range,
+          ),
+        )}
+      </div>
+      <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+        {btn("\u25c0 older", canOlder, () =>
+          onOffset(Math.min(offset + step, maxOffset)),
+        )}
+        {btn("newer \u25b6", canNewer, () => onOffset(Math.max(offset - step, 0)))}
+      </div>
+    </div>
+  );
+}
 function MovementChart({ data, color, compact = false }) {
+  // Window state lives here so both call sites (the in-card compact chart and
+  // the Progress tab's full one) get it for free. Declared before the
+  // too-little-data early return — hooks can't be called conditionally.
+  const [range, setRange] = useState(DEFAULT_CHART_RANGE);
+  const [offset, setOffset] = useState(0);
+  const total = data.length;
+  const windowed = windowSlice(data, range, offset);
+  const controls = (
+    /*#__PURE__*/ <ChartWindowControls
+      total={total}
+      range={range}
+      offset={offset}
+      onRange={setRange}
+      onOffset={setOffset}
+      compact={compact}
+    />
+  );
   if (data.length < 2)
     return (
       /*#__PURE__*/ <div
@@ -1012,14 +1123,19 @@ function MovementChart({ data, color, compact = false }) {
   const PAD_TOP = 24; // room above highest dot for weight label
   const PAD_BOT = 8;
   const chartH = DOT_AREA_H - PAD_TOP - PAD_BOT;
-  const weights = data.map((d) => d.weight);
+  // Everything below plots the WINDOW, not the whole series — including the
+  // y-axis scale, so a window of similar weights uses the full height instead
+  // of flattening against an all-time max that isn't on screen.
+  const weights = windowed.map((d) => d.weight);
   const minW = Math.min(...weights);
   const maxW = Math.max(...weights);
-  const range = maxW - minW || 1;
-  const n = data.length;
-  const xs = data.map((_, i) => PAD_L + (i / (n - 1)) * (W - PAD_L - PAD_R));
-  const ys = data.map(
-    (d) => PAD_TOP + chartH - ((d.weight - minW) / range) * chartH,
+  const span = maxW - minW || 1;
+  const n = windowed.length;
+  const xs = windowed.map((_, i) =>
+    n === 1 ? (W - PAD_L - PAD_R) / 2 + PAD_L : PAD_L + (i / (n - 1)) * (W - PAD_L - PAD_R),
+  );
+  const ys = windowed.map(
+    (d) => PAD_TOP + chartH - ((d.weight - minW) / span) * chartH,
   );
 
   // format short date: "Mar 7" → "3/7"
@@ -1028,17 +1144,18 @@ function MovementChart({ data, color, compact = false }) {
     return `${d.getMonth() + 1}/${d.getDate()}`;
   };
   return (
-    /*#__PURE__*/ <svg
-      viewBox={`0 0 ${W} ${H}`}
-      style={{
-        width: "100%",
-        height: H,
-        display: "block",
-      }}
-    >
+    /*#__PURE__*/ <div>
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        style={{
+          width: "100%",
+          height: H,
+          display: "block",
+        }}
+      >
       {[0, 0.5, 1].map((t, i) => {
         const y = PAD_TOP + chartH - t * chartH;
-        const wVal = Math.round(minW + t * range);
+        const wVal = Math.round(minW + t * span);
         return (
           /*#__PURE__*/ <g key={i}>
             <line
@@ -1068,7 +1185,7 @@ function MovementChart({ data, color, compact = false }) {
         strokeWidth="1.5"
         strokeLinejoin="round"
       />
-      {data.map((d, i) => {
+      {windowed.map((d, i) => {
         const x = xs[i];
         const y = ys[i];
         const isFirst = i === 0;
@@ -1123,7 +1240,9 @@ function MovementChart({ data, color, compact = false }) {
           </g>
         );
       })}
-    </svg>
+      </svg>
+      {controls}
+    </div>
   );
 }
 
@@ -5271,17 +5390,32 @@ function CardioTrendCard({ history }) {
       >
         Cardio trend
       </div>
-      {machines.map((machine) => {
-        // Most recent 8, oldest first, so a run of rows reads top-to-bottom
-        // as progress (duration/level rising while RPE holds flat).
-        const entries = byMachine[machine].slice(-8);
-        return (
-          /*#__PURE__*/ <div
-            key={machine}
-            style={{
-              marginBottom: 10,
-            }}
-          >
+      {machines.map((machine) => (
+        /*#__PURE__*/ <CardioMachineTable
+          key={machine}
+          machine={machine}
+          all={byMachine[machine]}
+        />
+      ))}
+    </div>
+  );
+}
+// One machine's cardio rows, windowed like the movement charts (CHANGES.md
+// Sep 8 2026, Phase 6). Its own window state, not the card's: Stairmaster has
+// far more entries than the machines used once or twice, so a shared offset
+// would mean something different in each table.
+function CardioMachineTable({ machine, all }) {
+  const [range, setRange] = useState(DEFAULT_CHART_RANGE);
+  const [offset, setOffset] = useState(0);
+  // Oldest first within the window, so a run of rows reads top-to-bottom as
+  // progress (duration/level rising while RPE holds flat).
+  const entries = windowSlice(all, range, offset);
+  return (
+    /*#__PURE__*/ <div
+      style={{
+        marginBottom: 10,
+      }}
+    >
             <div
               style={{
                 fontSize: 11,
@@ -5339,9 +5473,14 @@ function CardioTrendCard({ history }) {
                 </span>
               </div>
             ))}
-          </div>
-        );
-      })}
+      <ChartWindowControls
+        total={all.length}
+        range={range}
+        offset={offset}
+        onRange={setRange}
+        onOffset={setOffset}
+        compact={true}
+      />
     </div>
   );
 }
