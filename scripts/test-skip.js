@@ -71,9 +71,9 @@ async function checkSkipRendersCollapsedAndBlocksNormalUi() {
   click(window, byText(window, "button", "Pull"));
   await sleep(window, 40);
 
-  const card = await openMovementCard(window, "Hammer Curl");
+  const card = await openMovementCard(window, "DB Row");
   const skipBtn = within(card, "button", "skip");
-  if (!skipBtn) throw new Error("no 'skip' button found within Hammer Curl's card");
+  if (!skipBtn) throw new Error("no 'skip' button found within DB Row's card");
   click(window, skipBtn);
   await sleep(window, 40);
 
@@ -97,7 +97,7 @@ async function checkOtherReasonFreeText() {
   const { window, errors } = await mount();
   click(window, byText(window, "button", "Pull"));
   await sleep(window, 40);
-  const card = await openMovementCard(window, "Zottman Curl");
+  const card = await openMovementCard(window, "Reverse Fly");
   click(window, within(card, "button", "skip"));
   await sleep(window, 40);
   click(window, within(card, "button", "other"));
@@ -130,7 +130,7 @@ async function checkUnskipIsReversible() {
   const { window, errors } = await mount();
   click(window, byText(window, "button", "Pull"));
   await sleep(window, 40);
-  const card = await openMovementCard(window, "Hammer Curl");
+  const card = await openMovementCard(window, "DB Row");
   click(window, within(card, "button", "skip"));
   await sleep(window, 40);
   click(window, within(card, "button", "pain"));
@@ -157,7 +157,7 @@ async function checkFinishPersistsSkipAndIncludesZeroSetMovement() {
   const { window, errors } = await mount();
   click(window, byText(window, "button", "Pull"));
   await sleep(window, 40);
-  const card = await openMovementCard(window, "Hammer Curl");
+  const card = await openMovementCard(window, "DB Row");
   click(window, within(card, "button", "skip"));
   await sleep(window, 40);
   click(window, within(card, "button", "time"));
@@ -169,15 +169,15 @@ async function checkFinishPersistsSkipAndIncludesZeroSetMovement() {
 
   const stored = JSON.parse(window.localStorage.getItem("at_workout_stable") || "{}");
   const entry = stored.history[0];
-  const hammerCurl = entry.movements.find((m) => m.name === "Hammer Curl");
-  console.log("Persisted Hammer Curl:", JSON.stringify(hammerCurl));
-  if (!hammerCurl) throw new Error("a skipped movement with 0 sets must still be included in the record");
-  if (hammerCurl.skipped !== true) throw new Error(`expected skipped: true, got ${hammerCurl.skipped}`);
-  if (hammerCurl.skipReason !== "time") throw new Error(`expected skipReason 'time', got ${hammerCurl.skipReason}`);
-  if (hammerCurl.sets.length !== 0) throw new Error("expected zero logged sets for a skipped movement");
+  const dbRow = entry.movements.find((m) => m.name === "DB Row");
+  console.log("Persisted DB Row:", JSON.stringify(dbRow));
+  if (!dbRow) throw new Error("a skipped movement with 0 sets must still be included in the record");
+  if (dbRow.skipped !== true) throw new Error(`expected skipped: true, got ${dbRow.skipped}`);
+  if (dbRow.skipReason !== "time") throw new Error(`expected skipReason 'time', got ${dbRow.skipReason}`);
+  if (dbRow.sets.length !== 0) throw new Error("expected zero logged sets for a skipped movement");
 
   // No other, untouched movement should sneak into the record.
-  const untouched = entry.movements.find((m) => m.name === "DB Row");
+  const untouched = entry.movements.find((m) => m.name === "Seated Row");
   if (untouched) throw new Error("an untouched (not skipped, not logged) movement should not be in the record");
 
   console.log("PASS: finish() persists skipped/skipReason and keeps a zero-set skipped movement in the record");
@@ -188,7 +188,7 @@ async function checkCoachSummaryAndHandoffSurfaceSkips() {
   const { window, errors } = await mount();
   click(window, byText(window, "button", "Pull"));
   await sleep(window, 40);
-  const card = await openMovementCard(window, "Zottman Curl");
+  const card = await openMovementCard(window, "Reverse Fly");
   click(window, within(card, "button", "skip"));
   await sleep(window, 40);
   click(window, within(card, "button", "machine in use"));
@@ -205,8 +205,8 @@ async function checkCoachSummaryAndHandoffSurfaceSkips() {
   const stored = JSON.parse(window.localStorage.getItem("at_workout_stable") || "{}");
   const handoff = window.buildHandoff(stored.history);
   if (!handoff.includes("SKIP COUNTS (all-time):")) throw new Error("expected a SKIP COUNTS section in the handoff");
-  if (!handoff.includes("Zottman Curl: 1×")) throw new Error("expected Zottman Curl's skip count in the handoff");
-  if (!handoff.includes("Zottman Curl: SKIPPED — machine in use")) {
+  if (!handoff.includes("Reverse Fly: 1×")) throw new Error("expected Reverse Fly's skip count in the handoff");
+  if (!handoff.includes("Reverse Fly: SKIPPED — machine in use")) {
     throw new Error("expected the recent-sessions section to show the skip with its reason");
   }
   console.log("PASS: coach summary and handoff both surface the skip (with reason, and an all-time count)");

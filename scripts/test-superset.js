@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 // Behavioral jsdom check for supersets (see CLAUDE.md "Supersets" —
-// CHANGES.md Aug 10 2026, Phase 3, revised Aug 19 2026 Phase 3c). Registered
+// CHANGES.md Aug 10 2026, Phase 3, revised Aug 19 2026 Phase 3c and again
+// Sep 8 2026 Phase 3). Registered
 // as validation bar check #8 so `npm test` alone still runs it; also
 // runnable alone via `npm run test:superset`.
 //
 // Covers:
-//   - The three revised pre-seeded pairs (Shoulder Press+Lateral Raise,
-//     Rope Pushdown+Skull Crusher, Cable Curl+Reverse Fly) render as a
-//     combined SUPERSET card by default; Legs has none (Leg Extension +
-//     Calf Raise, a machine+machine pair, was removed).
+//   - EXACTLY ONE pre-seeded pair per session type, in the final two slots
+//     (Shoulder Press+Lateral Raise, Cable Curl+Hammer Curl, Goblet
+//     Squat+Calf Raise) renders as a combined SUPERSET card by default.
 //   - Each movement in a pair keeps its own target chips (including a
 //     steps-based movement, Lateral Raise) and its own ramp.
 //   - Finishing persists a shared supersetId on both movements, plus each
@@ -82,26 +82,43 @@ const logViaRpe = async (window, rpeInput, value) => {
 
 async function checkPreSeededPairsRenderForEveryType() {
   const { window, errors } = await mount();
+  // One pair per type, always last. The superset is the session's third
+  // muscle group, placed at the end by design (CHANGES.md Sep 8 2026,
+  // Phase 3).
   const expected = {
-    Push: ["SUPERSET · Shoulder Press + Lateral Raiseunlink", "SUPERSET · Rope Pushdown + Skull Crusherunlink"],
-    Pull: ["SUPERSET · Cable Curl + Reverse Flyunlink"],
-    Legs: [],
+    Push: "SUPERSET · Shoulder Press + Lateral Raiseunlink",
+    Pull: "SUPERSET · Cable Curl + Hammer Curlunlink",
+    Legs: "SUPERSET · Goblet Squat + Calf Raiseunlink",
   };
-  for (const [typeLabel, headers] of Object.entries(expected)) {
+  for (const [typeLabel, header] of Object.entries(expected)) {
     click(window, byText(window, "button", typeLabel));
     await sleep(window, 40);
-    for (const h of headers) {
-      if (!clickableWithText(window, h)) {
-        throw new Error(`expected pre-seeded superset header not found for ${typeLabel}: "${h}"`);
-      }
+    if (!clickableWithText(window, header)) {
+      throw new Error(`expected pre-seeded superset header not found for ${typeLabel}: "${header}"`);
     }
-    if (typeLabel === "Legs") {
-      const anySuperset = Array.from(window.document.querySelectorAll("div")).some((d) =>
-        d.textContent.trim().startsWith("SUPERSET ·"),
+    // Exactly one — no other pair may be pre-seeded.
+    const supersetHeaders = Array.from(window.document.querySelectorAll("div")).filter((d) =>
+      d.textContent.trim().startsWith("SUPERSET ·"),
+    );
+    const distinct = new Set(supersetHeaders.map((d) => d.textContent.trim().split("unlink")[0]));
+    if (distinct.size !== 1) {
+      throw new Error(`expected exactly one pre-seeded pair on ${typeLabel}, got ${distinct.size}: ${JSON.stringify([...distinct])}`);
+    }
+    // ...and it must sit in the FINAL slots. Only standalone movements render
+    // a "#n" position label, so every one of them must appear before the
+    // superset card in document order.
+    const numbered = Array.from(window.document.querySelectorAll("span")).filter((s) =>
+      /^#\d+$/.test(s.textContent.trim()),
+    );
+    if (!numbered.length) throw new Error(`no position labels rendered on ${typeLabel}`);
+    const pairCard = supersetHeaders[supersetHeaders.length - 1];
+    const trailing = numbered.filter(
+      (s) => pairCard.compareDocumentPosition(s) & window.Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+    if (trailing.length) {
+      throw new Error(
+        `expected the pre-seeded pair to sit in the final slots on ${typeLabel}, but ${trailing.length} movement(s) render after it`,
       );
-      if (anySuperset) {
-        throw new Error("Legs should have no pre-seeded superset pairs (Leg Extension + Calf Raise was removed, machine+machine)");
-      }
     }
     // Cancel back out to the type-selection screen for the next type.
     const cancelBtn = byText(window, "button", "cancel");
@@ -111,7 +128,7 @@ async function checkPreSeededPairsRenderForEveryType() {
     }
   }
   if (errors.length) throw new Error("jsdom errors: " + errors.join("; "));
-  console.log("PASS: the three revised pre-seeded pairs render as combined cards; Legs has none");
+  console.log("PASS: exactly one pre-seeded pair per session type renders as a combined card, in the final slots");
   window.close();
 }
 
@@ -211,9 +228,9 @@ async function checkUnlinkPreservesLoggedDataAndBreaksThePair() {
 
 async function checkManualLinkOfNonSeededPair() {
   const { window, errors } = await mount();
-  // Legs has no pre-seeded pairs as of Phase 3c (Leg Extension + Calf Raise,
-  // a machine+machine pair, was removed) — Leg Press and Leg Extension are
-  // both unpaired and adjacent, so manual linking is exercised here.
+  // Legs' only pre-seeded pair is Goblet Squat + Calf Raise in the final
+  // slots, so Leg Press and Leg Extension are still unpaired and adjacent —
+  // manual linking is exercised on them.
   click(window, byText(window, "button", "Legs"));
   await sleep(window, 40);
 

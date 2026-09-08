@@ -16,16 +16,21 @@ const repoRoot = path.resolve(__dirname, "..");
 const indexPath = path.join(repoRoot, "index.html");
 const appSrcPath = path.join(repoRoot, "src", "app.jsx");
 
+// The dumbbell movements among the CURRENT defaults (CHANGES.md Sep 8 2026,
+// Phase 3 reshuffled these: DB Bench Press is now the default chest slot, and
+// Zottman Curl dropped out of the Pull defaults — it was skipped three of the
+// last four Pull sessions — so neither Zottman Curl nor Chest Press has a
+// BLOCK entry to check any more.)
 const DUMBBELL_MOVEMENTS = [
+  "DB Bench Press",
   "Skull Crusher",
   "Hammer Curl",
-  "Zottman Curl",
   "DB Row",
   "Reverse Fly",
   "Lateral Raise",
   "Goblet Squat",
 ];
-const MACHINE_OR_CABLE_MOVEMENTS = ["Leg Press", "Chest Press", "Rope Pushdown", "Cable Curl", "Calf Raise"];
+const MACHINE_OR_CABLE_MOVEMENTS = ["Leg Press", "Pec Fly", "Rope Pushdown", "Cable Curl", "Calf Raise"];
 
 // Source-config check: every dumbbell movement's BLOCK entry uses
 // `steps: DUMBBELL_STEPS` and no fixed `increment`, while machine/cable
@@ -101,20 +106,20 @@ async function openCard(window, name) {
 
 async function checkChipsStepThroughAdjacentEntriesInTheLiveApp() {
   const { window, errors } = await mount();
-  click(window, byText(window, "button", "Pull"));
+  click(window, byText(window, "button", "Push"));
   await sleep(window, 40);
-  // Hammer Curl is standalone (not part of a pre-seeded superset pair,
-  // unlike Skull Crusher/DB Row-adjacent movements). current is "20 lb";
-  // the shared steps array's adjacent entries around 20 are 15 and 25 --
-  // not a naive current-5/current+5.
-  const card = await openCard(window, "Hammer Curl");
+  // Skull Crusher is standalone (Push's only pre-seeded pair is Shoulder
+  // Press + Lateral Raise, in the final slots). current is "20 lb"; the
+  // shared steps array's adjacent entries around 20 are 15 and 25 -- not a
+  // naive current-5/current+5.
+  const card = await openCard(window, "Skull Crusher");
   const buttons = Array.from(card.querySelectorAll("button")).map((b) => b.textContent.trim());
-  console.log("Hammer Curl chip buttons:", JSON.stringify(buttons));
-  if (!buttons.some((b) => b.startsWith("15"))) throw new Error("expected a 15 lb (down) chip for Hammer Curl");
+  console.log("Skull Crusher chip buttons:", JSON.stringify(buttons));
+  if (!buttons.some((b) => b.startsWith("15"))) throw new Error("expected a 15 lb (down) chip for Skull Crusher");
   if (!buttons.some((b) => b.includes("20") && b.includes("★"))) throw new Error("expected a suggested 20 lb (hold) chip");
-  if (!buttons.some((b) => b.startsWith("25"))) throw new Error("expected a 25 lb (up) chip for Hammer Curl");
+  if (!buttons.some((b) => b.startsWith("25"))) throw new Error("expected a 25 lb (up) chip for Skull Crusher");
   if (errors.length) throw new Error("jsdom errors: " + errors.join("; "));
-  console.log("PASS: Hammer Curl's chips reflect the shared dumbbell steps array in the live app");
+  console.log("PASS: Skull Crusher's chips reflect the shared dumbbell steps array in the live app");
   window.close();
 }
 
@@ -122,11 +127,11 @@ async function checkMachineMovementUnaffectedInTheLiveApp() {
   const { window, errors } = await mount();
   click(window, byText(window, "button", "Push"));
   await sleep(window, 40);
-  // Chest Press: increment 15, current 120 -> down/up should be 105/135.
-  const card = await openCard(window, "Chest Press");
+  // Pec Fly: increment 15, current 120 -> down/up should be 105/135.
+  const card = await openCard(window, "Pec Fly");
   const buttons = Array.from(card.querySelectorAll("button")).map((b) => b.textContent.trim());
-  if (!buttons.some((b) => b.startsWith("105"))) throw new Error("expected Chest Press down chip to be 105 (15 lb increment)");
-  if (!buttons.some((b) => b.startsWith("135"))) throw new Error("expected Chest Press up chip to be 135 (15 lb increment)");
+  if (!buttons.some((b) => b.startsWith("105"))) throw new Error("expected Pec Fly down chip to be 105 (15 lb increment)");
+  if (!buttons.some((b) => b.startsWith("135"))) throw new Error("expected Pec Fly up chip to be 135 (15 lb increment)");
   if (errors.length) throw new Error("jsdom errors: " + errors.join("; "));
   console.log("PASS: a machine movement's fixed-increment chips are unaffected");
   window.close();

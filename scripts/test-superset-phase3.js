@@ -7,7 +7,7 @@
 //   - A free-weight pair (both movements use `steps`, e.g. Rope Pushdown +
 //     Skull Crusher... no, Rope Pushdown is cable-machine — the real
 //     free-weight pre-seeded pair is none of the three by default, so this
-//     test manually links two dumbbell movements: Hammer Curl + Zottman
+//     test manually links two dumbbell movements: DB Row + Reverse Fly
 //     Curl) offers one shared down/hold/up chip row instead of two
 //     independent pickers, and tapping a shared chip drives both movements
 //     to the identical target weight.
@@ -57,15 +57,15 @@ async function checkFreeWeightPairSharesOneWeight() {
   click(window, byText(window, "button", "Pull"));
   await sleep(window, 40);
 
-  // Hammer Curl and Zottman Curl are adjacent, both dumbbell movements, and
+  // DB Row and Reverse Fly are adjacent, both dumbbell movements, and
   // neither is pre-seeded into a pair — link them manually.
-  const linkBtn = byText(window, "button", "⛓ link with Zottman Curl");
-  if (!linkBtn) throw new Error("expected a manual link affordance between Hammer Curl and Zottman Curl");
+  const linkBtn = byText(window, "button", "⛓ link with Reverse Fly");
+  if (!linkBtn) throw new Error("expected a manual link affordance between DB Row and Reverse Fly");
   click(window, linkBtn);
   await sleep(window, 40);
 
-  const header = clickableWithText(window, "SUPERSET · Hammer Curl + Zottman Curlunlink");
-  if (!header) throw new Error("Hammer Curl + Zottman Curl superset header not found");
+  const header = clickableWithText(window, "SUPERSET · DB Row + Reverse Flyunlink");
+  if (!header) throw new Error("DB Row + Reverse Fly superset header not found");
   // Scope subsequent queries to this pair's own card -- other cards on the
   // page (and non-set inputs like the cardio finisher) share the same
   // input[type="number"] shape and would otherwise pollute the count.
@@ -115,9 +115,9 @@ async function checkUnlinkAndRelinkWeights() {
   const { window, errors } = await mount();
   click(window, byText(window, "button", "Pull"));
   await sleep(window, 40);
-  click(window, byText(window, "button", "⛓ link with Zottman Curl"));
+  click(window, byText(window, "button", "⛓ link with Reverse Fly"));
   await sleep(window, 40);
-  click(window, clickableWithText(window, "SUPERSET · Hammer Curl + Zottman Curlunlink"));
+  click(window, clickableWithText(window, "SUPERSET · DB Row + Reverse Flyunlink"));
   await sleep(window, 40);
 
   const unlinkWeightsBtn = byText(window, "button", "unlink weights");
@@ -129,7 +129,7 @@ async function checkUnlinkAndRelinkWeights() {
   if (rootText.includes("shared weight")) {
     throw new Error("shared-weight picker should be gone after 'unlink weights'");
   }
-  if (!rootText.includes("Hammer Curl") || !rootText.includes("Zottman Curl")) {
+  if (!rootText.includes("DB Row") || !rootText.includes("Reverse Fly")) {
     throw new Error("both movement names should still render as independent chip pickers");
   }
 
@@ -169,8 +169,8 @@ async function checkAddRoundAppendsToBothMovements() {
   const { window, errors } = await mount();
   click(window, byText(window, "button", "Pull"));
   await sleep(window, 40);
-  const header = clickableWithText(window, "SUPERSET · Cable Curl + Reverse Flyunlink");
-  if (!header) throw new Error("Cable Curl + Reverse Fly superset header not found");
+  const header = clickableWithText(window, "SUPERSET · Cable Curl + Hammer Curlunlink");
+  if (!header) throw new Error("Cable Curl + Hammer Curl superset header not found");
   const card = header.parentElement;
   click(window, header);
   await sleep(window, 40);

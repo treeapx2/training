@@ -330,8 +330,8 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
 // see build.js) so a stale cached build is identifiable on the device
 // instead of silently running fixed-but-not-yet-deployed code.
 const BUILD_INFO = {
-  sha: "cf0d2f2",
-  builtAt: "2026-09-08T16:43:31.043Z"
+  sha: "fff04d7",
+  builtAt: "2026-09-08T16:52:48.050Z"
 };
 function formatBuildStamp() {
   const d = new Date(BUILD_INFO.builtAt);
@@ -360,7 +360,7 @@ const BLOCK = {
       label: "Legs",
       color: "#3B6D11",
       bg: "#EAF3DE",
-      rest: "Opener 2\u20132.5 min \u00b7 accessories 60s",
+      rest: "M1 60/60/150/150s \u00b7 M2 60/120/120s \u00b7 M3 45/90/90s \u00b7 superset 60s after each pair",
       movements: [{
         name: "Leg Press",
         current: "185 lb",
@@ -397,57 +397,51 @@ const BLOCK = {
       label: "Push",
       color: "#185FA5",
       bg: "#E6F1FB",
-      rest: "Opener 2 min · supersets 45–60s",
+      rest: "M1 60/60/150/150s \u00b7 M2 60/120/120s \u00b7 M3-4 45/90/90s \u00b7 superset 60s after each pair",
       movements: [{
-        name: "Chest Press",
-        current: "120 lb",
-        increment: 15,
+        name: "DB Bench Press",
+        current: "35 lb",
+        steps: DUMBBELL_STEPS,
         reps: 10,
-        target: "TEST 135 \u2014 second clean 10/10 @ RPE 7-8 as fresh opener (7/28). Run this FIRST."
-      }, {
-        name: "Shoulder Press",
-        current: "90 lb",
-        increment: 15,
-        reps: 10,
-        target: "HOLD 90 \u2014 needs a FRESH lead to confirm. Hit 90x10x2 when run first (7/5), dropped to 75x8 @ RPE 8 when run second (7/28). Confirm then 105. Thumb watch."
+        target: "NO COACH TARGET AUTHORED YET \u2014 restored to the default chest slot Sep 8 2026 (CHANGES.md Phase 3/4). Logged 45 lb on 4/6, then twice as prose in a zero-set note because it wasn't selectable: 30s x10 x3 @ RPE 5-6 (8/27) and 35s x10 x2 @ RPE 7 (9/5). The 35 fallback comes from that last note, not from a prescription."
       }, {
         name: "Pec Fly",
         current: "120 lb",
         increment: 15,
         reps: 10,
-        target: "TEST 135 \u2014 120x10x2 @ RPE 7 (7/28), room to spare. Superset with Lateral Raise."
+        target: "TEST 135 \u2014 120x10x2 @ RPE 7 (7/28), room to spare."
       }, {
         name: "Rope Pushdown",
         current: "42.5 lb",
         increment: 5,
         reps: 10,
-        target: "Confirm 2nd clean 10/10 @ 42.5 then 47.5. Skipped 7/28 (machine in use). Superset with Skull Crusher."
-      }, {
-        name: "Lateral Raise",
-        current: "15 lb",
-        steps: DUMBBELL_STEPS,
-        reps: 12,
-        target: "Back to 15 and run EARLIER \u2014 12x10x4 reached RPE 8 at position #4 (7/28). 15x10x2 already done 7/5."
+        target: "Confirm 2nd clean 10/10 @ 42.5 then 47.5. Skipped 7/28 (machine in use)."
       }, {
         name: "Skull Crusher",
         current: "20 lb",
         steps: DUMBBELL_STEPS,
         reps: 10,
         target: "TEST 25 \u2014 20x10x4 @ RPE 6-7 (7/28), elbow quiet. Sharp pain = stop."
+      }, {
+        name: "Shoulder Press",
+        current: "90 lb",
+        increment: 15,
+        reps: 10,
+        target: "HOLD 90 \u2014 needs a FRESH lead to confirm. Hit 90x10x2 when run first (7/5), dropped to 75x8 @ RPE 8 when run second (7/28). Confirm then 105. Thumb watch. Superset with Lateral Raise."
+      }, {
+        name: "Lateral Raise",
+        current: "15 lb",
+        steps: DUMBBELL_STEPS,
+        reps: 12,
+        target: "Back to 15 \u2014 12x10x4 reached RPE 8 at position #4 (7/28). 15x10x2 already done 7/5. Superset with Shoulder Press."
       }]
     },
     pull: {
       label: "Pull",
       color: "#3C3489",
       bg: "#EEEDFE",
-      rest: "Opener 2 min · supersets 45–60s",
+      rest: "M1 60/60/150/150s \u00b7 M2 60/120/120s \u00b7 M3-4 45/90/90s \u00b7 superset 60s after each pair",
       movements: [{
-        name: "DB Row",
-        current: "50 lb",
-        steps: DUMBBELL_STEPS,
-        reps: 10,
-        target: "Build 8-10 @ 50 \u2014 45x10 @ RPE 7 as fresh opener (7/25), best DB Row log to date. Keep LEADING the session with this; it's fatigue-sensitive."
-      }, {
         name: "Seated Row",
         current: "135 lb",
         increment: 15,
@@ -460,69 +454,75 @@ const BLOCK = {
         reps: 10,
         target: "Confirm 2nd clean 10/10 @ 135 (7/13 clean) then 150."
       }, {
-        name: "Cable Curl",
-        current: "42.5 lb",
-        increment: 5,
-        reps: 10,
-        target: "TEST 47.5 \u2014 two clean sessions at 42.5 (7/4, and 7/25 4x10 @ RPE 6-7). Superset with Reverse Fly."
-      }, {
-        name: "Hammer Curl",
-        current: "20 lb",
+        name: "DB Row",
+        current: "50 lb",
         steps: DUMBBELL_STEPS,
         reps: 10,
-        target: "HOLD 20 \u2014 read heavy cold (7/25: 20x8 @ RPE 8, dropped to 15). TEST 25 only on a day this LEADS the session."
-      }, {
-        name: "Zottman Curl",
-        current: "20 lb",
-        steps: DUMBBELL_STEPS,
-        reps: 10,
-        target: "Chase 10 reps @ 20 (stuck at 6) \u2014 slow eccentric."
+        target: "Build 8-10 @ 50 \u2014 45x10 @ RPE 7 as fresh opener (7/25), best DB Row log to date. Fatigue-sensitive."
       }, {
         name: "Reverse Fly",
         current: "15 lb",
         steps: DUMBBELL_STEPS,
         reps: 12,
         target: "TEST 20 for 8s \u2014 15x10x3 all @ RPE 6 (7/25) clears the consistency gate."
+      }, {
+        name: "Cable Curl",
+        current: "42.5 lb",
+        increment: 5,
+        reps: 10,
+        target: "TEST 47.5 \u2014 two clean sessions at 42.5 (7/4, and 7/25 4x10 @ RPE 6-7). Superset with Hammer Curl."
+      }, {
+        name: "Hammer Curl",
+        current: "20 lb",
+        steps: DUMBBELL_STEPS,
+        reps: 10,
+        target: "HOLD 20 \u2014 read heavy cold (7/25: 20x8 @ RPE 8, dropped to 15). TEST 25 only on a day this LEADS the session. Superset with Cable Curl."
       }]
     }
   }
 };
 
 // ── Movement metadata ──────────────────────────────────────────────────────────
-// Muscle group definitions — order within each group is fixed
+// Muscle group definitions — three groups per session type, two default
+// movements each, matching the session architecture in CHANGES.md Sep 8 2026,
+// Phase 3. Optional-add movements (Phase 4) are listed alongside the defaults
+// in whichever group they belong to, so a movement added to a session still
+// gets a real group chip instead of falling through to "Other".
+//
+// The group labels themselves come from Phase 3's tables (Quads / Posterior /
+// Calves, Chest / Triceps / Shoulders, Back / Upper back / Biceps), replacing
+// the older Quad / Hamstring / Glute / Calf and Bicep / Rear Delt splits —
+// Goblet Squat in particular moves from "Glute" to "Posterior" there.
 const MUSCLE_GROUPS = {
   legs: [{
-    label: "Quad",
+    label: "Quads",
     movements: ["Leg Press", "Leg Extension"]
   }, {
-    label: "Hamstring",
-    movements: ["Leg Curl", "RDL"]
+    label: "Posterior",
+    movements: ["Leg Curl", "Goblet Squat", "RDL", "Glute Bridge"]
   }, {
-    label: "Glute",
-    movements: ["Glute Bridge", "Goblet Squat"]
-  }, {
-    label: "Calf",
+    label: "Calves",
     movements: ["Calf Raise"]
   }],
   push: [{
     label: "Chest",
-    movements: ["Chest Press", "Pec Fly"]
+    movements: ["DB Bench Press", "Pec Fly", "Chest Press", "Flat DB Press", "Incline DB Press", "Floor Press"]
   }, {
-    label: "Shoulder",
-    movements: ["Shoulder Press", "Lateral Raise"]
+    label: "Triceps",
+    movements: ["Rope Pushdown", "Skull Crusher", "OHE"]
   }, {
-    label: "Tricep",
-    movements: ["Rope Pushdown", "Skull Crusher"]
+    label: "Shoulders",
+    movements: ["Shoulder Press", "Lateral Raise", "Shoulder Press (DB)"]
   }],
   pull: [{
     label: "Back",
-    movements: ["Seated Row", "Lat Pulldown", "DB Row"]
+    movements: ["Seated Row", "Lat Pulldown"]
   }, {
-    label: "Bicep",
-    movements: ["Hammer Curl", "Zottman Curl", "Cable Curl"]
+    label: "Upper back",
+    movements: ["DB Row", "Reverse Fly", "Rows"]
   }, {
-    label: "Rear Delt",
-    movements: ["Reverse Fly"]
+    label: "Biceps",
+    movements: ["Cable Curl", "Hammer Curl", "Zottman Curl"]
   }]
 };
 const MOVEMENT_GROUP = {};
@@ -690,16 +690,19 @@ function buildOrderedMovements(type, groupOrder, blockMovements) {
 // while that array's order is authored training content (see CLAUDE.md
 // "Scope boundary") — none of these pairs are adjacent in it today.
 //
-// Revised Aug 19 2026 to stop pre-seeding machine+machine pairs ("no
-// supersets with machines out of respect for the gym goers" — Aug 16):
-// Leg Extension <-> Calf Raise (two machines) removed outright. Shoulder
-// Press <-> Lateral Raise replaces Pec Fly <-> Lateral Raise -- the owner
-// explicitly endorsed Shoulder Press/Lateral Raise as "the one superset
-// that can include a machine so far" (Aug 17), and neither CHANGES.md's
-// "remove" nor "keep" list for this phase mentions Pec Fly, so this is an
-// inference: Lateral Raise's partner changes, Pec Fly goes unpaired. Flag
-// this to the owner if the resulting Push order looks wrong.
-const SUPERSET_PAIRS = [["Shoulder Press", "Lateral Raise"], ["Rope Pushdown", "Skull Crusher"], ["Cable Curl", "Reverse Fly"]];
+// Revised again Sep 8 2026 (CHANGES.md Phase 3) to EXACTLY ONE pre-seeded
+// pair per session type, always in the final two slots — the superset is now
+// the third muscle group of a three-group session, placed last by design so
+// that group gets finished under fatigue (which is also why Phase 2 excludes
+// superset sessions from baseline derivation). Rope Pushdown <-> Skull
+// Crusher and Cable Curl <-> Reverse Fly are gone; Legs gains its first
+// pre-seeded pair. Manual linking of any adjacent pair stays available.
+//
+// The Aug 19 revision's reasoning still holds for what's here: no
+// machine+machine pairs ("no supersets with machines out of respect for the
+// gym goers"), and Shoulder Press <-> Lateral Raise remains the one
+// machine-inclusive pair the owner explicitly endorsed.
+const SUPERSET_PAIRS = [["Shoulder Press", "Lateral Raise"], ["Cable Curl", "Hammer Curl"], ["Goblet Squat", "Calf Raise"]];
 // Moves the second movement of each known pair to sit immediately after the
 // first (a superset renders as one combined card, which requires the two
 // movements to be adjacent in sessionMovements) and assigns both a shared
