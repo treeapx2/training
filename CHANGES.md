@@ -1,207 +1,306 @@
-# CHANGES.md — work order, Aug 19 2026
+# CHANGES.md — work order, Sep 8 2026
 
 Supersedes the previous version. Read alongside CLAUDE.md.
 
-Seven phases. Commit after each. `npm run build && npm test` must pass before
+Eight phases. Commit after each. `npm run build && npm test` must pass before
 every commit. Do not push — the owner pushes.
 
-Every item below comes from a note the owner wrote in the log between Aug 10 and
-Aug 19. Quoted notes are the source of truth for intent.
-
 ---
 
-## PHASE 1 — free-weight increments are wrong
+## Background: the volume restructure
 
-> *"update this to use the same increments as other free weight exercises (5s up
-> to 50 with 12s the only extra weight available)"* — Skull Crusher, Aug 17
+The owner's framework has been **100 reps per muscle group** — two exercises ×
+five sets × ten reps. The current ramp `[T-2i, T-i, T-i, T, T]` delivers those
+reps, but only **two of five sets land at working weight**. Effective volume for
+hypertrophy is sets taken near failure, so 60% of each movement is warm-up tax.
 
-The dumbbell rack is 5 lb increments to 50, plus a 12 lb pair. Several movements
-are configured with wrong increments, and Skull Crusher in particular has been
-bouncing 12 → 15 → 20 because the picker offered unavailable weights.
+Measured against the Sep 3 legs session: 23 total sets, ~14 at working weight.
 
-Set a shared `steps` array for **all dumbbell movements** — Skull Crusher, Hammer
-Curl, Zottman Curl, DB Row, Reverse Fly, Lateral Raise, Goblet Squat:
+**The correcting insight: warm-up is a per-session need, not a per-movement
+need.** Quads do not need re-warming three times inside one legs session. Only
+the opener requires a full ramp.
 
-```
-[5, 10, 12, 15, 20, 25, 30, 35, 40, 45, 50]
-```
+New target: **~20 working sets per session at the same total set count**, inside
+a **45-minute lifting budget**. The cardio finisher is a **separate 15-minute
+block after** the 45 minutes — it is not inside the lifting budget.
 
-Chips step through adjacent entries in this array, not by a fixed number.
-Machine movements keep their 15 lb (or 5 lb cable) increments.
+| | Now | After |
+|---|---|---|
+| Total sets | ~23 | ~24 |
+| **Working sets** | ~14 | **~20** |
+| Reps at working weight | ~140 | **~200** |
+| Working sets per muscle group | 4 | **6–8** |
 
----
+Time budget for the 45 minutes of lifting, at disciplined rests:
 
-## PHASE 2 — ramp shape must scale with set count
-
-> *"no warmups for a three set exercise"* — Hammer Curl, Aug 15
-> *"one weight or two weight pattern when doing machines at 4-sets or less"* —
-> Shoulder Press, Aug 11
-
-The `[T-2i, T-i, T-i, T, T]` ramp is correct for 5 sets but wrong for short
-movements — it spends warmups the owner doesn't want on 3-set accessories.
-
-| Set count | Generated pattern |
+| Slot | Time |
 |---|---|
-| 5 | `[T-2i, T-i, T-i, T, T]` (unchanged) |
-| 4 | `[T-i, T, T, T]` |
-| 3 | `[T, T, T]` — no warmups |
-| 2 | `[T, T]` |
+| Movement 1 — 5 sets, rests 60s / 60s / 150s / 150s | ~10.5 min |
+| Movement 2 — 4 sets, rests 60s / 120s / 120s | ~7.5 min |
+| Movements 3 and 4 — 4 sets, rests 45s / 90s / 90s | ~6.5 min each |
+| Superset (movements 5+6) — 4 rounds, 60s after each pair | ~9.5 min |
+| **Total** | **~40.5 min** |
 
-Confirmed by actual logs: Skull Crusher Aug 17 ran `15×10` four times; Hammer
-Curl Aug 19 ran `15×10` three times.
+That leaves roughly 4 minutes of slack for transitions and waiting on a machine.
+Movements 1 and 2 get the longest rests because they carry the progression
+attempts; the superset is deliberately dense.
 
----
-
-## PHASE 3 — superset improvements
-
-Three separate notes:
-
-**3a. Shared weight for free-weight supersets.**
-
-> *"easier to keep the supersets with the same weight so im not going back and
-> forth to the rack too often"* — Calf Raise, Aug 10
-> *"keeping weights the same for a free weight superset"* — Reverse Fly, Aug 15
-
-When both movements in a superset are dumbbell movements, offer a **single shared
-weight** for the pair — one set of chips governing both, rather than two
-independent pickers. Include a way to unlink the weights if the owner wants them
-different.
-
-**3b. Add superset rounds.**
-
-> *"need ability to add more superset rounds"* — Calf Raise, Aug 16
-
-The merged superset card needs an "add round" action that appends a paired set
-row to both movements at once.
-
-**3c. Do not pre-seed machine+machine pairs.**
-
-> *"no supersets with machines out of respect for the gym goers"* — Aug 16
-> *"this is the one superset that can include a machine so far"* — Lateral Raise
-> ⇄ Shoulder Press, Aug 17
-
-Occupying two machines at once is antisocial in a busy gym. Revise the pre-seeded
-pairs:
-
-- **Remove** Leg Extension ⇄ Calf Raise (two machines)
-- **Keep** Cable Curl ⇄ Reverse Fly, Rope Pushdown ⇄ Skull Crusher
-- **Keep** Lateral Raise ⇄ Shoulder Press — the owner has explicitly endorsed
-  this one as the acceptable machine-inclusive pair
-- Manual linking of any pair stays available
+Total reps drop slightly; reps that actually drive adaptation rise ~30%. Answer
+to "is 100 reps still the target": no — **60 reps at working weight per muscle
+group** replaces it. The owner is already doing this instinctively on
+accessories (Lateral Raise, Sep 5: `15×10` four times, no ramp — one of the most
+consistent lifts in the log).
 
 ---
 
-## PHASE 4 — explicit set logging
+## PHASE 1 — position-aware ramp generation
 
-> *"selecting an RPE should log the set - need for a log button (can still use
-> the x to clear)"* — Lat Pulldown, Aug 15
+Replace the fixed ramp with one that scales by queue position.
 
-**Confirm intent with the owner before implementing.** The likely reading: an
-explicit **Log** button should commit a set, rather than a set being implicitly
-complete once an RPE is tapped. The `x` continues to clear a logged set.
+| Movement position | Pattern | Sets | Working |
+|---|---|---|---|
+| Position 1 (opener) | `[T-2i, T-i, T, T, T]` | 5 | 3 |
+| Position 2+ | `[T-i, T, T, T]` | 4 | 3 |
+| Superset members | `[T, T, T, T]` | 4 | 4 |
+| 2-set movements | `[T, T]` | 2 | 2 |
 
-Implement as: weight / reps / RPE are editable inputs; a **Log** action commits
-the set and visually marks it complete; `x` reverts it to uncommitted. Only
-committed sets count toward history-derived calculations.
+- Position is the movement's index in the session's flat ordered list.
+- Reordering a movement should regenerate its ramp accordingly, before sets are
+  logged. After sets are logged, use the existing confirm-before-change pattern.
+- Supersets never carry warm-up sets — they sit at the end of a session by
+  design and the muscle group is already fully warm.
 
----
-
-## PHASE 5 — unavailable weight fallback
-
-Four notes in ten days record a wanted weight being unavailable:
-
-> *"15s not available and didnt want to push 20s"* — Aug 11
-> *"45s not available"* — Aug 16
-> *"20s not available"* — Aug 19
-
-Add a quick action on a movement — e.g. a small `unavailable` affordance next to
-the chips — that shifts the whole generated ramp to the nearest available step
-**down**, in one tap, without hand-editing every set row.
-
-Record it: persist `substituted: true` when used, so a lighter session caused by
-rack availability is distinguishable from a deliberate deload in later analysis.
+Replaces the Aug 19 set-count table.
 
 ---
 
-## PHASE 6 — cardio progress tracking
+## PHASE 2 — superset-aware progression (important bug)
 
-> *"are we tracking stairmaster progress?"* — session note, Aug 17
+**The bug.** Current working weight is derived from the most recent logged
+session containing the movement, with no awareness of superset context. But the
+owner deliberately (a) matches weights across a free-weight superset to avoid
+rack trips, and (b) places supersets at the end of a session precisely so a
+muscle group gets finished under fatigue. Sets performed there are intentionally
+sub-maximal.
 
-Cardio has been logged as structured fields since Aug 2 but is never surfaced
-beyond the individual session. Add a cardio view (Progress tab is the natural
-home):
+The engine has been reading those as regression:
 
-- Trend of the cardio finisher over time: duration, level, and RPE
-- Grouped by machine
-- Include cardio in the coach handoff export — currently absent, and the coach
-  has been reading it out of session notes
+| Movement | Best logged | Engine's derived current | Cause |
+|---|---|---|---|
+| Hammer Curl | `25×8×3 @7–8` (Jul 30) | 15 | superset partner, weight-matched |
+| Goblet Squat | `50×10 @7` (Jul 29) | 45 | superset partner, weight-matched |
 
-The signal that matters: **output at a given RPE**. Duration and level rising
-while RPE stays flat is aerobic progress. Present it so that comparison is
-possible.
+Both movements have had `suggested: up` ignored repeatedly because the baseline
+was wrong, not because the owner disagreed.
+
+**Required changes:**
+
+1. **Exclude superset-position sets from working-weight derivation.** A movement
+   performed with a `supersetId` must not lower its own baseline. If a movement
+   has *only* superset history, fall back to the best non-superset session, then
+   to `BLOCK.current`.
+2. **Derive current weight from the best qualifying session in the last three**
+   containing the movement — the heaviest weight that reached the rep-range lower
+   bound — not from the most recent session alone. A one-off dip (rack
+   availability, fatigue, late placement) must not reset the baseline.
+3. **Exclude `substituted: true` sessions** from derivation (already specified
+   Aug 19; confirm it is actually applied).
+4. **Break the RPE-8 plateau trap.** The rule "target reps at RPE 8 → hold"
+   means a lift parked at RPE 8 can never be suggested up. Seated Row and Lat
+   Pulldown have sat at `135×10×2 @ RPE 8` for **seven sessions**, including
+   position-1 attempts, so it is not placement. Add: target reps at RPE 8 for
+   **three or more consecutive sessions** → suggest `up`. That is consolidation,
+   not a ceiling.
+
+Add tests for each: a Hammer Curl fixture with superset-only recent history must
+derive 25, not 15; a Seated Row fixture with three RPE-8 sessions must suggest
+`up`.
 
 ---
 
-## PHASE 7 — suggestion logic: rep-range awareness
+## PHASE 3 — session architecture: 3 muscle groups × 2 movements
 
-The stored `suggested` vs `chipChoice` fields make the engine auditable. Across
-33 movement instances Aug 10–19, the owner accepted the suggestion 21 times
-(~64%). The disagreements cluster in one systematic failure:
+Formalize the structure the owner is targeting: **three muscle groups per
+session, two movements each, one superset per session placed last.**
 
-**The engine treats "missed target reps" as failure, when hitting fewer reps at a
-heavier weight is often progress.**
+Default movement lists and group assignments:
 
-Concrete case. Chest Press, Aug 11: `135×8 @8, 135×5 @9` after a 120→135 jump.
-The engine scored that a failure and suggested `down` on Aug 17. But 8 reps at
-135 is a genuine strength gain over 10 reps at 120 — the weight simply belongs in
-a lower rep range. The owner overrode to `hold` both times. Same for Pec Fly,
-which was suggested `down` on Aug 17 and then completed `135×10 @7, ×10 @8` — a
-clean pass the engine had advised against.
+**Push** (6 movements)
 
-Required change:
+| # | Movement | Group |
+|---|---|---|
+| 1 | DB Bench Press | Chest |
+| 2 | Pec Fly | Chest |
+| 3 | Rope Pushdown | Triceps |
+| 4 | Skull Crusher | Triceps |
+| 5+6 | Shoulder Press ⇄ Lateral Raise | Shoulders (superset) |
 
-- Treat a working set as **successful** if it reaches the **lower bound of the
-  movement's rep range**, not only the target rep count.
-- Where a weight was newly increased and reps landed in a lower but respectable
-  range (roughly 6–8 for a 10-rep target) at RPE ≤8, suggest **hold** — the load
-  is being consolidated — rather than `down`.
-- Reserve `down` for genuine failure: reps below the range's lower bound, or any
-  working set at RPE ≥9.
+**Pull** (6 movements)
 
-Also add, in the same pass:
+| # | Movement | Group |
+|---|---|---|
+| 1 | Seated Row | Back |
+| 2 | Lat Pulldown | Back |
+| 3 | DB Row | Upper back |
+| 4 | Reverse Fly | Upper back |
+| 5+6 | Cable Curl ⇄ Hammer Curl | Biceps (superset) |
 
-- Do not fire the positional `up`→`hold` downgrade when the movement is in the
-  **first two positions**. (Rope Pushdown, Aug 17, position 3, was suggested
-  `hold`; the owner chose `up`. Related note, Aug 11: *"tough to push weight here
-  unless we test as the very first exercise"*.)
-- Ignore movements marked `substituted` (Phase 5) when deriving current working
-  weight — a rack-availability drop should not lower the baseline.
+**Legs** (5 movements)
 
-Add a test asserting the Chest Press Aug 11 → Aug 17 fixture yields `hold`, not
-`down`.
+| # | Movement | Group |
+|---|---|---|
+| 1 | Leg Press | Quads |
+| 2 | Leg Extension | Quads |
+| 3 | Leg Curl | Posterior |
+| 4+5 | Goblet Squat ⇄ Calf Raise | Posterior / Calves (superset) |
+
+**Weekly context** (informs nothing structural in the app, but explains why Push
+and Pull need to be repeatable and Legs does not): the owner targets **four gym
+days per week**, doubling either Push or Pull, plus **hockey one to two times per
+week on unpredictable days**, plus one to two rest or travel days. Legs runs once
+per week; skating supplies additional lower-body load.
+
+Notes:
+
+- **Exactly one pre-seeded superset per session**, always in the final slots.
+  Remove any other pre-seeded pairs. Manual linking stays available.
+- **Zottman Curl is removed from the default Pull list** — skipped three of the
+  last four Pull sessions (time, time, "biceps crushed from superset"). Keep it
+  available as an optional add, not a default.
+- **Chest Press (machine) and DB Bench Press both remain available.** DB Bench
+  Press is the current default for the chest slot; Chest Press machine is a
+  selectable alternate.
+
+---
+
+## PHASE 4 — full movement library with optional adds
+
+**Every movement ever logged must be available as an optional add**, not just the
+current defaults. Twenty-seven distinct movements exist in `sessions.json`.
+
+`DB Bench Press` already exists in history (Apr 6 2026, 45 lb) — it is a
+**restore to the library**, not a new movement. It has since been logged twice as
+prose inside a zero-set movement note (Aug 27, Sep 5: `30s×10×3 @5–6`,
+`35s×10×2 @7`) because it is not currently selectable.
+
+**Requirements:**
+
+1. Add an **add movement** action to any session: pick from the library, or
+   define a new movement (name, muscle group, increment or steps array). New
+   definitions persist.
+2. Seed the library with all 27 historical movements. Defaults per Phase 3;
+   everything else is an optional add.
+
+**Current defaults** (18): Leg Press, Leg Extension, Leg Curl, Goblet Squat,
+Calf Raise, DB Bench Press, Pec Fly, Rope Pushdown, Skull Crusher,
+Shoulder Press, Lateral Raise, Seated Row, Lat Pulldown, DB Row, Reverse Fly,
+Cable Curl, Hammer Curl, Chest Press (alternate for the chest slot).
+
+**Optional adds** (9), with last-logged date and max weight for reference:
+
+| Movement | Last logged | Max |
+|---|---|---|
+| Zottman Curl | Sep 7 2026 | 20 |
+| OHE (overhead extension) | May 15 2026 | 20 |
+| Shoulder Press (DB) | May 15 2026 | 70 |
+| RDL | Apr 24 2026 | 25 |
+| Glute Bridge | Apr 24 2026 | 35 |
+| DB Bench Press | Apr 6 2026 | 45 |
+| Incline DB Press | Mar 29 2026 | 40 |
+| Flat DB Press | Mar 29 2026 | 45 |
+| Floor Press | Mar 16 2026 | 35 |
+| Rows | Mar 16 2026 | 35 |
+
+Several of these are from an earlier home-gym setup and may not be performable at
+the current gym; list them regardless — the owner decides, not the app.
+
+3. **Dumbbell weights are per-hand.** The owner logs "35s" meaning 35 lb in each
+   hand. Label the weight field so this is unambiguous, and keep it consistent
+   across all dumbbell movements.
+4. **Do not merge or rename historical movements.** `Rows` and `DB Row`,
+   `Flat DB Press` and `DB Bench Press`, `Shoulder Press` and
+   `Shoulder Press (DB)` may overlap in practice, but merging would rewrite
+   history. Surface them as distinct and leave consolidation to the owner.
+
+---
+
+## PHASE 5 — session timer
+
+> *"would be helpful to automatically start a timer when a session is selected —
+> would need pause and resume functionality and a record of the total workout
+> time — this would be for the full session"* — Cable Curl note, Aug 26
+
+- Timer starts automatically when a session is started.
+- Pause and resume, with the paused state surviving app backgrounding and
+  reload (persist to the draft, not just in memory).
+- Elapsed time visible in the session header, alongside the rest target.
+- Total elapsed persists on the finished session record (`durationMin` or
+  similar) and appears in history.
+- Target is **45 minutes of lifting**, with the cardio finisher as a separate
+  ~15-minute block afterward. Optionally surface a subtle indicator as the
+  45-minute mark is approached — no alarms, no blocking.
+- Ideally track the lifting time and the cardio time separately, so the 45/15
+  split is visible rather than a single 60-minute total.
+- Include session duration in the coach handoff export.
+
+---
+
+## PHASE 6 — chart windowing
+
+Charts are unreadable as history grows; date labels are overlapping.
+
+- Default each chart to the most recent **12 data points**, with a pan control to
+  move further back.
+- **Window by data points, not calendar dates** — for a per-movement chart, 12
+  means 12 sessions *containing that movement*. Twelve calendar sessions is only
+  about four legs sessions, which would make leg charts far sparser than cardio
+  charts.
+- Add range presets (`12` / `25` / `all`) alongside the pan control. The
+  zoomed-out view answers "am I trending up over months", which the windowed view
+  cannot.
+- Applies to per-movement progression charts and the cardio trend view.
+
+---
+
+## PHASE 7 — cardio skip and substitution
+
+Cardio was skipped entirely on Aug 25 (`"stairmaster taken"`) rather than
+substituted, losing the finisher for that session.
+
+- Allow cardio to be **skipped with a reason**, matching the movement skip
+  pattern, so a missing finisher is distinguishable from an untracked one.
+- When a machine is unavailable, make substitution one tap: the machine dropdown
+  already exists, so surface it prominently rather than requiring the owner to
+  abandon the entry.
+- Record which machine was actually used (already stored) so the cardio trend can
+  group by machine.
 
 ---
 
 ## PHASE 8 — docs
 
-- CLAUDE.md: update the target-picker section for the new step arrays, ramp
-  shapes by set count, revised suggestion rules, and the `substituted` field.
-  Update the superset section for shared weights, added rounds, and the revised
-  pre-seed list. Document the cardio view and the explicit-log behavior.
-- Update the session-record schema block with `substituted` and any new fields.
-- Changelog entry.
-- Register any new test script in `scripts/test.js`.
+- CLAUDE.md: replace the ramp-shape section with the position-aware table;
+  document superset-aware derivation and the RPE-8 plateau rule; document the
+  3-groups × 2-movements architecture and the one-superset-per-session rule;
+  document DB Bench Press, the movement library, the session timer, chart
+  windowing, and cardio skip.
+- Update the session-record schema for `durationMin` and any new fields.
+- Note that the "100 reps per muscle group" target is superseded by "~6 working
+  sets per muscle group".
+- Changelog entry. Register any new test script in `scripts/test.js`.
 
 ---
 
 ## Verification
 
 - `npm run build && npm test` — all checks, both tiers
-- Assert the four ramp shapes (5/4/3/2 sets) generate exactly as tabulated
-- Assert dumbbell chips step through the `steps` array including the 12 lb entry
-- Assert a free-weight superset shares one weight and that "add round" appends to
-  both movements
-- Assert the Chest Press rep-range fixture suggests `hold`
+- Assert all four ramp patterns generate exactly as tabulated, and that changing
+  a movement's position regenerates its ramp
+- Assert the Hammer Curl superset-history fixture derives 25, not 15
+- Assert the Seated Row three-consecutive-RPE-8 fixture suggests `up`
+- Assert exactly one pre-seeded superset per session type, in the final slots
+- Assert the timer survives a reload mid-session with its paused state intact
+- Assert per-movement chart windowing counts sessions containing that movement
 - Open legacy records `pull` / `May 22, 2026` (id 39) and `legs` / `Aug 3, 2026`
   (has `variant: "A"`) and confirm both render cleanly
 - `git status` — `sessions.json` must never appear
