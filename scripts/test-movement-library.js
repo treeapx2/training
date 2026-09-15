@@ -280,18 +280,36 @@ async function checkDumbbellWeightsAreLabelledPerHand() {
   // the work order names must stay per-hand. Read from the authored data so a
   // mislabelled movement fails here rather than only on screen.
   const appSrc = fs.readFileSync(path.join(repoRoot, "src", "app.jsx"), "utf8");
+  // Names can contain regex metacharacters — "Shoulder Press (DB)" does.
+  // Names can contain regex metacharacters — "Shoulder Press (DB)" does.
+  const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, (c) => "\\" + c);
   const flagFor = (name) => {
-    const m = appSrc.match(new RegExp("\\{ name: \"" + name + "\",[^}]*?\\}"));
+    const m = appSrc.match(new RegExp("\\{ name: \"" + escapeRe(name) + "\",[^}]*?\\}"));
     if (!m) throw new Error("no library entry found for " + name);
     return /\bsingle: true\b/.test(m[0]);
   };
-  if (!flagFor("Goblet Squat")) {
-    throw new Error("Goblet Squat must be flagged as a single dumbbell");
-  }
-  ["DB Bench Press", "DB Row", "Skull Crusher", "Hammer Curl", "Zottman Curl", "Reverse Fly", "Lateral Raise"].forEach((name) => {
+  // All dumbbell movements are classified by the owner — no unclassified
+  // remainder left to default.
+  const SINGLE = ["Goblet Squat", "OHE", "Glute Bridge"];
+  const PAIRED = [
+    "DB Bench Press", "DB Row", "Skull Crusher", "Hammer Curl", "Zottman Curl",
+    "Reverse Fly", "Lateral Raise", "Shoulder Press (DB)", "RDL",
+    "Incline DB Press", "Flat DB Press", "Floor Press", "Rows",
+  ];
+  SINGLE.forEach((name) => {
+    if (!flagFor(name)) throw new Error(name + " must be flagged as a single dumbbell");
+  });
+  PAIRED.forEach((name) => {
     if (flagFor(name)) throw new Error(name + " is a paired dumbbell movement and must not be flagged single");
   });
-  console.log("PASS: Goblet Squat is flagged single; the seven paired dumbbell movements are not");
+  // Nothing with a steps array may be left out — this is what catches a newly
+  // added dumbbell movement silently defaulting to paired.
+  const dumbbells = [...appSrc.matchAll(/\{ name: "([^"]+)"[^}]*?steps: DUMBBELL_STEPS/g)].map((m) => m[1]);
+  const unlisted = dumbbells.filter((d) => !SINGLE.includes(d) && !PAIRED.includes(d));
+  if (unlisted.length) {
+    throw new Error(`every dumbbell movement must be classified; unlisted: ${JSON.stringify(unlisted)}`);
+  }
+  console.log(`PASS: all ${dumbbells.length} dumbbell movements classified — ${SINGLE.length} single, ${PAIRED.length} paired`);
 
   // Defining a single-dumbbell movement in-app carries the flag through.
   const singleDef = window.equipmentConfigFor("dumbbell-single");

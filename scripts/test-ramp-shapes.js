@@ -85,10 +85,14 @@ async function checkTheFourTabulatedPatterns() {
     { sets: 4, types: ["E", "W", "W", "W"], weights: ["170", "185", "185", "185"] },
     { sets: 3, types: ["W", "W", "W"], weights: ["185", "185", "185"] },
     { sets: 2, types: ["W", "W"], weights: ["185", "185"] },
+    // THE exception: a superset member runs every set at target, with no
+    // established-weight set, whatever its set count.
+    { sets: 4, isSuperset: true, types: ["W", "W", "W", "W"], weights: ["185", "185", "185", "185"] },
+    { sets: 5, isSuperset: true, types: ["W", "W", "W", "W", "W"], weights: ["185", "185", "185", "185", "185"] },
   ];
 
   for (const c of cases) {
-    const ramp = window.buildRamp(mov, 185, { setCount: c.sets });
+    const ramp = window.buildRamp(mov, 185, { setCount: c.sets, isSuperset: !!c.isSuperset });
     const types = ramp.map((s) => s.type);
     const weights = ramp.map((s) => s.weight);
     if (JSON.stringify(types) !== JSON.stringify(c.types)) {
@@ -112,20 +116,24 @@ async function checkTheFourTabulatedPatterns() {
   movs.forEach((m) => {
     targets.forEach((t) => {
       for (let sets = 1; sets <= 8; sets++) {
-        const ramp = window.buildRamp(m, t, { setCount: sets });
-        const distinct = new Set(ramp.map((s) => s.weight));
-        if (distinct.size > 2) {
-          throw new Error(
-            `${m.name} @ ${t} x${sets} produced ${distinct.size} distinct weights: ${JSON.stringify([...distinct])}`,
-          );
-        }
-        if (ramp.length !== sets) {
-          throw new Error(`${m.name} @ ${t} x${sets} produced ${ramp.length} sets`);
-        }
+        [false, true].forEach((isSuperset) => {
+          const ramp = window.buildRamp(m, t, { setCount: sets, isSuperset });
+          const distinct = new Set(ramp.map((s) => s.weight));
+          // A superset member is tighter still: exactly ONE weight.
+          const cap = isSuperset ? 1 : 2;
+          if (distinct.size > cap) {
+            throw new Error(
+              `${m.name} @ ${t} x${sets}${isSuperset ? " (superset)" : ""} produced ${distinct.size} distinct weights: ${JSON.stringify([...distinct])}`,
+            );
+          }
+          if (ramp.length !== sets) {
+            throw new Error(`${m.name} @ ${t} x${sets} produced ${ramp.length} sets`);
+          }
+        });
       }
     });
   });
-  console.log("PASS: never more than two distinct weights, across both equipment kinds and 1-8 sets");
+  console.log("PASS: never more than two distinct weights — exactly one for supersets — across both equipment kinds and 1-8 sets");
 
   // 3 and 2 sets are single-weight by design.
   [3, 2, 1].forEach((sets) => {
@@ -305,10 +313,10 @@ async function checkSupersetMembersUseTheSameTable() {
   }
   await sleep(window, 40);
 
-  // Superset members are authored at 4 sets, so they follow the same table as
-  // anything else at 4: one established set, three at target. (Under the Sep 8
-  // rules they got four straight working sets; the two-weight table is
-  // unconditional and supersedes that.)
+  // Superset members are THE exception to the two-weight table: four sets,
+  // all at the target weight, no established-weight set. The superset finishes
+  // a muscle group under fatigue at the end of a session, so the muscle is
+  // already warm and an established round there is wasted.
   const rounds = Array.from(card.querySelectorAll("div")).filter((d) =>
     /^Set \d+$/.test(d.textContent.trim()),
   );
@@ -317,15 +325,13 @@ async function checkSupersetMembersUseTheSameTable() {
   if (rows.length !== 8) throw new Error(`expected 8 rows (4 rounds x 2 movements), got ${rows.length}`);
   const perMovement = [rows.filter((_, i) => i % 2 === 0), rows.filter((_, i) => i % 2 === 1)];
   perMovement.forEach((weights, n) => {
-    const distinct = new Set(weights);
-    if (distinct.size > 2) {
-      throw new Error(`superset movement ${n} generated ${distinct.size} distinct weights: ${JSON.stringify(weights)}`);
-    }
-    if (weights[1] !== weights[3]) {
-      throw new Error(`superset movement ${n} should be [E, T, T, T], got ${JSON.stringify(weights)}`);
+    if (new Set(weights).size !== 1) {
+      throw new Error(
+        `superset movement ${n} should run every set at the target weight, got ${JSON.stringify(weights)}`,
+      );
     }
   });
-  console.log("PASS: superset members follow the same 4-set table ([E, T, T, T]), never a third weight");
+  console.log("PASS: superset members run all four sets at target — no established-weight set");
   if (errors.length) throw new Error("jsdom errors: " + errors.join("; "));
   window.close();
 }

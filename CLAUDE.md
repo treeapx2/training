@@ -554,10 +554,17 @@ For target weight `T` and one increment down `E`:
 | 4 | `[E, T, T, T]` | 1 | 3 |
 | 3 | `[T, T, T]` | 0 | 3 |
 | 2 | `[T, T]` | 0 | 2 |
+| **superset member** | **`[T, T, T, T]`** | **0** | **all** |
 
 Generalised as "2 established at ≥5 sets, 1 at exactly 4, 0 below that", so a
 movement the owner has added sets to in-session keeps the same two established
 sets rather than growing a third distinct weight. One set floors at `[T]`.
+
+**Superset members are the one exception**: every set at the target weight, no
+established-weight set, whatever the set count. The superset finishes a muscle
+group under fatigue at the end of a session — the muscle is already warm, so an
+established round there is wasted. (This was briefly implemented the other way,
+reading the table as unconditional; the owner confirmed the carve-out.)
 
 Validated by the owner's own log before it was specified: Sep 8 push ran
 two-weight patterns throughout (DB Bench `35,35,40,40,40` @ RPE 6,6,7,7,7; Pec
@@ -583,17 +590,15 @@ adjustable in-session — the owner explicitly wants to add work when time
 permits — via "+ add set" / "+ add round" (`handleUpdate("_add")`), which
 appends at the target weight and so can never introduce a third weight.
 
-**The ramp no longer depends on queue position or superset membership.** Both
-drove it under the Sep 8 rules; neither does now. Two consequences:
+**Queue position no longer affects the shape at all** — it drove it under the
+Sep 8 rules and doesn't now. So reordering a movement leaves its ramp alone;
+position still drives `applyPositionalDowngrade` (see "Suggestion rules").
 
-- Superset members are authored at 4 sets, so they carry one established-weight
-  set where the Sep 8 rule gave them four straight working sets. That follows
-  from the table being unconditional, and is consistent with the reframe — an
-  established round is real work, not a warm-up to skip because the muscle is
-  already warm.
-- Reordering a movement leaves its ramp alone. The Sep 8 regeneration effect
-  and its confirm prompt are gone. Position still drives
-  `applyPositionalDowngrade` (see "Suggestion rules").
+Superset membership *does* still affect it, via the exception above, so
+`useMovementPicker` regenerates the ramp when a movement is linked or unlinked
+mid-session: silently before any set is logged, behind the usual confirm once
+sets exist. Cancelling keeps the ramp — the pairing still changes, only the
+shape is left alone.
 
 (See `scripts/test-ramp-shapes.js`, validation bar check #12, which pins the
 invariant the work order states outright — never a third distinct weight —
@@ -1100,14 +1105,17 @@ every rendering site uses, and reads three ways:
 | single dumbbell (`single: true`) | `lb total` | one bell, both hands |
 | paired dumbbell | `lb/hand` | a bell in each hand |
 
-Goblet Squat is the only movement flagged `single`. The seven the work order
-names as paired — DB Bench Press, DB Row, Skull Crusher, Hammer Curl, Zottman
-Curl, Reverse Fly, Lateral Raise — stay per-hand. **The remaining eight
-dumbbell movements in the library (OHE, Shoulder Press (DB), RDL, Glute
-Bridge, Incline DB Press, Flat DB Press, Floor Press, Rows) appear in neither
-list**, so they keep the paired default rather than being reclassified on a
-guess; OHE and Glute Bridge in particular look single-dumbbell, but that's the
-owner's call. A movement defined in-app can declare which kind it is.
+All **16** dumbbell movements in the library are classified by the owner:
+
+- **single** (`single: true`, total weight): Goblet Squat, OHE, Glute Bridge
+- **paired** (the default, per hand): DB Bench Press, DB Row, Skull Crusher,
+  Hammer Curl, Zottman Curl, Reverse Fly, Lateral Raise, Shoulder Press (DB),
+  RDL, Incline DB Press, Flat DB Press, Floor Press, Rows
+
+Paired is the default, so only the three single ones carry the flag. Check #19
+asserts that **no movement with a `steps` array is left out** of either list,
+so a newly added dumbbell movement can't silently default. A movement defined
+in-app picks its kind from the equipment dropdown.
 
 This is a labelling fix only — no record is rewritten and no number changes.
 `SupersetRow` had no column header at all and gained one; a mixed pair keeps a
@@ -1217,17 +1225,22 @@ data can be viewed without switching the duration?"*
   series on screen, which is still the zoomed-out "am I trending up over
   months" view. `CHART_MIN_SPACING` floors the per-point spacing at every
   density below `all`, so labels can't collide.
-- **No per-point value labels.** The weight printed above each dot is gone —
-  *"remove data values from the graphs - they are getting squished."* Weights
-  are read from a **fixed y-axis column** beside the plot, which stays put
-  while the plot scrolls (gridline labels inside the plot would have scrolled
-  away).
-- RPE is kept, printed only on the points that carry a date label. It is one
-  character rather than three, it is the signal the whole suggestion engine
-  runs on, and its only other representation is dot colour, which is coarse.
-  Worth revisiting if the owner wants it gone too.
+- **Dots only — the plot prints no data values at all.** *"The charts should
+  be colored dots only with an RPE legend somewhere, the dots should have no
+  data value but the weight and relative date should be clear based on the y
+  and x axis."* So:
+  - **weight** comes off a **fixed y-axis column** beside the plot, which
+    stays put while the plot scrolls (gridline labels inside the plot would
+    have scrolled away);
+  - **date** comes off the x-axis, thinned from the newest backwards;
+  - **RPE** is carried by dot colour alone, keyed by `RpeLegend` below the
+    plot. The legend is defined next to `rpeColor` so the two can't drift, and
+    check #21 asserts its swatches match `rpeColor` exactly — colour-only
+    encoding is unreadable without an accurate key.
 - Date labels thin out from the newest backwards (about one per 44px), so the
   most recent session is always labelled and the rest stay legible zoomed out.
+  With the RPE row gone the label strip is a single row, so the plot is taller
+  for the same overall height.
 - The ◀ older / newer ▶ pan buttons are **gone** — native scrolling replaces
   them.
 - The y-axis scale spans the whole series, so scrolling never changes what a
@@ -1640,10 +1653,11 @@ Worth revisiting if it turns out to be more than one movement.
     exercise."* `[E, E, T, T, T]` at 5 sets down to `[T, T]` at 2, never a
     third distinct weight — the established-weight sets ARE the warm-up, and
     are productive volume rather than junk. Set counts became authored per
-    movement (`sets:`), replacing the history-derived `deriveSetCount`. The
-    ramp no longer depends on queue position or superset membership, so the
-    Sep 8 reorder-regeneration effect is gone too. See **Target picker** →
-    "Ramp shape".
+    movement (`sets:`), replacing the history-derived `deriveSetCount`. Queue
+    position no longer affects the shape, so reordering leaves a ramp alone.
+    **Superset members are the one exception to the table**: all sets at
+    target, no established-weight set, because the muscle is already warm by
+    then. See **Target picker** → "Ramp shape".
 39. **Triceps reorder** — Skull Crusher runs before Rope Pushdown. It dropped
     every time it followed the pushdowns; same muscle group, and the pushdowns
     pre-exhaust it. See **Target picker** → "Triceps order".
@@ -1662,19 +1676,23 @@ Worth revisiting if it turns out to be more than one movement.
     picker** → "Current working weight".
 42. **Single-dumbbell labelling** — *"goblet squats are one dumbbell so not
     'per hand'"*. `single: true` gives a third label (`lb total`) alongside
-    `lb` and `lb/hand`. Labelling only; no record rewritten. See **Movement
-    library** → "Dumbbell weights".
+    `lb` and `lb/hand`. All 16 dumbbell movements are now classified (three
+    single: Goblet Squat, OHE, Glute Bridge), with a check that none can be
+    left out. Labelling only; no record rewritten. See **Movement library** →
+    "Dumbbell weights".
 43. **Skipped cardio carries no performance data** — a skip reaching the
     record is stripped of duration/level/rpe, sanitised at the write boundary
     so un-skip stays non-destructive. Already-written records stay excluded
     from the trend by the read-side guard. See **Cardio finisher fields** →
     "Cardio skip".
-44. **Charts scroll; per-point values removed.** The per-movement charts plot
+44. **Charts are colored dots only, and scroll.** The per-movement charts plot
     the whole series in a horizontally scrollable container with a fixed
     y-axis, so all-time data is reachable without switching preset; the
     12/25/all presets became a density control and the pan buttons are gone.
-    The weight label above each dot is gone — it was what squished. The cardio
-    trend, being a table, keeps its paging. See **Charts**.
+    The plot prints **no data values at all** — weight off the y-axis, date off
+    the x-axis, RPE from dot colour keyed by an `RpeLegend` whose swatches are
+    asserted to match `rpeColor`. The cardio trend, being a table, keeps its
+    paging. See **Charts**.
 45. **Docs caught up for the Sep 13 2026 work order** (items 38-44) — "Ramp
     shape" and "Current working weight" rewritten, **Charts** replacing "Chart
     windowing", "Cardio reminder" and "Triceps order" added, `Data model`
@@ -1704,16 +1722,10 @@ project. Worth revisiting if it turns out to be more than one movement.
 
 **Still open:**
 
-- The eight dumbbell movements the Sep 13 work order didn't classify as single
-  or paired keep the paired default (item 42). OHE and Glute Bridge look like
-  single-dumbbell movements; the owner decides.
 - The nine optional adds other than DB Bench Press have no coach-authored
   `target`; they say so in place of one, and stay that way until one gets
   used. Shoulder Press (DB)'s 70 lb log is above the current rack's 50 lb
   ceiling, so its chips snap to 50.
-- RPE values are still printed on the charts. The owner asked to remove "data
-  values"; the weight labels went, RPE stayed (see **Charts** for why). Easy
-  to drop if that wasn't the intent.
 - `sessions.json` **in this working copy** lags the phone — the app
   auto-pushes it on every finished session, so `origin` runs ahead by one
   commit per session. Several records the Sep 13 work order cites (the Sep 8

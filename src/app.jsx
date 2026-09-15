@@ -467,10 +467,10 @@ const NO_COACH_TARGET =
 const OPTIONAL_MOVEMENTS = [
   { name: "Chest Press", current: "120 lb", increment: 15, reps: 10, target: "Alternate only \u2014 DB Bench Press is the primary chest movement now." },
   { name: "Zottman Curl", current: "20 lb", steps: DUMBBELL_STEPS, reps: 10, target: "Chase 10 reps @ 20 (stuck at 6) \u2014 slow eccentric. Dropped from the Pull defaults Sep 8 2026 (skipped three of the last four Pull sessions: time, time, \"biceps crushed from superset\"); still available as an optional add." },
-  { name: "OHE", current: "20 lb", steps: DUMBBELL_STEPS, reps: 10, target: NO_COACH_TARGET + " Overhead extension; max 20, last logged May 2026." },
+  { name: "OHE", current: "20 lb", steps: DUMBBELL_STEPS, single: true, reps: 10, target: NO_COACH_TARGET + " Overhead extension; max 20, last logged May 2026." },
   { name: "Shoulder Press (DB)", current: "70 lb", steps: DUMBBELL_STEPS, reps: 10, target: NO_COACH_TARGET + " Max 70 per hand, last logged May 15 2026 \u2014 above the current rack's 50 lb ceiling, so the chips snap to 50. Distinct from the machine Shoulder Press by design; do not merge." },
   { name: "RDL", current: "25 lb", steps: DUMBBELL_STEPS, reps: 10, target: NO_COACH_TARGET + " Max 25, last logged Apr 24 2026. Hinge \u2014 low-back and knee flags apply." },
-  { name: "Glute Bridge", current: "35 lb", steps: DUMBBELL_STEPS, reps: 10, target: NO_COACH_TARGET + " Max 35, last logged Apr 24 2026." },
+  { name: "Glute Bridge", current: "35 lb", steps: DUMBBELL_STEPS, single: true, reps: 10, target: NO_COACH_TARGET + " Max 35, last logged Apr 24 2026." },
   { name: "Incline DB Press", current: "40 lb", steps: DUMBBELL_STEPS, reps: 10, target: NO_COACH_TARGET + " Max 40, last logged Mar 29 2026." },
   { name: "Flat DB Press", current: "45 lb", steps: DUMBBELL_STEPS, reps: 10, target: NO_COACH_TARGET + " Max 45, last logged Mar 29 2026. Distinct from DB Bench Press by design; do not merge." },
   { name: "Floor Press", current: "35 lb", steps: DUMBBELL_STEPS, reps: 10, target: NO_COACH_TARGET + " Max 35, last logged Mar 16 2026." },
@@ -944,6 +944,44 @@ function rpeColor(rpe) {
   if (r === 8) return "#D97706";
   return "#DC2626";
 }
+// The chart's only key to what a dot colour means. Defined right here so it
+// can't drift from rpeColor above — the plot carries no printed values at all
+// now, so this legend is the whole explanation.
+const RPE_LEGEND = [
+  { label: "RPE \u22647", rpe: 7 },
+  { label: "8", rpe: 8 },
+  { label: "9+", rpe: 9 },
+];
+function RpeLegend({ compact }) {
+  return (
+    /*#__PURE__*/ <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        flexWrap: "wrap",
+      }}
+    >
+      {RPE_LEGEND.map((e) => (
+        /*#__PURE__*/ <div
+          key={e.label}
+          style={{ display: "flex", alignItems: "center", gap: 3 }}
+        >
+          <span
+            style={{
+              width: compact ? 6 : 7,
+              height: compact ? 6 : 7,
+              borderRadius: "50%",
+              background: rpeColor(e.rpe),
+              display: "inline-block",
+            }}
+          />
+          <span style={{ fontSize: 9, color: "#aaa" }}>{e.label}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
 function getMovementHistory(history, movName) {
   const pts = [];
   [...history].forEach((session) => {
@@ -1182,6 +1220,11 @@ function ChartDensityControls({ density, onDensity, compact }) {
 }
 
 function MovementChart({ data, color, compact = false }) {
+  // Dots only: the plot prints no data values at all. Weight is read off the
+  // fixed y-axis, date off the x-axis, and RPE from dot colour via RpeLegend —
+  // "the dots should have no data value but the weight and relative date
+  // should be clear based on the y and x axis".
+  //
   // The chart plots the WHOLE series and scrolls horizontally; `density` only
   // sets how much of it fits on screen at once. That replaced slicing the
   // series into a window with prev/next paging — "is it possible to scroll
@@ -1218,7 +1261,9 @@ function MovementChart({ data, color, compact = false }) {
         need 2+ sessions to chart
       </div>
     );
-  const LABEL_H = compact ? 34 : 44;
+  // Room for one row of date labels under the plot. The RPE row is gone —
+  // dot colour carries it, with RpeLegend as the key.
+  const LABEL_H = compact ? 24 : 28;
   const DOT_AREA_H = compact ? 100 : 180;
   const H = DOT_AREA_H + LABEL_H;
   const AXIS_W = 34;
@@ -1342,25 +1387,24 @@ function MovementChart({ data, color, compact = false }) {
                       {shortDate(d.date)}
                     </text>
                   ) : null}
-                  {showDate && d.rpe ? (
-                    /*#__PURE__*/ <text
-                      x={x}
-                      y={DOT_AREA_H + 25}
-                      fontSize="9"
-                      fill={dotColor}
-                      textAnchor="middle"
-                      fontWeight="600"
-                    >
-                      {d.rpe}
-                    </text>
-                  ) : null}
                 </g>
               );
             })}
           </svg>
         </div>
       </div>
-      {controls}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 10,
+          flexWrap: "wrap",
+        }}
+      >
+        {controls}
+        <RpeLegend compact={compact} />
+      </div>
     </div>
   );
 }
@@ -1718,18 +1762,30 @@ function stepWeight(mov, value, n) {
 // two-weight patterns throughout (DB Bench 35,35,40,40,40 @ RPE 6,6,7,7,7; Pec
 // Fly 120,135,135,135 @ 6,7,8,8) and came in at 43 minutes.
 //
-// NOTE the ramp no longer depends on queue position or superset membership at
-// all — only on the movement's set count. Superset members get 4 sets, so they
-// now carry one established-weight set where the Sep 8 rule gave them four
-// straight working sets. That follows from the table being unconditional, and
-// is consistent with the reframe: an established-weight round is real work, not
-// a warm-up to be skipped because the muscle is already warm.
+// SUPERSET MEMBERS ARE THE ONE EXCEPTION to the table: they run all sets at
+// the target weight, with no established-weight set at all. The superset
+// finishes a muscle group under fatigue at the end of a session — the muscle
+// is already warm, so an established round there is wasted.
+//
+// (This was briefly implemented the other way, on the reading that the table
+// was unconditional. It isn't: the owner confirmed supersets are carved out.)
+//
+// Queue position no longer affects the shape at all — only set count and
+// superset membership do.
 function buildRamp(mov, targetWeight, opts) {
   const o = opts || {};
   const setCount = Math.max(o.setCount != null ? o.setCount : DEFAULT_SET_COUNT, 1);
+  // Reading isSuperset off the caller rather than the movement keeps buildRamp
+  // pure; useMovementPicker passes the movement's own supersetId through.
   const T = targetWeight;
   const E = stepWeight(mov, targetWeight, -1);
-  const established = setCount >= 5 ? 2 : setCount === 4 ? 1 : 0;
+  const established = o.isSuperset
+    ? 0
+    : setCount >= 5
+      ? 2
+      : setCount === 4
+        ? 1
+        : 0;
   const shape = [];
   for (let k = 0; k < established; k++) shape.push({ weight: E, type: "E" });
   for (let k = established; k < setCount; k++) shape.push({ weight: T, type: "W" });
@@ -1771,14 +1827,16 @@ const SET_TYPE_LABEL = {
 // This is a LABELLING fix only — no historical record is rewritten, and the
 // numbers themselves are unchanged.
 //
-// SCOPE NOTE: the work order enumerates both lists explicitly (single: Goblet
-// Squat; paired: DB Bench Press, DB Row, Skull Crusher, Hammer Curl, Zottman
-// Curl, Reverse Fly, Lateral Raise). The remaining dumbbell movements in the
-// library — OHE, Shoulder Press (DB), RDL, Glute Bridge, Incline DB Press,
-// Flat DB Press, Floor Press, Rows — are in neither list, so they keep the
-// existing paired default rather than being reclassified on a guess. Some of
-// them (OHE and Glute Bridge especially) look like single-dumbbell movements;
-// that's the owner's call, not one to make here.
+// All 16 dumbbell movements in the library are now classified by the owner:
+//
+//   single (total weight): Goblet Squat, OHE, Glute Bridge
+//   paired (per hand):     DB Bench Press, DB Row, Skull Crusher, Hammer Curl,
+//                          Zottman Curl, Reverse Fly, Lateral Raise,
+//                          Shoulder Press (DB), RDL, Incline DB Press,
+//                          Flat DB Press, Floor Press, Rows
+//
+// Paired is the default, so only the three single ones carry `single: true`.
+// A movement defined in-app picks its kind from the equipment dropdown.
 function weightLabelFor(mov) {
   if (!mov || !mov.steps) return "lb";
   return mov.single ? "lb total" : "lb/hand";
@@ -2310,11 +2368,14 @@ function useMovementPicker(mov, history, position, total, onChange) {
 
   // No chip tapped yet (fresh session, no draft) -> no planned sets; the
   // chip picker renders instead of the set-rows grid until one is chosen.
-  // The ramp shape now depends only on the movement's authored set count (see
-  // buildRamp) — not on queue position or superset membership, both of which
-  // drove it under the Sep 8 rules. Position still matters elsewhere: it feeds
-  // applyPositionalDowngrade below.
-  const rampOpts = () => ({ setCount: setCountFor(mov) });
+  // Shape depends on the authored set count and on superset membership (see
+  // buildRamp — superset members run all sets at target). Queue position no
+  // longer feeds it at all; position still drives applyPositionalDowngrade
+  // below. supersetId is read straight off the movement, so linking or
+  // unlinking mid-session is picked up by the regeneration effect further
+  // down without threading another prop through.
+  const isSuperset = !!mov.supersetId;
+  const rampOpts = () => ({ setCount: setCountFor(mov), isSuperset });
   const [plannedSets, setPlannedSets] = useState(() => {
     if (mov._targetWeight == null) return [];
     const planned = buildRamp(mov, mov._targetWeight, rampOpts());
@@ -2408,11 +2469,34 @@ function useMovementPicker(mov, history, position, total, onChange) {
     applyTarget(choice, weight);
   };
 
-  // (The Sep 8 rules regenerated the ramp whenever a movement's position or
-  // superset membership changed, because both fed the shape. Under the
-  // two-weight ramp neither does — the shape follows the movement's authored
-  // set count alone — so reordering no longer disturbs a ramp, and the
-  // regeneration effect and its confirm prompt are gone with it.)
+  // Linking or unlinking a movement mid-session changes its ramp shape, since
+  // superset members drop the established-weight set — so the ramp
+  // regenerates, silently before any set is logged and behind the usual
+  // confirm once sets exist. Cancelling keeps the existing ramp; the pairing
+  // still changes, only the shape is left alone.
+  //
+  // REORDERING no longer regenerates anything: position stopped feeding the
+  // shape with the two-weight ramp, so moving a movement leaves its sets
+  // untouched. The ref seeds itself on the first render so a freshly-mounted
+  // movement never regenerates just for existing.
+  const rampShapeKeyRef = useRef(null);
+  useEffect(() => {
+    const key = isSuperset ? "1" : "0";
+    if (rampShapeKeyRef.current === null) {
+      rampShapeKeyRef.current = key;
+      return;
+    }
+    if (rampShapeKeyRef.current === key) return;
+    rampShapeKeyRef.current = key;
+    if (targetWeight == null) return;
+    if (done) {
+      const ok = window.confirm(
+        "Linking changes this movement's set pattern. Logged sets are kept, not discarded. Regenerate?",
+      );
+      if (!ok) return;
+    }
+    applyTarget(chipChoice, targetWeight);
+  }, [isSuperset]);
 
   // Auto-log (see CHANGES.md Aug 19 2026, Phase 4 — "selecting an RPE
   // should log the set... as soon as an RPE is set, the log action

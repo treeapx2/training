@@ -188,15 +188,66 @@ async function checkPerMovementChartPlotsEverythingAndScrolls() {
   if (!axis.textContent.trim()) throw new Error("the fixed axis should carry the weight scale");
   console.log("PASS: the weight scale is a fixed axis that does not scroll away");
 
-  // No per-point value labels — the squish the owner reported. Weights appear
-  // only on the axis.
+  // Dots only. The plot prints NO data values: weight comes off the fixed
+  // y-axis, date off the x-axis, RPE from dot colour via the legend.
   const plotText = Array.from(plot.querySelectorAll("text")).map((t) => t.textContent.trim());
   const weightsPlotted = data.map((d) => String(d.weight));
-  const leaked = plotText.filter((t) => weightsPlotted.includes(t));
-  if (leaked.length) {
-    throw new Error(`per-point weight values should be gone from the plot, found ${JSON.stringify(leaked)}`);
+  const leakedWeights = plotText.filter((t) => weightsPlotted.includes(t));
+  if (leakedWeights.length) {
+    throw new Error(`weight values should be gone from the plot, found ${JSON.stringify(leakedWeights)}`);
   }
-  console.log("PASS: per-point weight values are gone from the plot (they squished); the axis keeps them readable");
+  // Every label left in the plot must be a date (M/D), never a bare value.
+  const nonDate = plotText.filter((t) => t && !/^\d{1,2}\/\d{1,2}$/.test(t));
+  if (nonDate.length) {
+    throw new Error(`the plot should carry only date labels, found ${JSON.stringify(nonDate)}`);
+  }
+  console.log("PASS: the plot carries dots and date labels only — no data values at all");
+
+  // The x-axis is legible: dates are present and readable.
+  if (!plotText.some((t) => /^\d{1,2}\/\d{1,2}$/.test(t))) {
+    throw new Error("the x-axis must carry date labels");
+  }
+  // The y-axis carries the weight scale, including the series extremes.
+  const axisLabels = Array.from(axis.querySelectorAll("text")).map((t) => Number(t.textContent.trim()));
+  const lo = Math.min(...data.map((d) => d.weight));
+  const hi = Math.max(...data.map((d) => d.weight));
+  if (!axisLabels.includes(lo) || !axisLabels.includes(hi)) {
+    throw new Error(
+      `the y-axis should span the series (${lo}-${hi}), got ${JSON.stringify(axisLabels)}`,
+    );
+  }
+  console.log("PASS: weight is readable from the y-axis and date from the x-axis");
+
+  // An RPE legend explains what the dot colours mean — without it, colour-only
+  // encoding is unreadable.
+  const cardText = card.textContent;
+  if (!/RPE/.test(cardText)) {
+    throw new Error("the chart needs an RPE legend now that RPE is colour-only");
+  }
+  const swatches = Array.from(card.querySelectorAll("span")).filter((s) =>
+    (s.getAttribute("style") || "").includes("border-radius: 50%"),
+  );
+  if (swatches.length !== 3) {
+    throw new Error(`expected three RPE legend swatches, got ${swatches.length}`);
+  }
+  // The legend's colours must be the ones the plot actually uses.
+  // The DOM normalises hex to rgb(), so compare in one space.
+  const toRgb = (c) => {
+    const hex = c.trim().match(/^#([0-9a-f]{6})$/i);
+    if (!hex) return c.trim().replace(/\s+/g, "");
+    const v = parseInt(hex[1], 16);
+    return `rgb(${(v >> 16) & 255},${(v >> 8) & 255},${v & 255})`;
+  };
+  const legendColours = swatches.map((s) =>
+    toRgb((s.getAttribute("style") || "").match(/background: ([^;]+)/)[1]),
+  );
+  [7, 8, 9].forEach((r) => {
+    const want = toRgb(window.rpeColor(r));
+    if (!legendColours.includes(want)) {
+      throw new Error(`the legend is missing the colour for RPE ${r} (${want}): ${JSON.stringify(legendColours)}`);
+    }
+  });
+  console.log("PASS: an RPE legend keys the dot colours, matching rpeColor exactly");
 
   // Density changes how much fits on screen, NOT how much exists.
   const byLabel = (t) => Array.from(card.querySelectorAll("button")).find((b) => b.textContent.trim() === t);
