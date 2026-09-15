@@ -54,11 +54,11 @@ const BLOCK = {
       bg: "#EAF3DE",
       rest: "opener 150s \u00b7 movement 2 120s \u00b7 movements 3\u20134 90s \u00b7 superset 60s after each pair \u00b7 60s between sets at the established weight",
       movements: [
-        { name: "Leg Press", current: "185 lb", increment: 15, reps: 10, sets: 5, target: "BANK 185 at RPE 7 \u2014 test passed 7/29 (185x10x2 @ RPE 8) but that's the rep ceiling. Two clean sessions at RPE 7, then TEST 200. Fresh opener, straight sets, 2-2.5 min rest." },
-        { name: "Leg Extension", current: "150 lb", increment: 15, reps: 10, sets: 5, target: "TEST 165 \u2014 broke the 8-rep wall: 150x10x2 @ RPE 8 (7/26) then @ RPE 7 (7/29). The old plateau was fatigue placement, not a ceiling." },
-        { name: "Leg Curl", current: "90 lb", increment: 15, reps: 10, sets: 4, target: "One more clean 10x10 @ 90, RPE \u22647, then TEST 105. Low-back compensation resolved (clean 7/26 and 7/29). Stop the set if the back takes over." },
-        { name: "Goblet Squat", current: "50 lb", steps: DUMBBELL_STEPS, single: true, reps: 10, sets: 4, target: "Two clean sessions at 50 (10 @ RPE 7 then 8 on 7/29), then 55. Controlled depth, knee-monitor." },
-        { name: "Calf Raise", current: "40 lb", increment: 5, reps: 15, sets: 4, target: "TEST 45 \u2014 40x20x3 @ RPE 6-7 (7/29) was the easiest pass of the day. Superset with Leg Extension." }
+        { name: "Leg Press", current: "185 lb", increment: 15, reps: 10, sets: 5, target: "HOLD 185 \u2014 do NOT add weight. The limiter is unracking off the hinges, not the working reps. Three working sets at 185 produced RPE 7 on the first (9/9), the best read in eight sessions. Use a 3-second eccentric, or check whether the carriage start height adjusts." },
+        { name: "Leg Extension", current: "165 lb", increment: 15, reps: 10, sets: 5, target: "165 confirmed (9/3, 9/9). Reps fade across three working sets \u2014 build clean 10/10/10 before 180." },
+        { name: "Leg Curl", current: "90 lb", increment: 15, reps: 10, sets: 4, target: "Consolidating at 90 after 105 dropped to 6 reps. Build clean 10s at RPE \u22647, then retest 105." },
+        { name: "Goblet Squat", current: "50 lb", steps: DUMBBELL_STEPS, single: true, reps: 10, sets: 4, target: "Confirmed \u2014 50\u00d710\u00d74 @ RPE 6-7 (9/9). Single dumbbell, total weight. TEST 55." },
+        { name: "Calf Raise", current: "45 lb", increment: 5, reps: 15, sets: 4, target: "45\u00d715\u00d74 @ RPE 6-7 confirmed (9/3). Derivation bug dropped it to 35 on 9/9 \u2014 see Phase 4. TEST 50." }
       ]
     },
     push: {
@@ -67,12 +67,12 @@ const BLOCK = {
       bg: "#E6F1FB",
       rest: "opener 150s \u00b7 movement 2 120s \u00b7 movements 3\u20134 90s \u00b7 superset 60s after each pair \u00b7 60s between sets at the established weight",
       movements: [
-        { name: "DB Bench Press", current: "35 lb", steps: DUMBBELL_STEPS, reps: 10, sets: 5, target: "Build clean 10/10 at 35 per hand \u2192 then 40. Logged 30s\u00d710\u00d73 @ RPE 5-6 and 35s\u00d710\u00d72 @ RPE 7 (9/5). Currently the preferred chest movement over the Chest Press machine." },
-        { name: "Pec Fly", current: "120 lb", increment: 15, reps: 10, sets: 4, target: "TEST 135 \u2014 120x10x2 @ RPE 7 (7/28), room to spare." },
-        { name: "Skull Crusher", current: "20 lb", steps: DUMBBELL_STEPS, reps: 10, sets: 4, target: "TEST 25 \u2014 20x10x4 @ RPE 6-7 (7/28), elbow quiet. Sharp pain = stop." },
-        { name: "Rope Pushdown", current: "42.5 lb", increment: 5, reps: 10, sets: 4, target: "Confirm 2nd clean 10/10 @ 42.5 then 47.5. Skipped 7/28 (machine in use)." },
-        { name: "Shoulder Press", current: "90 lb", increment: 15, reps: 10, sets: 4, target: "HOLD 90 \u2014 needs a FRESH lead to confirm. Hit 90x10x2 when run first (7/5), dropped to 75x8 @ RPE 8 when run second (7/28). Confirm then 105. Thumb watch. Superset with Lateral Raise." },
-        { name: "Lateral Raise", current: "15 lb", steps: DUMBBELL_STEPS, reps: 12, sets: 4, target: "Back to 15 \u2014 12x10x4 reached RPE 8 at position #4 (7/28). 15x10x2 already done 7/5. Superset with Shoulder Press." }
+        { name: "DB Bench Press", current: "40 lb/hand", steps: DUMBBELL_STEPS, reps: 10, sets: 5, target: "TEST 45/hand \u2014 40\u00d710\u00d73 @ RPE 7 clean as opener (9/8). Now the primary chest movement." },
+        { name: "Pec Fly", current: "135 lb", increment: 15, reps: 10, sets: 4, target: "Confirmed at 135 across four sessions @ RPE 7-8. TEST 150." },
+        { name: "Skull Crusher", current: "20 lb/hand", steps: DUMBBELL_STEPS, reps: 10, sets: 4, target: "20 when run FRESH (9/8 note: \"cant do 20s after pushdowns\"). Now ordered before Rope Pushdown \u2014 build clean 10/10 at 20, then 25." },
+        { name: "Rope Pushdown", current: "42.5 lb", increment: 5, reps: 10, sets: 4, target: "Confirmed \u2014 42.5\u00d710 @ RPE 7-8 as opener (9/5, 9/8). TEST 47.5." },
+        { name: "Shoulder Press", current: "75 lb", increment: 15, reps: 10, sets: 4, target: "Back at 75 after the 60 cap \u2014 75\u00d710\u00d72 @ RPE 7 (9/8). Build clean 10s, then 90. Stop if the low back starts compensating." },
+        { name: "Lateral Raise", current: "15 lb/hand", steps: DUMBBELL_STEPS, reps: 12, sets: 4, target: "Confirmed 15 across five sessions. TEST 20." }
       ]
     },
     pull: {
@@ -81,12 +81,12 @@ const BLOCK = {
       bg: "#EEEDFE",
       rest: "opener 150s \u00b7 movement 2 120s \u00b7 movements 3\u20134 90s \u00b7 superset 60s after each pair \u00b7 60s between sets at the established weight",
       movements: [
-        { name: "Seated Row", current: "135 lb", increment: 15, reps: 10, sets: 5, target: "Back to 135 \u2014 build clean 10/10 then 150. (7/25 was a deliberate deload to 120x10x2 @ RPE 7 on upper re-entry, not a regression.)" },
-        { name: "Lat Pulldown", current: "135 lb", increment: 15, reps: 10, sets: 4, target: "Confirm 2nd clean 10/10 @ 135 (7/13 clean) then 150." },
-        { name: "DB Row", current: "50 lb", steps: DUMBBELL_STEPS, reps: 10, sets: 4, target: "Build 8-10 @ 50 \u2014 45x10 @ RPE 7 as fresh opener (7/25), best DB Row log to date. Fatigue-sensitive." },
-        { name: "Reverse Fly", current: "15 lb", steps: DUMBBELL_STEPS, reps: 12, sets: 4, target: "TEST 20 for 8s \u2014 15x10x3 all @ RPE 6 (7/25) clears the consistency gate." },
-        { name: "Cable Curl", current: "42.5 lb", increment: 5, reps: 10, sets: 4, target: "TEST 47.5 \u2014 two clean sessions at 42.5 (7/4, and 7/25 4x10 @ RPE 6-7). Superset with Hammer Curl." },
-        { name: "Hammer Curl", current: "20 lb", steps: DUMBBELL_STEPS, reps: 10, sets: 4, target: "HOLD 20 \u2014 read heavy cold (7/25: 20x8 @ RPE 8, dropped to 15). TEST 25 only on a day this LEADS the session. Superset with Cable Curl." }
+        { name: "Seated Row", current: "135 lb", increment: 15, reps: 10, sets: 5, target: "TEST 150 \u2014 135\u00d710\u00d72 held at RPE 7-8 for eight sessions including position 1. Consolidated, not capped. Run it FIRST." },
+        { name: "Lat Pulldown", current: "135 lb", increment: 15, reps: 10, sets: 4, target: "TEST 150 \u2014 same plateau as Seated Row." },
+        { name: "DB Row", current: "50 lb/hand", steps: DUMBBELL_STEPS, reps: 10, sets: 4, target: "Confirmed \u2014 50\u00d710\u00d72 @ RPE 8 (9/7). Build clean 10s then 55." },
+        { name: "Reverse Fly", current: "15 lb/hand", steps: DUMBBELL_STEPS, reps: 12, sets: 4, target: "Build clean 12s at 15 @ RPE 6, then 20." },
+        { name: "Cable Curl", current: "52.5 lb", increment: 5, reps: 10, sets: 4, target: "Confirmed \u2014 52.5\u00d710\u00d72 @ RPE 7 when run fresh (8/29). Collapses to 47.5\u00d75 late in a session; that is the superset doing its job." },
+        { name: "Hammer Curl", current: "25 lb/hand", steps: DUMBBELL_STEPS, reps: 10, sets: 4, target: "Baseline restored to 25 (was wrongly derived at 15 from superset sessions). Rebuild to clean 10s at 25." }
       ]
     }
   }
@@ -465,7 +465,7 @@ const NO_COACH_TARGET =
   "Sep 8 2026 (CHANGES.md Phase 4). The numbers below are from the log, not a " +
   "prescription.";
 const OPTIONAL_MOVEMENTS = [
-  { name: "Chest Press", current: "120 lb", increment: 15, reps: 10, target: "TEST 135 \u2014 second clean 10/10 @ RPE 7-8 as fresh opener (7/28). Run this FIRST. Selectable alternate for the chest slot (CHANGES.md Sep 8 2026, Phase 3); DB Bench Press is the current default." },
+  { name: "Chest Press", current: "120 lb", increment: 15, reps: 10, target: "Alternate only \u2014 DB Bench Press is the primary chest movement now." },
   { name: "Zottman Curl", current: "20 lb", steps: DUMBBELL_STEPS, reps: 10, target: "Chase 10 reps @ 20 (stuck at 6) \u2014 slow eccentric. Dropped from the Pull defaults Sep 8 2026 (skipped three of the last four Pull sessions: time, time, \"biceps crushed from superset\"); still available as an optional add." },
   { name: "OHE", current: "20 lb", steps: DUMBBELL_STEPS, reps: 10, target: NO_COACH_TARGET + " Overhead extension; max 20, last logged May 2026." },
   { name: "Shoulder Press (DB)", current: "70 lb", steps: DUMBBELL_STEPS, reps: 10, target: NO_COACH_TARGET + " Max 70 per hand, last logged May 15 2026 \u2014 above the current rack's 50 lb ceiling, so the chips snap to 50. Distinct from the machine Shoulder Press by design; do not merge." },

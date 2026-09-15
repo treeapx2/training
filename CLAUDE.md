@@ -87,15 +87,16 @@ directions.
 | `scripts/test-movement-library.js` | jsdom behavioral check for the movement library, optional adds and per-hand weight labels (see **Movement library**). Validation bar check #19; also `npm run test:movement-library`. |
 | `scripts/test-session-timer.js` | jsdom behavioral check for the session timer (see **Session timer**). Validation bar check #20; also `npm run test:session-timer`. |
 | `scripts/test-chart-windowing.js` | jsdom behavioral check for chart windowing (see **Chart windowing**). Validation bar check #21; also `npm run test:chart-windowing`. |
-| `scripts/test-cardio-skip.js` | jsdom behavioral check for cardio skip and machine substitution (see **Cardio finisher fields** → "Cardio skip"). Validation bar check #22; also `npm run test:cardio-skip`. |
+| `scripts/test-cardio-skip.js` | jsdom behavioral check for cardio skip, machine substitution and skipped-record sanitising (see **Cardio finisher fields** → "Cardio skip"). Validation bar check #22; also `npm run test:cardio-skip`. |
+| `scripts/test-cardio-reminder.js` | jsdom behavioral check for the 45-minute cardio reminder (see **Session timer** → "Cardio reminder"). Validation bar check #23; also `npm run test:cardio-reminder`. |
 | `scripts/decompile.js` | **Historical/documentation only.** The one-time script that reconstructed `src/app.jsx` from the previously shipped, hand-patched `index.html`. Not runnable against current devDependencies — it needs the Babel 7.x line plus `babel-plugin-transform-react-createelement-to-jsx` (unmaintained, relies on legacy `t.jSXIdentifier`-style `@babel/types` builders that Babel 8 removed), both of which were removed once the decompile was done and committed. See the comment in the file for how to temporarily reinstall them if this is ever needed again. |
 | `scripts/normalize-for-diff.js` | Parses a compiled app script and re-emits it through `@babel/generator` with fixed formatting, so two semantically-identical scripts (differing only in quote style, escaping, etc.) diff to nothing. Used to prove the JSX reconstruction and the Babel 7→8 upgrade changed no behavior; reusable for future refactors that touch `src/app.jsx`. |
 | `index.html` | **Build output.** Don't hand-edit — regenerate via `npm run build`. Still the file that gets committed and deployed (see Deploy, below); there is no separate `dist/`. |
 
-## Validation bar — every change must pass all twenty-two
+## Validation bar — every change must pass all twenty-three
 
 Two tiers, both scripted as `npm test` (`scripts/test.js`) — **one command
-runs everything**, checks 1-22:
+runs everything**, checks 1-23:
 
 **Artifact tier (1-5):** is `index.html` a well-formed, non-stale build of
 `src/app.jsx`.
@@ -142,7 +143,7 @@ fresh clone). Together they mean source and artifact can't diverge in a
 commit made through normal `git commit`, and check #5 catches it in `npm
 test` regardless.
 
-**Behavior tier (6-22):** does the app actually do the right thing at
+**Behavior tier (6-23):** does the app actually do the right thing at
 runtime, not just have valid syntax. Each check is a standalone jsdom
 script (also runnable alone, e.g. `npm run test:sync-last`,
 `npm run test:target-picker`) that `scripts/test.js` invokes as a
@@ -162,11 +163,10 @@ subprocess:
 - **#11** `scripts/test-dumbbell-steps.js` — the shared `DUMBBELL_STEPS`
   rack array on every dumbbell movement, machine/cable movements
   unaffected, see **Target picker** → "Increments".
-- **#12** `scripts/test-ramp-shapes.js` — the four tabulated ramp patterns
-  (opener / position 2+ / superset member / 2-set movement), the ≤1 floor,
-  a reorder regenerating both the promoted and displaced movements' ramps,
-  and a superset pair's four warmup-free rounds, see **Target picker** →
-  "Ramp shape".
+- **#12** `scripts/test-ramp-shapes.js` — the four tabulated two-weight
+  patterns (5/4/3/2 sets), the invariant that a ramp never contains a third
+  distinct weight, the authored per-movement set counts and declared movement
+  order, and in-session set addition, see **Target picker** → "Ramp shape".
 - **#13** `scripts/test-superset-phase3.js` — a free-weight pair's shared
   weight (and unlink/link weights), a mixed pair never sharing weight,
   "+ add round", see **Supersets**.
@@ -183,13 +183,13 @@ subprocess:
   `suggestChip` rules, the positional first-two-positions guard, and
   `substituted` movements ignored for the baseline weight, see **Target
   picker** → "Suggestion rules".
-- **#18** `scripts/test-superset-progression.js` — superset sessions excluded
-  from working-weight derivation (the Hammer Curl fixture deriving 25, not
-  the 15 lb weight-matched superset round), the best qualifying session in a
-  three-session window, `substituted` exclusion confirmed, a superset-only
-  movement still progressing, and the RPE-8 plateau rule (the Seated Row
-  fixture suggesting `up`) without misfiring on a fresh jump, see **Target
-  picker** → "Suggestion rules".
+- **#18** `scripts/test-superset-progression.js` — superset rounds raising the
+  baseline but never lowering it (the Hammer Curl fixture deriving 25 not 15,
+  the Calf Raise fixture deriving 45 not 40), the best qualifying session in a
+  three-session window, `substituted` exclusion confirmed, the superset-specific
+  no-`down` guard, and the RPE-8 plateau rule (the Seated Row fixture
+  suggesting `up`) without misfiring on a fresh jump, see **Target picker** →
+  "Suggestion rules".
 - **#19** `scripts/test-movement-library.js` — the library covering all 27
   movements ever logged (derived from `sessions.json` at test time, not
   hardcoded), every entry usable, overlapping historical names kept distinct,
@@ -202,14 +202,20 @@ subprocess:
   running timer counting the time the app was away, and
   `durationMin`/`liftingMin`/`cardioMin` reaching the record, history and
   the handoff, see **Session timer**.
-- **#21** `scripts/test-chart-windowing.js` — the newest-12 default,
-  half-window pan with overlap, clamping at both ends, the 12/25/all presets,
-  a per-movement window counting sessions *containing that movement*, and the
-  cardio trend windowed the same way, see **Chart windowing**.
+- **#21** `scripts/test-chart-windowing.js` — per-movement charts plotting
+  every point at any density inside a horizontally scrollable container, the
+  fixed y-axis, no per-point value labels, and the cardio trend's table still
+  using windowSlice's paging, see **Chart windowing**.
 - **#22** `scripts/test-cardio-skip.js` — a skipped finisher counting as data
   while an untouched one doesn't, exclusion from the trend but not the
-  record, one-tap machine substitution offered before the skip reasons, and
-  reversibility, see **Cardio finisher fields** → "Cardio skip".
+  record, one-tap machine substitution offered before the skip reasons,
+  reversibility, and a skip reaching the record stripped of
+  duration/level/rpe, see **Cardio finisher fields** → "Cardio skip".
+- **#23** `scripts/test-cardio-reminder.js` — the reminder firing at 45
+  minutes of lifting and not before, never switching automatically, staying
+  non-blocking, dismissing quietly and returning exactly once well later
+  before going silent, persisting the dismissal to the draft, and surviving
+  backgrounding, see **Session timer** → "Cardio reminder".
 
 Negative-tested the same way as the artifact tier: deliberately
 reintroducing the old Leg Press `workSets` bug (a stale ancestor of what's
@@ -258,23 +264,29 @@ BLOCK = {
   movement shares one `steps: DUMBBELL_STEPS` array (`[5, 10, 12, 15, 20,
   25, 30, 35, 40, 45, 50]` — the rack's actual available plates, 5s to 50
   plus a 12 lb pair as the one exception) instead of a per-movement array;
-  machine/cable movements keep a plain `increment` (15 or 5). There is no
-  `workSets` field anymore — today's set count is derived from logged
-  history (`deriveSetCount`), not authored here.
+  machine/cable movements keep a plain `increment` (15 or 5). The old
+  `workSets` field is long gone; today's set count is the authored `sets`
+  field below (it was history-derived between Aug 19 and Sep 13 2026).
 - `current` is a **fallback only**, consulted by `deriveCurrentWeight`
   exclusively when a movement has zero logged history. `target` (coach
   prose) is secondary UI, collapsed behind a "why?" tap-to-expand — see
   **Target picker**.
-- `buildRamp(mov, targetWeight, { position, isSuperset, setCount })` is the
-  ramp generator — see **Target picker** → "Ramp shape". Its third argument
-  became an options object on Sep 8 2026 when the shape started scaling with
-  queue position instead of set count. It replaced the old
-  `buildPlannedSets`/`buildPlannedSetsBase` wrapper pair entirely, not just
-  its `workSets` handling.
+- `sets` (number) is the movement's authored set count, read through
+  `setCountFor(mov)` — see **Target picker** → "Ramp shape". It replaced the
+  history-derived `deriveSetCount` on Sep 13 2026; a movement without one
+  falls back to 5.
+- `single: true` marks a movement using ONE dumbbell held in both hands
+  (Goblet Squat), so it is labelled as total weight rather than per hand — see
+  **Movement library** → "Dumbbell weights".
+- `buildRamp(mov, targetWeight, { setCount })` is the ramp generator — see
+  **Target picker** → "Ramp shape". It generates two weights, never three. It
+  replaced the old `buildPlannedSets`/`buildPlannedSetsBase` wrapper pair
+  entirely, not just its `workSets` handling.
 - **Session architecture** (CHANGES.md Sep 8 2026, Phase 3): three muscle
   groups per session, two movements each, exactly one superset placed last.
-  Push is DB Bench Press + Pec Fly (Chest), Rope Pushdown + Skull Crusher
-  (Triceps), Shoulder Press ⇄ Lateral Raise (Shoulders); Pull is Seated Row +
+  Push is DB Bench Press + Pec Fly (Chest), Skull Crusher + Rope Pushdown
+  (Triceps — reordered Sep 13 2026, see "Triceps order"), Shoulder Press ⇄
+  Lateral Raise (Shoulders); Pull is Seated Row +
   Lat Pulldown (Back), DB Row + Reverse Fly (Upper back), Cable Curl ⇄ Hammer
   Curl (Biceps); Legs is Leg Press + Leg Extension (Quads), Leg Curl
   (Posterior), Goblet Squat ⇄ Calf Raise (Posterior/Calves). `MUSCLE_GROUPS`
@@ -314,8 +326,8 @@ the record, unlike a genuinely untouched movement; `substituted: true`
 marks a movement where the "unavailable" action was used (see **Target
 picker** → "Unavailable weight fallback") — a lighter session forced by
 rack availability, distinguishable from a deliberate deload, and excluded
-from `deriveCurrentWeight`/`deriveSetCount`/`suggestChip`'s history so it
-never lowers the baseline. All are `undefined` (omitted, not
+from `deriveCurrentWeight`/`suggestChip`'s history so it never lowers the
+baseline. All are `undefined` (omitted, not
 empty-string/false) when not applicable, consistent with how `cardio`
 itself is omitted rather than written as an all-empty object.
 
@@ -479,83 +491,125 @@ down once the old weight ages out. If nothing in the window reached the rep
 floor, the most recent top weight is used rather than the window's heaviest
 failed attempt.
 
-`movementSessionSummaries(history, movName, targetReps, opts)` is the shared
-per-session summarizer underneath this, `deriveSetCount` and `suggestChip`.
-It records `inSuperset` per session and can exclude those sessions.
-`progressionSummaries()` wraps it with the eligibility rule: **superset
-sessions are dropped**, because the owner matches weights across a
-free-weight superset to avoid rack trips and places supersets last precisely
-to finish a muscle group under fatigue — those sets are intentionally
-sub-maximal and must not set the movement's own baseline.
+`movementSessionSummaries(history, movName, targetReps)` is the shared
+per-session summarizer underneath this and `suggestChip`. It records
+`inSuperset` per session.
 
-**Flagged deviation** (documented at `progressionSummaries`): Phase 2 says a
-superset-only movement should "fall back to the best non-superset session,
-then to `BLOCK.current`". Taken literally that means `BLOCK.current`, which
-would freeze all six permanent superset members (Shoulder Press, Lateral
-Raise, Cable Curl, Hammer Curl, Goblet Squat, Calf Raise) at a hand-authored
-string forever — exactly the staleness the target picker exists to remove.
-So superset history is used when it is the only history there is; the "a
-superset round must never LOWER the baseline" guarantee still holds, because
-the window is scored by its best session, never its most recent. Raise this
-with the owner if the frozen-baseline reading was intended.
+**Superset rounds may RAISE the baseline, never lower it**
+(CHANGES-2026-09-13, Phase 4). Sep 8 excluded superset sessions from
+progression outright whenever any solo history existed. The intent was
+directional — the owner weight-matches across a pair and runs it last under
+fatigue, so that output is deliberately sub-maximal and must not drag the
+baseline down. Implementing it as wholesale invisibility went too far: a
+superset round could no longer raise the baseline either, so a movement living
+permanently inside a pair was judged on stale solo data forever.
+
+That was the **Calf Raise bug**: in the Goblet Squat superset since Aug 10, its
+best and cleanest work (`45×15×3` @ RPE 6 on Aug 25, `45×15×4` @ RPE 6-7 on
+Sep 3) was discarded, the baseline fell back to Jul 29's `40×20`, and it
+suggested `down`. Goblet Squat escaped only by luck — its stale solo sessions
+happen to sit at 50, its best — so the symptom was movement-specific while the
+cause was not. **Not** the cause, despite a reasonable suspicion: rep-range
+bounds. `reps` is a single lower bound, not a range, and `hitFloor`/`hitTarget`
+already compare with `>=`; both sessions scored as clean passes before being
+thrown away.
+
+`deriveCurrentWeight` therefore scores **two separate three-session windows**,
+solo and superset, and takes the max. Superset rounds contribute only their
+best *qualifying* weight and never the "nothing qualified" fallback, so they
+can only push the number up. A straight max over the last three sessions of any
+kind is **not** sufficient and was tried first: for a movement supersetted
+three outings running it pushes solo history out of the window entirely, which
+regressed Hammer Curl to 15 and Goblet Squat to 45.
+
+`suggestChip` enforces the same direction with a `notDown` guard — a superset
+session can never produce a `down`. The guard is superset-specific: the same
+poor session logged solo still suggests `down`.
+
+This retired the Sep 8 flagged deviation about superset-only movements falling
+back to `BLOCK.current`. There is no solo-preference left to fall back from, so
+the question no longer arises.
 
 Falls back to `BLOCK.current` only with zero history for the movement.
 
-**Ramp shape:** `buildRamp(mov, targetWeight, { position, isSuperset,
-setCount })` scales its shape with the movement's **queue position**, not
-with its historical set count (CHANGES.md Sep 8 2026, Phase 1, which replaces
-the Aug 19 set-count table outright).
+**Ramp shape:** `buildRamp(mov, targetWeight, { setCount })` generates **two
+weights, never three** (CHANGES-2026-09-13, Phase 1). This is the third
+version of this logic: the Aug 19 set-count table was replaced by the Sep 8
+position-aware ramp, which is replaced here.
 
-The correcting insight is that warm-up is a per-session need, not a
-per-movement need: quads don't need re-warming three times inside one legs
-session, so only the opener earns a full ramp. The old shape put just 2 of 5
-sets at working weight — 60% warm-up tax — against a target of ~20 working
-sets per session inside a 45-minute lifting budget. Measured on the Sep 3
-legs session: 23 total sets, ~14 at working weight.
+> *"there's no need for three different weights in one exercise. We are
+> starting at a heavy but established weight and then moving to a higher
+> weight."*
 
-For target weight `T` and step `i` (one chip-step down):
+The reframe that makes it work: **the sets at the established weight ARE the
+warm-up.** They are productive volume at a real load, not junk sets at a token
+weight — which is why they are typed `"E"` rather than the old `"WU"`/`"B"`,
+and why their count is small and fixed rather than scaled by queue position.
 
-| Movement position | Generated pattern | Sets | Working |
+For target weight `T` and one increment down `E`:
+
+| Sets | Pattern | At established | At target |
 |---|---|---|---|
-| Position 1 (opener) | `[T-2i, T-i, T, T, T]` | 5 | 3 |
-| Position 2+ | `[T-i, T, T, T]` | 4 | 3 |
-| Superset member | `[T, T, T, T]` | 4 | 4 |
-| 2-set movement | `[T, T]` | 2 | 2 |
-| ≤1 set | `[T]` | 1 | 1 |
+| 5 | `[E, E, T, T, T]` | 2 | 3 |
+| 4 | `[E, T, T, T]` | 1 | 3 |
+| 3 | `[T, T, T]` | 0 | 3 |
+| 2 | `[T, T]` | 0 | 2 |
 
-- `position` is the movement's index in the session's flat ordered list, so
-  the opener is position 0.
-- `isSuperset` is read straight off the movement's `supersetId`, so
-  linking/unlinking mid-session is picked up without threading another prop
-  through `useMovementPicker`. Superset members never carry warm-up sets —
-  they sit at the end of a session by design and the muscle group is already
-  fully warm — and always get exactly 4 rounds regardless of derived set
-  count, since `SupersetRow` interleaves the pair's rows and a mismatched
-  count renders ragged.
-- `setCount` (from `deriveSetCount`, the modal total-set count across the
-  last 3 eligible sessions, defaulting to 5) is now consulted for **one case
-  only**: the "2-set movement" row. **Inference flagged in the code** — the
-  work order lists that row without saying what makes a movement a 2-set
-  movement; reading it as "history says 2 sets" is the only reading that
-  leaves the row any work to do. Flag to the owner if it was meant to be an
-  explicit per-movement setting instead.
-- There is **no padding beyond the tabulated counts** any more. Position
-  determines the set count, which is the point of the restructure (capping
-  total sets against the time budget); "+ add round" / `handleUpdate("_add")`
-  is still how extra sets get added by hand.
+Generalised as "2 established at ≥5 sets, 1 at exactly 4, 0 below that", so a
+movement the owner has added sets to in-session keeps the same two established
+sets rather than growing a third distinct weight. One set floors at `[T]`.
 
-**Reordering regenerates the ramp.** `useMovementPicker` watches
-`position`/`isSuperset` and rebuilds through the same `applyTarget` helper a
-chip tap uses: silent before any set is logged, and behind the existing
-confirm-before-change pattern once sets exist. Cancelling keeps the ramp —
-the movement still moved, only its shape is left alone. Both the promoted and
-the displaced movement regenerate.
+Validated by the owner's own log before it was specified: Sep 8 push ran
+two-weight patterns throughout (DB Bench `35,35,40,40,40` @ RPE 6,6,7,7,7; Pec
+Fly `120,135,135,135` @ 6,7,8,8) and came in at **43 minutes**, inside the
+45-minute lifting budget.
 
-(See `scripts/test-ramp-shapes.js`, validation bar check #12. This is also
-where the earlier "Leg Press generates 6 sets" bug fix lives — it used to be
-a `workSets`-field mismatch against the ramp's built-in "W" count, then a
-history-derived count; now the count follows position, so there is no
-hand-maintained number left to drift.)
+**Set counts are authored per movement**, via `sets:` on each `BLOCK`
+movement, read through `setCountFor(mov)`. This replaced the history-derived
+`deriveSetCount`, which is gone: set counts are a programming decision, not
+something to infer from what happened to get logged. A library or custom
+movement with no authored count falls back to `DEFAULT_SET_COUNT` (5).
+
+| Session | Set counts | Total |
+|---|---|---|
+| Legs | Leg Press 5, Leg Extension 5, Leg Curl 4, Goblet Squat 4, Calf Raise 4 | 22 |
+| Push | DB Bench Press 5, Pec Fly 4, Skull Crusher 4, Rope Pushdown 4, Shoulder Press 4, Lateral Raise 4 | 25 |
+| Pull | Seated Row 5, Lat Pulldown 4, DB Row 4, Reverse Fly 4, Cable Curl 4, Hammer Curl 4 | 25 |
+
+Calibrated against real timing rather than estimated: Sep 8 push ran exactly
+those 25 sets in 43 minutes. Legs gets 5 sets on movements 1 and 2 because it
+has roughly ten minutes of headroom against the budget. Set counts stay
+adjustable in-session — the owner explicitly wants to add work when time
+permits — via "+ add set" / "+ add round" (`handleUpdate("_add")`), which
+appends at the target weight and so can never introduce a third weight.
+
+**The ramp no longer depends on queue position or superset membership.** Both
+drove it under the Sep 8 rules; neither does now. Two consequences:
+
+- Superset members are authored at 4 sets, so they carry one established-weight
+  set where the Sep 8 rule gave them four straight working sets. That follows
+  from the table being unconditional, and is consistent with the reframe — an
+  established round is real work, not a warm-up to skip because the muscle is
+  already warm.
+- Reordering a movement leaves its ramp alone. The Sep 8 regeneration effect
+  and its confirm prompt are gone. Position still drives
+  `applyPositionalDowngrade` (see "Suggestion rules").
+
+(See `scripts/test-ramp-shapes.js`, validation bar check #12, which pins the
+invariant the work order states outright — never a third distinct weight —
+across both equipment kinds, 1-8 sets and nine targets including the rack's
+irregular 12 lb entry. This is also where the ancestral "Leg Press generates 6
+sets" bug fix lives: it was a `workSets`-field mismatch, then a history-derived
+count, then position; now it is an authored number, which is the only version
+of this that a reader can check against the program.)
+
+**Triceps order.** Skull Crusher runs **before** Rope Pushdown in the Push
+defaults (CHANGES-2026-09-13, Phase 2): *"cant do 20s after pushdowns"* (Sep
+8). Skull Crusher dropped every time it followed the pushdowns — Aug 27
+(`20×10,8,5` then down to 12), Sep 5 (`20×8,6` then down to 15), Sep 8
+(`15×10×4`, chip `down`). Same muscle group, and the pushdowns pre-exhaust it;
+Skull Crusher is the load-sensitive one, so it gets the fresher slot. Check #12
+asserts the declared order of all three default lists, not just membership.
 
 **Suggestion rules:** `suggestChip(history, movName, targetReps)` evaluates
 the last two sessions containing the movement, via the shared
@@ -608,15 +662,15 @@ situations. Tell the owner if the literal exactly-RPE-8 reading was meant.
 strict — hitting the floor is enough to avoid `down`, but not enough to
 suggest increasing. `movementSessionSummaries` skips any session where the
 movement is marked `substituted` (see "Unavailable weight fallback", below) —
-a rack-availability drop must not lower the baseline — and `suggestChip` now
-reads `progressionSummaries` rather than the raw summaries, so **superset
-sessions are excluded from the suggestion too**, not just from the derived
-weight. Both come from the same eligibility rule, so a movement's suggestion
-and the weight under it can never be computed from different sessions.
+a rack-availability drop must not lower the baseline. Superset sessions are
+**not** skipped; they are handled directionally by the `notDown` guard (see
+"Current working weight", above), so a sub-maximal round can never read as
+regression while a genuinely strong one still counts.
 
 Verified against the committed log by `scripts/test-superset-progression.js`
-(check #18): Hammer Curl derives 25, Goblet Squat 50, and Seated Row and Lat
-Pulldown both suggest `up`.
+(check #18): Calf Raise derives 45 and suggests `up` (it was 40 / `down`),
+Hammer Curl 25, Goblet Squat 50, and Seated Row and Lat Pulldown both suggest
+`up`.
 
 Verified with `scripts/test-suggestion-rep-range.js` (validation bar check
 #17, also `npm run test:suggestion-rep-range`): the named Chest Press
@@ -981,6 +1035,23 @@ time / pain / other).
   duration/level/RPE to plot — while the record still shows it, which is
   exactly what makes a missing finisher distinguishable from an untracked one.
 
+**A skip carries no performance data** (CHANGES-2026-09-13, Phase 6). The Sep
+8 record went out with `skipped: true`, `skipReason: "machine in use"` AND
+`duration: 13`, `level: 4` — the numbers were entered before the machine
+turned out to be taken. `cardioForRecord(cardio)` strips
+duration/level/rpe from a skipped finisher, keeping the skip, its reason, and
+which machine was unavailable.
+
+Sanitising happens at the **write** boundary rather than when skip is tapped:
+the entry fields are hidden while cardio is skipped anyway, so holding the
+values in session state costs nothing on screen and keeps "un-skip"
+non-destructive. Only what reaches the permanent record is cleaned; the draft
+keeps them so a resume restores them. Records already written in the
+inconsistent shape can't be fixed without rewriting `sessions.json`, which
+this repo never does — so the read side stays defensive and is pinned by
+tests: `getCardioHistory` keeps such a record off the trend and
+`formatCardio` displays it as a skip rather than as a 13-minute finisher.
+
 Verified with `scripts/test-cardio-skip.js` (validation bar check #22, also
 `npm run test:cardio-skip`).
 
@@ -1018,14 +1089,30 @@ type's `BLOCK` list. Without that, a resumed draft containing an optional add
 or a custom definition would silently lose its `steps`/`increment`/`reps`
 and come back with dead chips.
 
-**Dumbbell weights are per hand.** The owner logs "35s" meaning 35 lb in each
-hand. `weightLabelFor(mov)` is the single source both rendering sites use —
-`SetLogger`'s column header and `SupersetRow`'s rows — so they can't drift;
-it keys off `steps`, which is exactly the dumbbell classification the rack
-array encodes. `SupersetRow` had no column header at all and gained one; a
-mixed pair keeps a plain "lb" header and names the per-hand movement
-underneath. `ChipPicker` shows a "lb per hand" line, since the chips are
-weights too.
+**Dumbbell weights.** The owner logs "35s" meaning 35 lb in each hand — but
+*"goblet squats are one dumbbell so not 'per hand'"* (Sep 9), so `steps` alone
+isn't enough to decide the label. `weightLabelFor(mov)` is the single source
+every rendering site uses, and reads three ways:
+
+| Movement | Label | |
+|---|---|---|
+| machine / cable | `lb` | one loaded stack |
+| single dumbbell (`single: true`) | `lb total` | one bell, both hands |
+| paired dumbbell | `lb/hand` | a bell in each hand |
+
+Goblet Squat is the only movement flagged `single`. The seven the work order
+names as paired — DB Bench Press, DB Row, Skull Crusher, Hammer Curl, Zottman
+Curl, Reverse Fly, Lateral Raise — stay per-hand. **The remaining eight
+dumbbell movements in the library (OHE, Shoulder Press (DB), RDL, Glute
+Bridge, Incline DB Press, Flat DB Press, Floor Press, Rows) appear in neither
+list**, so they keep the paired default rather than being reclassified on a
+guess; OHE and Glute Bridge in particular look single-dumbbell, but that's the
+owner's call. A movement defined in-app can declare which kind it is.
+
+This is a labelling fix only — no record is rewritten and no number changes.
+`SupersetRow` had no column header at all and gained one; a mixed pair keeps a
+plain "lb" header and names both movements' actual units underneath.
+`ChipPicker` shows "lb per hand" or "one dumbbell, total weight" to match.
 
 **Do not merge or rename historical movements.** `Rows`/`DB Row`,
 `Flat DB Press`/`DB Bench Press` and `Shoulder Press`/`Shoulder Press (DB)`
@@ -1086,43 +1173,82 @@ from the clock, never replayed.
 - Past 45 minutes of lifting the clock turns amber and nothing else happens:
   "no alarms, no blocking".
 
+**Cardio reminder (Phase 3, Sep 13 2026).**
+
+> *"Instead of automatically switching to cardio, add a reminder at 45 mins
+> that asks me to switch to cardio."*
+
+The problem is a measurement one: the owner lifted straight through the cardio
+block on Sep 9, so `liftingMin` recorded 52 when actual lifting was ~39 — the
+stairmaster time was banked as lifting.
+
+- `cardioReminderDue(timer, elapsed)` fires at `LIFTING_TARGET_MIN` (45) of
+  **lifting** time as a non-blocking banner above the session stats, offering
+  "start cardio" or "not yet". **Nothing switches automatically.**
+- Dismissing (`timerReminderDismissed`) goes quiet for
+  `CARDIO_REMINDER_GAP_MIN` (15) of lifting time, returns exactly once, then
+  never again — "do not nag repeatedly, at most one further reminder, well
+  later". `MAX_CARDIO_REMINDERS` is 2.
+- `remindersDismissed` / `lastReminderMin` live on the timer object, so they
+  ride the existing draft persistence.
+- It survives backgrounding because it is **derived** from elapsed time rather
+  than scheduled: an app returning at minute 50 finds the reminder already due
+  instead of having missed a fire. Same reasoning the timer itself uses for
+  storing a start timestamp rather than counting ticks.
+- A timer saved before this phase has no reminder fields; it defaults to
+  un-dismissed and still gets its first reminder.
+
 Verified with `scripts/test-session-timer.js` (validation bar check #20, also
-`npm run test:session-timer`).
+`npm run test:session-timer`) and `scripts/test-cardio-reminder.js` (check
+#23, also `npm run test:cardio-reminder`).
 
-### Chart windowing
+### Charts
 
-Charts became unreadable as history grew — months of data crushed into 320px
-with date labels overlapping. Each chart now shows the most recent **12**
-points by default, with **12 / 25 / all** presets and a pan control
-(CHANGES.md Sep 8 2026, Phase 6).
+Two different mechanisms, for two different shapes of data.
 
-**Windowed by data points, not calendar dates**, and deliberately so: for a
-per-movement chart, 12 means 12 sessions *containing that movement*. Twelve
+**Per-movement charts scroll.** `MovementChart` plots the WHOLE series inside
+a horizontally scrollable container, opened on the most recent end. Nothing is
+sliced away, so all-time data is reachable by scrolling at any setting — which
+was the ask: *"is it possible to scroll across the graphs so that all time
+data can be viewed without switching the duration?"*
+
+- The **12 / 25 / all** presets are a DENSITY (zoom) control, not a window: at
+  12, roughly twelve points fill the visible width; `all` fits the entire
+  series on screen, which is still the zoomed-out "am I trending up over
+  months" view. `CHART_MIN_SPACING` floors the per-point spacing at every
+  density below `all`, so labels can't collide.
+- **No per-point value labels.** The weight printed above each dot is gone —
+  *"remove data values from the graphs - they are getting squished."* Weights
+  are read from a **fixed y-axis column** beside the plot, which stays put
+  while the plot scrolls (gridline labels inside the plot would have scrolled
+  away).
+- RPE is kept, printed only on the points that carry a date label. It is one
+  character rather than three, it is the signal the whole suggestion engine
+  runs on, and its only other representation is dot colour, which is coarse.
+  Worth revisiting if the owner wants it gone too.
+- Date labels thin out from the newest backwards (about one per 44px), so the
+  most recent session is always labelled and the rest stay legible zoomed out.
+- The ◀ older / newer ▶ pan buttons are **gone** — native scrolling replaces
+  them.
+- The y-axis scale spans the whole series, so scrolling never changes what a
+  height means.
+
+**The cardio trend still pages.** It is a table rather than a graph and never
+squished, so `CardioMachineTable` keeps `windowSlice` /
+`ChartWindowControls` / `maxChartOffset` / `chartPanStep` — the newest 12
+entries per machine with 12/25/all presets and a half-window pan. Each machine
+holds its own state: Stairmaster has far more entries than the machines used
+once or twice, so a shared offset would mean something different in each table.
+
+Windowing counts **data points, not calendar dates**, either way: for a
+per-movement view, 12 means 12 sessions *containing that movement*. Twelve
 calendar sessions is only about four legs sessions — legs runs once a week —
 which would make leg charts far sparser than cardio charts for no reason the
 reader could see.
 
-- `windowSlice` / `maxChartOffset` / `chartPanStep` are the shared
-  arithmetic and `ChartWindowControls` the shared UI, so the per-movement
-  charts and the cardio trend can't drift apart.
-- Pan steps by **half** a window rather than a whole page, so consecutive
-  views overlap and a trend running across a window boundary stays readable.
-  Switching preset re-anchors to the newest data rather than stranding the
-  reader at an offset the new range may not reach.
-- The y-axis scales to the **window**, not the whole series, so a window of
-  similar weights uses the full height instead of flattening against an
-  all-time max that isn't on screen.
-- Controls stay hidden when the whole series already fits in one window.
-- The cardio trend's per-machine tables (`CardioMachineTable`) are windowed
-  the same way, each holding its own state: Stairmaster has far more entries
-  than the machines used once or twice, so a shared offset would mean
-  something different in each table. This replaced its fixed `.slice(-8)`.
-- "all" earns its place because the zoomed-out view answers a question the
-  windowed one can't: am I trending up over months.
-
-Note the per-movement progression charts live on the **Block** tab (and,
-compact, inside an open movement card); the **Progress** tab carries the
-weekly breakdown and the cardio trend.
+Note the per-movement charts live on the **Block** tab (and, compact, inside
+an open movement card); the **Progress** tab carries the weekly breakdown and
+the cardio trend.
 
 Verified with `scripts/test-chart-windowing.js` (validation bar check #21,
 also `npm run test:chart-windowing`).
@@ -1509,6 +1635,91 @@ Worth revisiting if it turns out to be more than one movement.
   origin is ahead by one commit per session. Pull before relying on the
   committed log. Everything derives from live history at runtime, so this
   never blocked the work above.
+
+38. **Two-weight ramp.** *"there's no need for three different weights in one
+    exercise."* `[E, E, T, T, T]` at 5 sets down to `[T, T]` at 2, never a
+    third distinct weight — the established-weight sets ARE the warm-up, and
+    are productive volume rather than junk. Set counts became authored per
+    movement (`sets:`), replacing the history-derived `deriveSetCount`. The
+    ramp no longer depends on queue position or superset membership, so the
+    Sep 8 reorder-regeneration effect is gone too. See **Target picker** →
+    "Ramp shape".
+39. **Triceps reorder** — Skull Crusher runs before Rope Pushdown. It dropped
+    every time it followed the pushdowns; same muscle group, and the pushdowns
+    pre-exhaust it. See **Target picker** → "Triceps order".
+40. **45-minute cardio reminder** — a non-blocking prompt at 45 minutes of
+    lifting, offering to switch. Nothing switches automatically; one further
+    reminder if dismissed, then silence. Fixes the Sep 9 miscount where
+    lifting through the cardio block banked stairmaster time as lifting. See
+    **Session timer** → "Cardio reminder".
+41. **Superset rounds may raise the baseline, never lower it.** The Sep 8
+    exclusion was directional in intent but implemented as wholesale
+    invisibility, so a movement living permanently in a pair was judged on
+    stale solo data — Calf Raise deriving 40 with a `down` suggestion against
+    two clean `45×15` sessions. Now two windows (solo and superset) scored
+    separately and maxed, plus a superset-specific no-`down` guard in
+    `suggestChip`. Retires the Sep 8 `BLOCK.current` deviation. See **Target
+    picker** → "Current working weight".
+42. **Single-dumbbell labelling** — *"goblet squats are one dumbbell so not
+    'per hand'"*. `single: true` gives a third label (`lb total`) alongside
+    `lb` and `lb/hand`. Labelling only; no record rewritten. See **Movement
+    library** → "Dumbbell weights".
+43. **Skipped cardio carries no performance data** — a skip reaching the
+    record is stripped of duration/level/rpe, sanitised at the write boundary
+    so un-skip stays non-destructive. Already-written records stay excluded
+    from the trend by the read-side guard. See **Cardio finisher fields** →
+    "Cardio skip".
+44. **Charts scroll; per-point values removed.** The per-movement charts plot
+    the whole series in a horizontally scrollable container with a fixed
+    y-axis, so all-time data is reachable without switching preset; the
+    12/25/all presets became a density control and the pan buttons are gone.
+    The weight label above each dot is gone — it was what squished. The cardio
+    trend, being a table, keeps its paging. See **Charts**.
+45. **Docs caught up for the Sep 13 2026 work order** (items 38-44) — "Ramp
+    shape" and "Current working weight" rewritten, **Charts** replacing "Chart
+    windowing", "Cardio reminder" and "Triceps order" added, `Data model`
+    updated for `sets`/`single`, the dumbbell-labelling table, the cardio-skip
+    sanitising note, and the `Validation bar` check list/counts (22→23).
+
+**Readings the owner has since confirmed** (Sep 8 2026) — the three Sep 8
+interpretation questions were all ratified; two of them have since been
+superseded by the Sep 13 work order:
+
+- Phase 1's **"2-set movements" row** stayed history-derived. **Superseded**:
+  set counts are authored per movement now (item 38).
+- Phase 2's **superset-only fallback** stood as implemented. **Superseded**:
+  there is no solo-preference left at all (item 41).
+- Phase 2's **plateau rule** stands as RPE ≤8 at the same top weight for three
+  sessions, not RPE exactly 8. Still current.
+
+**Known conflict — Leg Press.** `BLOCK.flags` and the movement's own target
+both say 185 has been RPE 8 for six sessions and to **not** add weight,
+because the limiter is unracking off the hinges rather than the working reps.
+The plateau rule reads exactly that pattern and suggests `up`. The engine does
+not read `flags` or `target` (they're coach prose), so the two genuinely
+disagree on screen; the star is a suggestion and the owner overrides it.
+Deliberately not special-cased — encoding "this movement is exempt" needs a
+real per-movement field, which is a programming decision for the training
+project. Worth revisiting if it turns out to be more than one movement.
+
+**Still open:**
+
+- The eight dumbbell movements the Sep 13 work order didn't classify as single
+  or paired keep the paired default (item 42). OHE and Glute Bridge look like
+  single-dumbbell movements; the owner decides.
+- The nine optional adds other than DB Bench Press have no coach-authored
+  `target`; they say so in place of one, and stay that way until one gets
+  used. Shoulder Press (DB)'s 70 lb log is above the current rack's 50 lb
+  ceiling, so its chips snap to 50.
+- RPE values are still printed on the charts. The owner asked to remove "data
+  values"; the weight labels went, RPE stayed (see **Charts** for why). Easy
+  to drop if that wasn't the intent.
+- `sessions.json` **in this working copy** lags the phone — the app
+  auto-pushes it on every finished session, so `origin` runs ahead by one
+  commit per session. Several records the Sep 13 work order cites (the Sep 8
+  push, the Sep 9 legs session, the Sep 8 skipped-cardio record) are not in
+  the committed log, which ends Sep 7. Pull before relying on it. Everything
+  derives from live history at runtime, so this never blocked the work above.
 
 Add new items here as they come up.
 

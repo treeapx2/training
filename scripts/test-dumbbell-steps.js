@@ -127,11 +127,11 @@ async function checkMachineMovementUnaffectedInTheLiveApp() {
   const { window, errors } = await mount();
   click(window, byText(window, "button", "Push"));
   await sleep(window, 40);
-  // Pec Fly: increment 15, current 120 -> down/up should be 105/135.
+  // Pec Fly: increment 15, current 135 -> down/up should be 120/150.
   const card = await openCard(window, "Pec Fly");
   const buttons = Array.from(card.querySelectorAll("button")).map((b) => b.textContent.trim());
-  if (!buttons.some((b) => b.startsWith("105"))) throw new Error("expected Pec Fly down chip to be 105 (15 lb increment)");
-  if (!buttons.some((b) => b.startsWith("135"))) throw new Error("expected Pec Fly up chip to be 135 (15 lb increment)");
+  if (!buttons.some((b) => b.startsWith("120"))) throw new Error("expected Pec Fly down chip to be 120 (15 lb increment)");
+  if (!buttons.some((b) => b.startsWith("150"))) throw new Error("expected Pec Fly up chip to be 150 (15 lb increment)");
   if (errors.length) throw new Error("jsdom errors: " + errors.join("; "));
   console.log("PASS: a machine movement's fixed-increment chips are unaffected");
   window.close();
