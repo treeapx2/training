@@ -3426,9 +3426,11 @@ function SupersetRow({
 const LIFTING_TARGET_MIN = 45;
 const CARDIO_TARGET_MIN = 15;
 const EMPTY_TIMER = {
+  // "lifting" while the clock is measuring; "cardio" once the lifting block is
+  // closed. The clock does NOT run during the cardio phase — see
+  // timerCardioStarted.
   phase: "lifting",
   liftingMs: 0,
-  cardioMs: 0,
   running: false,
   startedAt: null,
   // Cardio reminder bookkeeping (CHANGES-2026-09-13, Phase 3). Lives on the
@@ -3445,10 +3447,7 @@ function timerElapsed(timer, now) {
   const t = timer || EMPTY_TIMER;
   const at = now != null ? now : Date.now();
   const live = t.running && t.startedAt ? Math.max(at - t.startedAt, 0) : 0;
-  return {
-    liftingMs: t.liftingMs + (t.phase === "lifting" ? live : 0),
-    cardioMs: t.cardioMs + (t.phase === "cardio" ? live : 0),
-  };
+  return { liftingMs: t.liftingMs + live };
 }
 // Bank the running stretch into its phase and stop the clock. Every
 // transition (pause, phase switch, finish) goes through this so a running
@@ -3456,7 +3455,7 @@ function timerElapsed(timer, now) {
 function timerBanked(timer, now) {
   const t = timer || EMPTY_TIMER;
   const e = timerElapsed(t, now);
-  return { ...t, liftingMs: e.liftingMs, cardioMs: e.cardioMs, running: false, startedAt: null };
+  return { ...t, liftingMs: e.liftingMs, running: false, startedAt: null };
 }
 function timerPaused(timer, now) {
   return timerBanked(timer, now);
@@ -3466,12 +3465,30 @@ function timerResumed(timer, now) {
   if (t.running) return t;
   return { ...t, running: true, startedAt: now != null ? now : Date.now() };
 }
-// Close the lifting block and start the cardio one. Irreversible within a
-// session by design — the split is a record of what happened, not a mode
-// toggle.
+// Close the lifting block and STOP the clock. The cardio block is not timed:
+// its minutes come from what the owner enters in the cardio finisher, which is
+// the number they actually did.
+//
+// The clock used to keep running through cardio, and because it counts wall
+// time (deliberately, so a backgrounded session isn't under-counted) a session
+// finished later banked all of it as cardio. The Sep 13 record went out with
+// cardioMin: 3151 — about 52 hours — against an entered duration of 13,
+// and that total reached the coach handoff. Nothing bounded the cardio phase
+// the way the 45-minute reminder nudges the lifting one.
+//
+// Total session length is now the lifting clock plus the entered cardio
+// minutes. Irreversible within a session by design — the split is a record of
+// what happened, not a mode toggle.
 function timerCardioStarted(timer, now) {
   const banked = timerBanked(timer, now);
-  return { ...banked, phase: "cardio", running: true, startedAt: now != null ? now : Date.now() };
+  return { ...banked, phase: "cardio" };
+}
+// Cardio minutes for the record: the owner's entered duration, not a clock. A
+// skipped finisher contributes nothing.
+function cardioMinutesFrom(cardio) {
+  if (!cardio || cardio.skipped) return 0;
+  const n = parseFloat(cardio.duration);
+  return Number.isFinite(n) && n > 0 ? Math.round(n) : 0;
 }
 
 // The 45-minute cardio reminder (CHANGES-2026-09-13, Phase 3).
@@ -4005,7 +4022,8 @@ function SessionScreen({ history, setHistory, syncLast, onSynced }) {
     // final stretch isn't dropped (CHANGES.md Sep 8 2026, Phase 5).
     const finalTimer = timerBanked(timer);
     const liftingMin = durationMinutes(finalTimer.liftingMs);
-    const cardioMin = durationMinutes(finalTimer.cardioMs);
+    // Not a clock — the minutes the owner entered in the finisher.
+    const cardioMin = cardioMinutesFrom(cardio);
     const entry = {
       id: Date.now(),
       type: active,
@@ -4522,9 +4540,11 @@ function SessionScreen({ history, setHistory, syncLast, onSynced }) {
         >
           rest {session.rest}
         </div>
-        {/* Session timer (CHANGES.md Sep 8 2026, Phase 5), sat alongside the
-            rest target. Past the 45-minute lifting budget the clock just
-            turns amber — "no alarms, no blocking". */}
+        {/* Session timer, sat alongside the rest target. Past the 45-minute
+            lifting budget the clock just turns amber — "no alarms, no
+            blocking". It measures LIFTING only: once cardio starts the clock
+            stops for good and the cardio minutes come from the finisher
+            entry. */}
         <div
           style={{
             textAlign: "right",
@@ -4539,9 +4559,7 @@ function SessionScreen({ history, setHistory, syncLast, onSynced }) {
               color: overBudget ? "#b8860b" : "#111",
             }}
           >
-            {formatDuration(
-              timer.phase === "cardio" ? elapsed.cardioMs : elapsed.liftingMs,
-            )}
+            {formatDuration(elapsed.liftingMs)}
             {!timer.running && (
               /*#__PURE__*/ <span
                 style={{
@@ -4551,7 +4569,7 @@ function SessionScreen({ history, setHistory, syncLast, onSynced }) {
                   marginLeft: 4,
                 }}
               >
-                paused
+                {timer.phase === "cardio" ? "final" : "paused"}
               </span>
             )}
           </div>
@@ -4563,11 +4581,9 @@ function SessionScreen({ history, setHistory, syncLast, onSynced }) {
             }}
           >
             {timer.phase === "cardio"
-              ? "cardio · lifting " +
-                formatDuration(elapsed.liftingMs) +
-                " / " +
+              ? "lifting done · cardio from entry (~" +
                 CARDIO_TARGET_MIN +
-                "m target"
+                "m)"
               : "lifting / " + LIFTING_TARGET_MIN + "m target"}
           </div>
           <div
@@ -4578,23 +4594,25 @@ function SessionScreen({ history, setHistory, syncLast, onSynced }) {
               marginTop: 3,
             }}
           >
-            <button
-              onClick={() =>
-                setTimer((t) => (t.running ? timerPaused(t) : timerResumed(t)))
-              }
-              style={{
-                fontSize: 11,
-                color: "#888",
-                background: "none",
-                border: "none",
-                padding: 0,
-                cursor: "pointer",
-                textDecoration: "underline",
-                textDecorationStyle: "dotted",
-              }}
-            >
-              {timer.running ? "pause" : "resume"}
-            </button>
+            {timer.phase === "lifting" && (
+              /*#__PURE__*/ <button
+                onClick={() =>
+                  setTimer((t) => (t.running ? timerPaused(t) : timerResumed(t)))
+                }
+                style={{
+                  fontSize: 11,
+                  color: "#888",
+                  background: "none",
+                  border: "none",
+                  padding: 0,
+                  cursor: "pointer",
+                  textDecoration: "underline",
+                  textDecorationStyle: "dotted",
+                }}
+              >
+                {timer.running ? "pause" : "resume"}
+              </button>
+            )}
             {timer.phase === "lifting" && (
               /*#__PURE__*/ <button
                 onClick={() => {

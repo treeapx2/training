@@ -62,7 +62,6 @@ async function checkTimerArithmetic() {
   // is 10 minutes even if nothing ticked (a backgrounded PWA).
   let e = window.timerElapsed(t, t0 + 10 * MIN);
   if (e.liftingMs !== 10 * MIN) throw new Error(`expected 10 min of lifting, got ${e.liftingMs}`);
-  if (e.cardioMs !== 0) throw new Error("cardio must not accrue during the lifting phase");
   console.log("PASS: elapsed time is recomputed from the wall clock, not accumulated tick by tick");
 
   // Pause banks the running stretch and stops the clock; later wall time
@@ -82,15 +81,34 @@ async function checkTimerArithmetic() {
   }
   console.log("PASS: pause banks the running stretch and resume continues from the banked total");
 
-  // Starting cardio closes the lifting block; the two accrue separately.
+  // Starting cardio closes the lifting block and STOPS the clock for good.
+  // The cardio block is not timed — its minutes come from the finisher entry.
   t = window.timerCardioStarted(t, t0 + 45 * MIN);
-  if (t.phase !== "cardio" || !t.running) throw new Error("starting cardio must switch phase and keep running");
-  e = window.timerElapsed(t, t0 + 57 * MIN);
-  if (e.liftingMs !== 25 * MIN) {
-    throw new Error(`lifting must freeze at its banked total once cardio starts, got ${e.liftingMs / MIN}`);
+  if (t.phase !== "cardio") throw new Error("starting cardio must switch phase");
+  if (t.running) throw new Error("starting cardio must stop the clock, not keep it running");
+  // However long the session then sits — minutes, hours, days — lifting is
+  // frozen and nothing else accrues. This is the Sep 13 record, which banked
+  // 3151 minutes of "cardio" because the clock kept running for two days.
+  [57, 120, 60 * 24 * 2].forEach((mins) => {
+    const at = window.timerElapsed(t, t0 + mins * MIN);
+    if (at.liftingMs !== 25 * MIN) {
+      throw new Error(`lifting must stay frozen at 25 min, got ${at.liftingMs / MIN} after ${mins} min`);
+    }
+  });
+  console.log("PASS: starting cardio stops the clock — nothing accrues, however late the session is finished");
+
+  // Cardio minutes come from the entered duration, not a clock.
+  if (window.cardioMinutesFrom({ machine: "Stairmaster", duration: "13" }) !== 13) {
+    throw new Error("cardio minutes should come from the entered duration");
   }
-  if (e.cardioMs !== 12 * MIN) throw new Error(`expected 12 min of cardio, got ${e.cardioMs / MIN}`);
-  console.log("PASS: lifting and cardio accrue as separate blocks (the 45/15 split, not one 60-minute total)");
+  if (window.cardioMinutesFrom({ duration: "13", skipped: true }) !== 0) {
+    throw new Error("a skipped finisher contributes no cardio minutes");
+  }
+  if (window.cardioMinutesFrom({ duration: "" }) !== 0) {
+    throw new Error("an unentered duration contributes no cardio minutes");
+  }
+  if (window.cardioMinutesFrom(null) !== 0) throw new Error("no cardio at all contributes nothing");
+  console.log("PASS: cardio minutes come from the entered duration, and skips contribute none");
 
   if (window.formatDuration(0) !== "0:00") throw new Error("formatDuration(0) should be 0:00");
   if (window.formatDuration(65 * 1000) !== "1:05") throw new Error("formatDuration should be m:ss");
@@ -202,10 +220,11 @@ async function checkDurationPersistsOnTheRecordAndInHistory() {
   const draft = {
     type: "legs",
     note: "",
-    cardio: null,
+    // 14 entered cardio minutes — the clock does not time the cardio block.
+    cardio: { machine: "Stairmaster", duration: "14", level: "4", rpe: "6", skipped: false, skipReason: "" },
     sessionDate: "2026-09-08",
     date: "Sep 8, 2026",
-    timer: { phase: "cardio", liftingMs: 44 * MIN, cardioMs: 14 * MIN, running: false, startedAt: null },
+    timer: { phase: "cardio", liftingMs: 44 * MIN, running: false, startedAt: null },
     movements: [
       { name: "Leg Press", _group: "Quads", _loggedSets: [{ set: 1, weight: "185", reps: "10", rpe: "7", note: "" }], note: "", targetWeight: "185", chipChoice: "hold", suggested: "hold", supersetId: null, skipped: false, skipReason: "", substituted: false },
     ],
@@ -227,7 +246,36 @@ async function checkDurationPersistsOnTheRecordAndInHistory() {
   if (entry.durationMin !== 58) throw new Error(`expected durationMin 58 (44 + 14), got ${entry.durationMin}`);
   if (entry.liftingMin !== 44) throw new Error(`expected liftingMin 44, got ${entry.liftingMin}`);
   if (entry.cardioMin !== 14) throw new Error(`expected cardioMin 14, got ${entry.cardioMin}`);
-  console.log("PASS: finish() persists the total and the lifting/cardio split on the record");
+  console.log("PASS: finish() persists the total and the lifting/cardio split — clock for lifting, entry for cardio");
+
+  // The runaway-clock case: a session left in the cardio phase for two days
+  // must still record the entered cardio minutes, not the elapsed time. This
+  // is the Sep 13 record, which went out with cardioMin: 3151.
+  const stale = {
+    type: "push",
+    note: "",
+    cardio: { machine: "Stairmaster", duration: "13", level: "4", rpe: "6", skipped: false, skipReason: "" },
+    sessionDate: "2026-09-13",
+    date: "Sep 13, 2026",
+    timer: { phase: "cardio", liftingMs: 46 * MIN, running: false, startedAt: Date.now() - 52 * 60 * MIN },
+    movements: [
+      { name: "Pec Fly", _group: "Chest", _loggedSets: [{ set: 1, weight: "150", reps: "10", rpe: "8", note: "" }], note: "", targetWeight: "150", chipChoice: "up", suggested: "up", supersetId: null, skipped: false, skipReason: "", substituted: false },
+    ],
+  };
+  const second = await mount(stale);
+  const w2 = second.window;
+  click(w2, byText(w2, "button", "resume session"));
+  await sleep(w2, 80);
+  click(w2, byText(w2, "button", "finish session"));
+  await sleep(w2, 120);
+  const rec = JSON.parse(w2.localStorage.getItem("at_workout_stable") || "{}").history[0];
+  if (rec.cardioMin !== 13) {
+    throw new Error(`expected the entered 13 cardio minutes, got ${rec.cardioMin}`);
+  }
+  if (rec.liftingMin !== 46) throw new Error(`expected 46 lifting minutes, got ${rec.liftingMin}`);
+  if (rec.durationMin !== 59) throw new Error(`expected 59 total, got ${rec.durationMin}`);
+  console.log("PASS: a session left in the cardio phase for two days still records the entered minutes (was 3151)");
+  w2.close();
 
   // It shows up in history, and in the coach handoff.
   const formatted = window.formatSessionDuration(entry);

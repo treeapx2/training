@@ -190,26 +190,27 @@ async function checkDismissAndSwitchInTheLiveApp() {
   await sleep(w2, 80);
 
   const afterSwitch = JSON.parse(w2.localStorage.getItem("at_session_draft") || "{}");
-  if (afterSwitch.timer.phase !== "cardio") throw new Error("switching should start the cardio phase");
-  if (!afterSwitch.timer.running) throw new Error("switching should start the cardio timer running");
+  if (afterSwitch.timer.phase !== "cardio") throw new Error("switching should close the lifting block");
+  if (afterSwitch.timer.running) {
+    throw new Error("switching must STOP the clock — the cardio block is not timed");
+  }
   if (Math.round(afterSwitch.timer.liftingMs / MIN) !== 46) {
     throw new Error(`lifting time should be banked at 46 min, got ${afterSwitch.timer.liftingMs / MIN}`);
   }
   if (rootText(w2).includes("switch to cardio?")) {
     throw new Error("the prompt should be gone once cardio has started");
   }
-  console.log("PASS: 'start cardio' banks lifting time, starts the cardio timer, and clears the prompt");
+  console.log("PASS: 'start cardio' banks lifting time, stops the clock, and clears the prompt");
 
-  // And lifting stops accruing — which is the Sep 9 bug this phase fixes.
+  // Nothing accrues afterwards, however long the session sits before being
+  // finished — the Sep 9 miscount (lifting through cardio) and the Sep 13 one
+  // (3151 cardio minutes from a two-day-old running clock) are both closed.
   const before = w2.timerElapsed(afterSwitch.timer, Date.now());
-  const later = w2.timerElapsed(afterSwitch.timer, Date.now() + 10 * MIN);
+  const later = w2.timerElapsed(afterSwitch.timer, Date.now() + 60 * 24 * MIN);
   if (later.liftingMs !== before.liftingMs) {
     throw new Error("lifting time must stop accruing once cardio starts");
   }
-  if (later.cardioMs - before.cardioMs !== 10 * MIN) {
-    throw new Error("cardio time should accrue after the switch");
-  }
-  console.log("PASS: after switching, lifting stops accruing and cardio starts (the Sep 9 miscount)");
+  console.log("PASS: after switching nothing accrues at all, however late the session is finished");
   if (second.errors.length) throw new Error("jsdom errors: " + second.errors.join("; "));
   if (errors.length) throw new Error("jsdom errors: " + errors.join("; "));
   w2.close();

@@ -1159,12 +1159,21 @@ away from, which on a phone is most of them. `timerNow` state exists only to
 re-render the clock once a second; the elapsed value is always recomputed
 from the clock, never replayed.
 
-- **Two phases**, because the budget has two parts: **45 minutes of lifting**
-  (`LIFTING_TARGET_MIN`) and a separate **~15-minute cardio finisher**
-  (`CARDIO_TARGET_MIN`) that is *not* inside it. "start cardio"
-  (`timerCardioStarted`) closes the lifting block and opens the cardio one,
-  so the 45/15 split stays visible instead of collapsing into one 60-minute
-  total. One-way by design — it records what happened, it isn't a mode toggle.
+- **The clock measures LIFTING only.** "start cardio"
+  (`timerCardioStarted`) closes the lifting block and **stops the clock for
+  good**; the cardio block is not timed. Total session length is the lifting
+  clock plus the cardio minutes the owner *enters* in the finisher
+  (`cardioMinutesFrom`), which is the number they actually did. One-way by
+  design — it records what happened, it isn't a mode toggle.
+
+  The clock used to keep running through cardio. Because it counts wall time
+  (deliberately, so a backgrounded session isn't under-counted), a session
+  finished later banked all of it: the **Sep 13 record went out with
+  `cardioMin: 3151`** — about 52 hours — against an entered duration of 13,
+  and that total reached the coach handoff. Nothing bounded the cardio phase
+  the way the 45-minute reminder nudges the lifting one. A timed block whose
+  end depends on the owner remembering to press finish can't be trusted;
+  the entered number can.
 - Starts automatically on session start; pause/resume sit in the session
   header alongside the rest target, with the elapsed clock and the target.
   `timerBanked` is the single transition helper (pause, phase switch,
@@ -1174,7 +1183,9 @@ from the clock, never replayed.
   the time the app was closed.
 - `finish()` banks the clock before reading it, then writes
   `durationMin`/`liftingMin`/`cardioMin` onto the record (see **Session
-  records**). All three are omitted when the clock never ran.
+  records**) — `liftingMin` from the clock, `cardioMin` from the entered
+  duration, `durationMin` their sum. A skipped finisher contributes no cardio
+  minutes. All three are omitted when the clock never ran.
 - Shown in both history sites and in the coach handoff.
   `formatSessionDuration()` returns `""` for a record with no `durationMin`,
   so the pre-Sep-8-2026 back catalogue renders nothing rather than "0 min".
