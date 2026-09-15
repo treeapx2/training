@@ -5,13 +5,12 @@
 // test-sync-last.js) so `npm test` alone still runs it.
 //
 // Covers, against fixture history:
-//   - buildRamp produces the exact opener shape [T-2i, T-i, T, T, T] and
-//     clamps at the lowest available increment.
+//   - buildRamp produces the exact two-weight 5-set shape [E, E, T, T, T]
+//     and clamps at the lowest available increment.
 //   - deriveCurrentWeight: heaviest qualifying weight across the last three
 //     eligible sessions; falls back to BLOCK.current with no history. (See
 //     test-superset-progression.js for the windowing and superset-exclusion
 //     rules themselves.)
-//   - deriveSetCount: modal total-set count across the last three sessions.
 //   - suggestChip's four rules (up / hold / down / <2 sessions -> hold).
 //   - applyPositionalDowngrade: up -> hold only in the last two positions.
 //   - End-to-end: tapping a chip in a live session and finishing persists
@@ -68,21 +67,22 @@ async function checkRampShape() {
   const { window, errors } = await mount(null);
   if (errors.length) throw new Error("jsdom errors on mount: " + errors.join("; "));
   const mov = { name: "Leg Press", reps: 10, increment: 15, current: "185 lb" };
-  // Position 0 (the opener) is the only shape that still carries a warmup.
-  const ramp = window.buildRamp(mov, 185, { position: 0 });
+  // Two weights, never three (CHANGES-2026-09-13 Phase 1): 5 sets is
+  // [E, E, T, T, T].
+  const ramp = window.buildRamp(mov, 185, { setCount: 5 });
   const shape = ramp.map((s) => s.weight);
-  if (JSON.stringify(shape) !== JSON.stringify(["155", "170", "185", "185", "185"])) {
+  if (JSON.stringify(shape) !== JSON.stringify(["170", "170", "185", "185", "185"])) {
     throw new Error("ramp shape wrong: " + JSON.stringify(shape));
   }
-  if (JSON.stringify(ramp.map((s) => s.type)) !== JSON.stringify(["WU", "B", "W", "W", "W"])) {
+  if (JSON.stringify(ramp.map((s) => s.type)) !== JSON.stringify(["E", "E", "W", "W", "W"])) {
     throw new Error("ramp types wrong: " + JSON.stringify(ramp.map((s) => s.type)));
   }
   // Clamp: a target near the increment must not go negative/zero.
-  const clamped = window.buildRamp(mov, 20, { position: 0 });
+  const clamped = window.buildRamp(mov, 20, { setCount: 5 });
   if (clamped.some((s) => Number(s.weight) < 15)) {
     throw new Error("ramp did not clamp at the lowest increment: " + JSON.stringify(clamped.map((s) => s.weight)));
   }
-  console.log("PASS: buildRamp opener shape and clamping (see test-ramp-shapes.js for the full position table)");
+  console.log("PASS: buildRamp two-weight 5-set shape and clamping (see test-ramp-shapes.js for the full table)");
   window.close();
 }
 
@@ -98,16 +98,12 @@ async function checkDeriveCurrentWeightAndSetCount() {
   if (current !== 200) throw new Error(`expected deriveCurrentWeight 200 (best qualifying session in the window), got ${current}`);
   console.log("PASS: deriveCurrentWeight uses the best qualifying session in the last three (200)");
 
-  const setCount = window.deriveSetCount(history, "Leg Press");
-  // Last 3 sessions: 5, 5, 4 -> modal is 5.
-  if (setCount !== 5) throw new Error(`expected modal set count 5, got ${setCount}`);
-  console.log("PASS: deriveSetCount picks the modal count across the last 3 sessions (5)");
+  // (deriveSetCount is gone — set counts are authored per movement now, see
+  // test-ramp-shapes.js. Nothing derives them from history any more.)
 
   const noHistoryWeight = window.deriveCurrentWeight([], mov);
   if (noHistoryWeight !== 185) throw new Error(`expected fallback to BLOCK.current (185), got ${noHistoryWeight}`);
-  const noHistoryCount = window.deriveSetCount([], "Leg Press");
-  if (noHistoryCount !== 5) throw new Error(`expected fallback set count 5, got ${noHistoryCount}`);
-  console.log("PASS: both derive* functions fall back correctly with no history");
+  console.log("PASS: deriveCurrentWeight falls back to BLOCK.current with no history");
   if (errors.length) throw new Error("jsdom errors: " + errors.join("; "));
   window.close();
 }

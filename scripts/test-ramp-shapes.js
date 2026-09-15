@@ -1,23 +1,25 @@
 #!/usr/bin/env node
-// Behavioral jsdom check for POSITION-AWARE ramp generation (see CLAUDE.md
-// "Target picker" — CHANGES.md Sep 8 2026, Phase 1). Registered as
-// validation bar check #12; also runnable alone via
-// `npm run test:ramp-shapes`.
+// Behavioral jsdom check for the TWO-WEIGHT ramp (see CLAUDE.md "Target
+// picker" — CHANGES-2026-09-13, Phase 1). Registered as validation bar check
+// #12; also runnable alone via `npm run test:ramp-shapes`.
 //
-// Replaces the Aug 19 set-count table. The old shape landed only 2 of 5 sets
-// at working weight — 60% warm-up tax — because it re-warmed the muscle
-// group on every movement. Warm-up is a per-session need, so only the opener
-// earns a full ramp; everything after it starts at one build set, and
-// superset members (which sit last, on an already-warm muscle group) carry
-// no warm-up at all.
+// > "there's no need for three different weights in one exercise. We are
+// > starting at a heavy but established weight and then moving to a higher
+// > weight."
+//
+// The load-bearing invariant is the one the work order states outright: never
+// generate a third distinct weight. Set counts are authored per movement
+// rather than derived from position or history, and are calibrated against
+// real timing (Sep 8 push, 5/4/4/4/4/4 = 25 sets, 43 minutes).
 const fs = require("fs");
 const path = require("path");
 const { JSDOM } = require("jsdom");
 
 const repoRoot = path.resolve(__dirname, "..");
 const indexPath = path.join(repoRoot, "index.html");
+const appSrcPath = path.join(repoRoot, "src", "app.jsx");
 
-async function mount(seed) {
+async function mount() {
   const html = fs.readFileSync(indexPath, "utf8");
   const dom = new JSDOM(html, {
     url: "https://example.invalid/",
@@ -31,19 +33,25 @@ async function mount(seed) {
   if (!window.matchMedia) {
     window.matchMedia = () => ({ matches: false, addListener() {}, removeListener() {} });
   }
-  // Must be set before the sleep below (i.e. before React's mount effect
-  // actually runs and reads localStorage) — seeding after `mount()`
-  // returns is too late, the app has already loaded with empty history.
-  if (seed) window.localStorage.setItem("at_workout_stable", JSON.stringify({ history: seed }));
   await new Promise((r) => window.setTimeout(r, 100));
   return { window, errors };
 }
 
-// The wrapper div around one movement — it holds the reorder controls
-// (▲/▼, the "#n" position label) as well as the movement's own card. Walking
-// up from the name div, the FIRST ancestor containing a ▲ button is this
-// wrapper: the card itself has no reorder controls, and every ancestor above
-// the wrapper holds every other movement's controls too.
+const sleep = (window, ms) => new Promise((r) => window.setTimeout(r, ms));
+const click = (window, el) =>
+  el.dispatchEvent(new window.MouseEvent("click", { bubbles: true, cancelable: true }));
+const byText = (window, tag, text) =>
+  Array.from(window.document.querySelectorAll(tag)).find((b) => b.textContent.trim() === text);
+
+// Weight inputs only — each set row renders weight/reps/rpe in that order.
+function rampWeightsIn(scope) {
+  return Array.from(scope.querySelectorAll('input[type="number"]'))
+    .filter((_, i) => i % 3 === 0)
+    .map((i) => i.value);
+}
+
+// The wrapper div around one movement: the first ancestor of its name div that
+// contains a ▲ reorder button (the card itself has none).
 function wrapperFor(window, name) {
   const nameDiv = Array.from(window.document.querySelectorAll("div")).find(
     (d) => d.textContent.trim() === name,
@@ -65,188 +73,199 @@ function cardHeaderIn(wrapper) {
   return header;
 }
 
-// Weight inputs only — each set row renders weight/reps/rpe in that order.
-function rampWeightsIn(scope) {
-  return Array.from(scope.querySelectorAll('input[type="number"]'))
-    .filter((_, i) => i % 3 === 0)
-    .map((i) => i.value);
-}
-
-async function checkAllFourTabulatedShapes() {
+async function checkTheFourTabulatedPatterns() {
   const { window, errors } = await mount();
   if (errors.length) throw new Error("jsdom errors on mount: " + errors.join("; "));
 
-  // Leg Press: increment 15, target 185 -> wu=155, b=170.
+  // Leg Press: increment 15, target 185 -> established 170.
   const mov = { name: "Leg Press", reps: 10, increment: 15, current: "185 lb" };
 
   const cases = [
-    {
-      label: "position 1 (opener)",
-      opts: { position: 0 },
-      types: ["WU", "B", "W", "W", "W"],
-      weights: ["155", "170", "185", "185", "185"],
-    },
-    {
-      label: "position 2",
-      opts: { position: 1 },
-      types: ["B", "W", "W", "W"],
-      weights: ["170", "185", "185", "185"],
-    },
-    {
-      label: "position 6",
-      opts: { position: 5 },
-      types: ["B", "W", "W", "W"],
-      weights: ["170", "185", "185", "185"],
-    },
-    {
-      label: "superset member",
-      opts: { position: 4, isSuperset: true },
-      types: ["W", "W", "W", "W"],
-      weights: ["185", "185", "185", "185"],
-    },
-    {
-      label: "2-set movement",
-      opts: { position: 0, setCount: 2 },
-      types: ["W", "W"],
-      weights: ["185", "185"],
-    },
+    { sets: 5, types: ["E", "E", "W", "W", "W"], weights: ["170", "170", "185", "185", "185"] },
+    { sets: 4, types: ["E", "W", "W", "W"], weights: ["170", "185", "185", "185"] },
+    { sets: 3, types: ["W", "W", "W"], weights: ["185", "185", "185"] },
+    { sets: 2, types: ["W", "W"], weights: ["185", "185"] },
   ];
 
   for (const c of cases) {
-    const ramp = window.buildRamp(mov, 185, c.opts);
+    const ramp = window.buildRamp(mov, 185, { setCount: c.sets });
     const types = ramp.map((s) => s.type);
     const weights = ramp.map((s) => s.weight);
     if (JSON.stringify(types) !== JSON.stringify(c.types)) {
-      throw new Error(`${c.label} shape types wrong: expected ${JSON.stringify(c.types)}, got ${JSON.stringify(types)}`);
+      throw new Error(`${c.sets}-set types wrong: expected ${JSON.stringify(c.types)}, got ${JSON.stringify(types)}`);
     }
     if (JSON.stringify(weights) !== JSON.stringify(c.weights)) {
-      throw new Error(`${c.label} shape weights wrong: expected ${JSON.stringify(c.weights)}, got ${JSON.stringify(weights)}`);
+      throw new Error(`${c.sets}-set weights wrong: expected ${JSON.stringify(c.weights)}, got ${JSON.stringify(weights)}`);
     }
   }
-  console.log("PASS: all four tabulated ramp patterns (opener / position 2+ / superset / 2-set) generate exactly as specified");
+  console.log("PASS: all four tabulated patterns (5/4/3/2 sets) generate exactly as specified");
 
-  // Working-set counts are the point of the restructure: 3/3/4 working sets,
-  // versus 2 of 5 under the old shape.
-  const working = (opts) => window.buildRamp(mov, 185, opts).filter((s) => s.type === "W").length;
-  if (working({ position: 0 }) !== 3) throw new Error("opener must land 3 working sets");
-  if (working({ position: 1 }) !== 3) throw new Error("position 2+ must land 3 working sets");
-  if (working({ position: 4, isSuperset: true }) !== 4) throw new Error("superset member must land 4 working sets");
-  console.log("PASS: working-set counts are 3 / 3 / 4 (opener / position 2+ / superset member)");
+  // THE invariant: never a third distinct weight. Checked across set counts,
+  // both equipment kinds, and a range of targets — including ones where the
+  // step lands on the dumbbell rack's irregular 12 lb entry.
+  const movs = [
+    { name: "Leg Press", reps: 10, increment: 15 },
+    { name: "Cable Curl", reps: 10, increment: 5 },
+    { name: "Skull Crusher", reps: 10, steps: window.DUMBBELL_STEPS },
+  ];
+  const targets = [5, 10, 12, 15, 20, 42.5, 50, 135, 185];
+  movs.forEach((m) => {
+    targets.forEach((t) => {
+      for (let sets = 1; sets <= 8; sets++) {
+        const ramp = window.buildRamp(m, t, { setCount: sets });
+        const distinct = new Set(ramp.map((s) => s.weight));
+        if (distinct.size > 2) {
+          throw new Error(
+            `${m.name} @ ${t} x${sets} produced ${distinct.size} distinct weights: ${JSON.stringify([...distinct])}`,
+          );
+        }
+        if (ramp.length !== sets) {
+          throw new Error(`${m.name} @ ${t} x${sets} produced ${ramp.length} sets`);
+        }
+      }
+    });
+  });
+  console.log("PASS: never more than two distinct weights, across both equipment kinds and 1-8 sets");
 
-  // A superset member is 4 rounds regardless of derived set count — the pair's
-  // rows are interleaved, so a mismatched count renders ragged.
-  const supersetTwo = window.buildRamp(mov, 185, { position: 4, isSuperset: true, setCount: 2 });
-  if (supersetTwo.length !== 4) {
-    throw new Error(`superset member must stay at 4 rounds even with a 2-set history, got ${supersetTwo.length}`);
+  // 3 and 2 sets are single-weight by design.
+  [3, 2, 1].forEach((sets) => {
+    const distinct = new Set(window.buildRamp(mov, 185, { setCount: sets }).map((s) => s.weight));
+    if (distinct.size !== 1) {
+      throw new Error(`${sets} sets should be a single weight, got ${JSON.stringify([...distinct])}`);
+    }
+  });
+  console.log("PASS: 3 and 2 sets are a single weight (and 1 set floors at one working set)");
+
+  // Adding sets in-session must not grow a third weight — still 2 established.
+  const six = window.buildRamp(mov, 185, { setCount: 6 });
+  if (six.filter((s) => s.type === "E").length !== 2) {
+    throw new Error("beyond 5 sets the established count should stay at 2");
   }
-  console.log("PASS: superset membership overrides a 2-set derived count (4 rounds, interleaving stays aligned)");
+  console.log("PASS: beyond 5 sets the established count stays at 2 rather than adding a third weight");
 
-  // Floor: 1 set (and 0, defensively) never goes below one working set.
-  const one = window.buildRamp(mov, 185, { position: 0, setCount: 1 });
-  if (one.length !== 1 || one[0].type !== "W" || one[0].weight !== "185") {
-    throw new Error(`expected a 1-set floor of [{type:"W", weight:"185"}], got ${JSON.stringify(one)}`);
+  // Clamping: a target at the bottom of the range can't step below it, which
+  // collapses to a single weight rather than producing something negative.
+  const clamped = window.buildRamp(mov, 15, { setCount: 5 });
+  if (clamped.some((s) => Number(s.weight) < 15)) {
+    throw new Error(`ramp did not clamp at the lowest increment: ${JSON.stringify(clamped.map((s) => s.weight))}`);
   }
-  const zero = window.buildRamp(mov, 185, { position: 0, setCount: 0 });
-  if (zero.length !== 1 || zero[0].type !== "W") {
-    throw new Error(`expected setCount 0 to still floor at one working set, got ${JSON.stringify(zero)}`);
-  }
-  console.log("PASS: a derived set count <= 1 floors at exactly one working set");
+  console.log("PASS: the established weight clamps at the lowest available increment");
 
-  // No opts at all still has to produce something sane (opener shape).
+  // No opts at all still has to produce something sane.
   const bare = window.buildRamp(mov, 185);
-  if (bare.length !== 5 || bare[0].type !== "WU") {
-    throw new Error(`expected the opener shape with no opts, got ${JSON.stringify(bare.map((s) => s.type))}`);
+  if (bare.length !== 5 || new Set(bare.map((s) => s.weight)).size !== 2) {
+    throw new Error(`expected a default 5-set two-weight ramp with no opts, got ${JSON.stringify(bare)}`);
   }
-  console.log("PASS: buildRamp with no opts defaults to the opener shape");
+  console.log("PASS: buildRamp with no opts defaults to the 5-set two-weight ramp");
   window.close();
 }
 
-async function checkPositionAwareRampsInTheLiveApp() {
+// The Phase 1 tables, asserted against the authored BLOCK data rather than
+// against whatever the UI happens to render — a set count that drifts here is
+// a programming change, not a rendering bug.
+const EXPECTED_SETS = {
+  legs: [["Leg Press", 5], ["Leg Extension", 5], ["Leg Curl", 4], ["Goblet Squat", 4], ["Calf Raise", 4]],
+  push: [["DB Bench Press", 5], ["Pec Fly", 4], ["Skull Crusher", 4], ["Rope Pushdown", 4], ["Shoulder Press", 4], ["Lateral Raise", 4]],
+  pull: [["Seated Row", 5], ["Lat Pulldown", 4], ["DB Row", 4], ["Reverse Fly", 4], ["Cable Curl", 4], ["Hammer Curl", 4]],
+};
+
+function checkAuthoredSetCounts() {
+  // BLOCK is a `const`, not a function declaration, so it isn't reachable on
+  // `window` from a mounted page — read the source, same approach
+  // test-dumbbell-steps.js uses for the authored data shape.
+  const src = fs.readFileSync(appSrcPath, "utf8");
+  Object.entries(EXPECTED_SETS).forEach(([type, rows]) => {
+    rows.forEach(([name, sets]) => {
+      const re = new RegExp(`\\{ name: "${name}",[^}]*?\\bsets: (\\d+)`);
+      const m = src.match(re);
+      if (!m) throw new Error(`no authored sets found for ${name} (${type})`);
+      if (Number(m[1]) !== sets) {
+        throw new Error(`${name} (${type}): expected sets: ${sets}, got ${m[1]}`);
+      }
+    });
+  });
+  const total = Object.values(EXPECTED_SETS).flat().length;
+  console.log(`PASS: all ${total} default movements carry their tabulated set count`);
+
+  // A movement with no authored count falls back to the default rather than
+  // generating nothing.
+  const totals = Object.fromEntries(
+    Object.entries(EXPECTED_SETS).map(([t, rows]) => [t, rows.reduce((a, [, n]) => a + n, 0)]),
+  );
+  if (totals.push !== 25) throw new Error(`Push should total 25 sets (the measured 43-minute session), got ${totals.push}`);
+  if (totals.legs !== 22) throw new Error(`Legs should total 22 sets, got ${totals.legs}`);
+  if (totals.pull !== 25) throw new Error(`Pull should total 25 sets, got ${totals.pull}`);
+  console.log("PASS: session set totals are 22 legs / 25 push / 25 pull");
+}
+
+async function checkSetCountFallbackAndLiveRamp() {
   const { window, errors } = await mount();
-  const sleep = (ms) => new Promise((r) => window.setTimeout(r, ms));
-  const click = (el) => el.dispatchEvent(new window.MouseEvent("click", { bubbles: true, cancelable: true }));
-  const byText = (tag, text) =>
-    Array.from(window.document.querySelectorAll(tag)).find((b) => b.textContent.trim() === text);
+  if (window.setCountFor({ name: "X" }) !== 5) {
+    throw new Error("a movement with no authored sets should fall back to 5");
+  }
+  if (window.setCountFor({ name: "X", sets: 4 }) !== 4) {
+    throw new Error("an authored set count should win");
+  }
+  console.log("PASS: setCountFor uses the authored count and falls back to 5");
 
-  click(byText("button", "Legs"));
-  await sleep(40);
-
-  // Leg Press is the Legs opener (position 1) -> full ramp, 5 sets.
-  const openerWrap = wrapperFor(window, "Leg Press");
-  click(cardHeaderIn(openerWrap));
-  await sleep(40);
-  let starred = Array.from(openerWrap.querySelectorAll("button")).find((b) => b.textContent.includes("★"));
+  // Live app: the Legs opener generates its authored 5 sets as two weights.
+  click(window, byText(window, "button", "Legs"));
+  await sleep(window, 60);
+  const wrap = wrapperFor(window, "Leg Press");
+  click(window, cardHeaderIn(wrap));
+  await sleep(window, 40);
+  const starred = Array.from(wrap.querySelectorAll("button")).find((b) => b.textContent.includes("★"));
   if (!starred) throw new Error("no suggested chip found for Leg Press");
-  click(starred);
-  await sleep(40);
-  let weights = rampWeightsIn(openerWrap);
+  click(window, starred);
+  await sleep(window, 60);
+  const weights = rampWeightsIn(wrap);
   if (weights.length !== 5) {
-    throw new Error(`expected the opener to generate 5 sets, got ${weights.length}: ${JSON.stringify(weights)}`);
-  }
-  if (new Set(weights).size < 3) {
-    throw new Error(`expected the opener's ramp to carry a warmup and a build set, got ${JSON.stringify(weights)}`);
-  }
-  console.log("PASS: the session opener generates a full 5-set ramp in the live app");
-
-  // Leg Extension sits at position 2 -> one build set, 4 sets total.
-  const secondWrap = wrapperFor(window, "Leg Extension");
-  click(cardHeaderIn(secondWrap));
-  await sleep(40);
-  starred = Array.from(secondWrap.querySelectorAll("button")).find((b) => b.textContent.includes("★"));
-  if (!starred) throw new Error("no suggested chip found for Leg Extension");
-  click(starred);
-  await sleep(40);
-  weights = rampWeightsIn(secondWrap);
-  if (weights.length !== 4) {
-    throw new Error(`expected a position-2 movement to generate 4 sets, got ${weights.length}: ${JSON.stringify(weights)}`);
+    throw new Error(`expected Leg Press's authored 5 sets, got ${weights.length}: ${JSON.stringify(weights)}`);
   }
   if (new Set(weights).size !== 2) {
-    throw new Error(`expected exactly one build set below three working sets, got ${JSON.stringify(weights)}`);
+    throw new Error(`expected exactly two distinct weights in the live app, got ${JSON.stringify(weights)}`);
   }
-  console.log("PASS: a position-2+ movement generates a 4-set ramp with one build set");
+  if (weights[0] !== weights[1] || weights[2] !== weights[4]) {
+    throw new Error(`expected [E, E, T, T, T], got ${JSON.stringify(weights)}`);
+  }
+  console.log("PASS: the Legs opener generates its authored 5 sets as [E, E, T, T, T] in the live app");
 
-  // Reordering it up to position 1 must regenerate the ramp (no sets logged,
-  // so this is silent — no confirm).
-  const up = Array.from(secondWrap.querySelectorAll("button")).find((b) => b.textContent.trim() === "▲");
-  if (!up) throw new Error("no ▲ reorder button found for Leg Extension");
-  click(up);
-  await sleep(60);
-  const movedWrap = wrapperFor(window, "Leg Extension");
-  weights = rampWeightsIn(movedWrap);
-  if (weights.length !== 5) {
-    throw new Error(`expected the ramp to regenerate to 5 sets after moving to position 1, got ${weights.length}: ${JSON.stringify(weights)}`);
+  // Leg Curl is authored at 4 -> one established set.
+  const curl = wrapperFor(window, "Leg Curl");
+  click(window, cardHeaderIn(curl));
+  await sleep(window, 40);
+  const curlChip = Array.from(curl.querySelectorAll("button")).find((b) => b.textContent.includes("★"));
+  click(window, curlChip);
+  await sleep(window, 60);
+  const curlWeights = rampWeightsIn(curl);
+  if (curlWeights.length !== 4) {
+    throw new Error(`expected Leg Curl's authored 4 sets, got ${curlWeights.length}`);
   }
-  if (new Set(weights).size < 3) {
-    throw new Error(`expected a warmup + build after the move to position 1, got ${JSON.stringify(weights)}`);
+  if (new Set(curlWeights).size !== 2 || curlWeights[1] !== curlWeights[3]) {
+    throw new Error(`expected [E, T, T, T] for a 4-set movement, got ${JSON.stringify(curlWeights)}`);
   }
-  console.log("PASS: reordering a movement to position 1 regenerates its ramp to the opener shape");
+  console.log("PASS: a 4-set movement generates [E, T, T, T]");
 
-  // And the movement it displaced drops from 5 sets to 4.
-  const demotedWrap = wrapperFor(window, "Leg Press");
-  weights = rampWeightsIn(demotedWrap);
-  if (weights.length !== 4) {
-    throw new Error(`expected the displaced opener to regenerate to 4 sets, got ${weights.length}: ${JSON.stringify(weights)}`);
+  // In-session adjustability: the owner explicitly wants to add work when
+  // time permits, and doing so must not introduce a third weight.
+  const addBtn = Array.from(curl.querySelectorAll("button")).find((b) => b.textContent.trim().startsWith("+"));
+  if (!addBtn) throw new Error("no add-set affordance on a movement card");
+  click(window, addBtn);
+  await sleep(window, 60);
+  const grown = rampWeightsIn(curl);
+  if (grown.length !== 5) throw new Error(`expected 5 sets after adding one, got ${grown.length}`);
+  if (new Set(grown).size !== 2) {
+    throw new Error(`adding a set introduced a third weight: ${JSON.stringify(grown)}`);
   }
-  console.log("PASS: the displaced movement regenerates to the position-2+ shape");
-
+  console.log("PASS: set counts stay adjustable in-session without introducing a third weight");
   if (errors.length) throw new Error("jsdom errors: " + errors.join("; "));
   window.close();
 }
 
-async function checkSupersetMembersCarryNoWarmup() {
+async function checkSupersetMembersUseTheSameTable() {
   const { window, errors } = await mount();
-  const sleep = (ms) => new Promise((r) => window.setTimeout(r, ms));
-  const click = (el) => el.dispatchEvent(new window.MouseEvent("click", { bubbles: true, cancelable: true }));
-  const byText = (tag, text) =>
-    Array.from(window.document.querySelectorAll(tag)).find((b) => b.textContent.trim() === text);
-
-  click(byText("button", "Pull"));
-  await sleep(40);
-
-  // The pre-seeded Pull superset renders as one combined card, headed
-  // "SUPERSET · A + B". Open it and drive both movements' chips; every
-  // generated row must sit at its own movement's target weight, with no
-  // warmup or build row anywhere.
+  click(window, byText(window, "button", "Pull"));
+  await sleep(window, 60);
   const pairHeader = Array.from(window.document.querySelectorAll("div")).find(
     (d) =>
       (d.getAttribute("style") || "").includes("cursor: pointer") &&
@@ -254,44 +273,46 @@ async function checkSupersetMembersCarryNoWarmup() {
   );
   if (!pairHeader) throw new Error("no superset card header found on Pull");
   const card = pairHeader.parentElement;
-  click(pairHeader);
-  await sleep(40);
+  click(window, pairHeader);
+  await sleep(window, 40);
   const stars = Array.from(card.querySelectorAll("button")).filter((b) => b.textContent.includes("★"));
-  if (!stars.length) throw new Error("no suggested chip found on the superset card");
+  if (!stars.length) throw new Error("no suggested chip on the superset card");
   for (const s of stars) {
-    click(s);
-    await sleep(40);
+    click(window, s);
+    await sleep(window, 40);
   }
-  await sleep(40);
+  await sleep(window, 40);
 
-  // Four interleaved rounds, each rendering one row per movement -> 8 rows.
-  const roundLabels = Array.from(card.querySelectorAll("div")).filter((d) =>
+  // Superset members are authored at 4 sets, so they follow the same table as
+  // anything else at 4: one established set, three at target. (Under the Sep 8
+  // rules they got four straight working sets; the two-weight table is
+  // unconditional and supersedes that.)
+  const rounds = Array.from(card.querySelectorAll("div")).filter((d) =>
     /^Set \d+$/.test(d.textContent.trim()),
   );
-  if (roundLabels.length !== 4) {
-    throw new Error(`expected exactly 4 superset rounds, got ${roundLabels.length}`);
-  }
+  if (rounds.length !== 4) throw new Error(`expected 4 superset rounds, got ${rounds.length}`);
   const rows = rampWeightsIn(card);
-  if (rows.length !== 8) {
-    throw new Error(`expected 8 set rows (4 rounds x 2 movements), got ${rows.length}: ${JSON.stringify(rows)}`);
-  }
-  // Each movement's own 4 rows are all at that movement's working weight;
-  // the two movements are different equipment here, so their weights differ.
+  if (rows.length !== 8) throw new Error(`expected 8 rows (4 rounds x 2 movements), got ${rows.length}`);
   const perMovement = [rows.filter((_, i) => i % 2 === 0), rows.filter((_, i) => i % 2 === 1)];
   perMovement.forEach((weights, n) => {
-    if (new Set(weights).size !== 1) {
-      throw new Error(`superset movement ${n} generated a warmup/build row: ${JSON.stringify(weights)}`);
+    const distinct = new Set(weights);
+    if (distinct.size > 2) {
+      throw new Error(`superset movement ${n} generated ${distinct.size} distinct weights: ${JSON.stringify(weights)}`);
+    }
+    if (weights[1] !== weights[3]) {
+      throw new Error(`superset movement ${n} should be [E, T, T, T], got ${JSON.stringify(weights)}`);
     }
   });
-  console.log("PASS: superset members generate 4 working-weight-only rounds (no warmup, no build)");
+  console.log("PASS: superset members follow the same 4-set table ([E, T, T, T]), never a third weight");
   if (errors.length) throw new Error("jsdom errors: " + errors.join("; "));
   window.close();
 }
 
 async function main() {
-  await checkAllFourTabulatedShapes();
-  await checkPositionAwareRampsInTheLiveApp();
-  await checkSupersetMembersCarryNoWarmup();
+  await checkTheFourTabulatedPatterns();
+  checkAuthoredSetCounts();
+  await checkSetCountFallbackAndLiveRamp();
+  await checkSupersetMembersUseTheSameTable();
   console.log("ALL PASS");
 }
 
