@@ -271,6 +271,8 @@ async function checkAgainstRealHistory() {
     { name: "Goblet Squat", reps: 10, steps: true, current: "50 lb", derived: 50 },
     { name: "Seated Row", reps: 10, increment: 15, current: "135 lb", suggested: "up" },
     { name: "Lat Pulldown", reps: 10, increment: 15, current: "135 lb", suggested: "up" },
+    // Phase 4: was deriving 40 with a `down` suggestion off stale solo data.
+    { name: "Calf Raise", reps: 15, increment: 5, current: "45 lb", derived: 45 },
   ];
   expected.forEach((e) => {
     const mov = {
@@ -297,12 +299,93 @@ async function checkAgainstRealHistory() {
   window.close();
 }
 
+async function checkSupersetRoundsCanRaiseTheBaseline() {
+  const { window, errors } = await mount();
+  if (errors.length) throw new Error("jsdom errors on mount: " + errors.join("; "));
+
+  // The Calf Raise bug (CHANGES-2026-09-13, Phase 4). It has lived in the
+  // Goblet Squat superset since Aug 10, so excluding superset sessions
+  // outright threw away its best and cleanest work and fell back to stale
+  // solo data — deriving 40 and suggesting `down` off 45x15 ` RPE 6.
+  //
+  // Note what is NOT the cause, despite a reasonable suspicion: rep-range
+  // bounds. `reps: 15` is a single lower bound, not a 15-20 range, and both
+  // sessions below score as clean passes. They were discarded before scoring
+  // ever mattered.
+  const history = [
+    // Stale solo history: the top set missed the 15-rep target.
+    session("Aug 7, 2026", "Calf Raise", 45, 10, 6, { type: "legs", label: "Legs" }),
+    session("Jul 29, 2026", "Calf Raise", 40, 20, 6, { type: "legs", label: "Legs" }),
+    // Recent superset rounds — the real, clean work.
+    session("Aug 25, 2026", "Calf Raise", 45, 15, 6, { type: "legs", label: "Legs", supersetId: "seed_2" }),
+    session("Sep 3, 2026", "Calf Raise", 45, 15, 6, { type: "legs", label: "Legs", supersetId: "seed_2" }),
+  ];
+  const mov = { name: "Calf Raise", reps: 15, increment: 5, current: "45 lb" };
+
+  // Guard the premise: those superset sessions really do score as passes.
+  const all = window.movementSessionSummaries(history, "Calf Raise", 15);
+  const sep3 = all.find((s) => s.date === "Sep 3, 2026");
+  if (!sep3.hitFloor || !sep3.hitTarget) {
+    throw new Error("fixture premise broken: 45x15 against a 15-rep target should score as a pass");
+  }
+  if (!sep3.inSuperset) throw new Error("fixture premise broken: Sep 3 should be flagged inSuperset");
+
+  const derived = window.deriveCurrentWeight(history, mov);
+  if (derived !== 45) {
+    throw new Error(`expected Calf Raise to derive 45 from its superset rounds, got ${derived}`);
+  }
+  const suggested = window.suggestChip(history, "Calf Raise", 15);
+  if (suggested === "down") {
+    throw new Error("Calf Raise must not suggest down off two clean 45x15 sessions");
+  }
+  console.log(`PASS: superset rounds RAISE the baseline — Calf Raise derives 45 and suggests ${suggested}, not down`);
+
+  // ...but they still can't lower it. Same movement, superset rounds
+  // deliberately weight-matched down to 35: the solo baseline holds.
+  const matchedDown = [
+    session("Aug 7, 2026", "Calf Raise", 45, 15, 6, { type: "legs", label: "Legs" }),
+    session("Aug 25, 2026", "Calf Raise", 35, 15, 6, { type: "legs", label: "Legs", supersetId: "seed_2" }),
+    session("Sep 3, 2026", "Calf Raise", 35, 15, 6, { type: "legs", label: "Legs", supersetId: "seed_2" }),
+  ];
+  if (window.deriveCurrentWeight(matchedDown, mov) !== 45) {
+    throw new Error(
+      `a weight-matched superset round lowered the baseline: got ${window.deriveCurrentWeight(matchedDown, mov)}, expected 45`,
+    );
+  }
+  console.log("PASS: a weight-matched superset round still cannot lower the baseline");
+
+  // And a superset session can never produce a `down`, however it went —
+  // sub-maximal output run last under fatigue is not a regression.
+  const badSupersetRound = [
+    session("Aug 25, 2026", "Calf Raise", 45, 15, 6, { type: "legs", label: "Legs" }),
+    session("Sep 3, 2026", "Calf Raise", 45, 5, 9, { type: "legs", label: "Legs", supersetId: "seed_2" }),
+  ];
+  const call = window.suggestChip(badSupersetRound, "Calf Raise", 15);
+  if (call === "down") {
+    throw new Error("a superset session must never produce a down suggestion");
+  }
+  console.log(`PASS: a poor superset round yields ${call}, never down`);
+
+  // The same poor session run SOLO is a genuine signal and still reads down.
+  const badSoloRound = [
+    session("Aug 25, 2026", "Calf Raise", 45, 15, 6, { type: "legs", label: "Legs" }),
+    session("Sep 3, 2026", "Calf Raise", 45, 5, 9, { type: "legs", label: "Legs" }),
+  ];
+  if (window.suggestChip(badSoloRound, "Calf Raise", 15) !== "down") {
+    throw new Error("a poor SOLO session should still suggest down — the guard must be superset-specific");
+  }
+  console.log("PASS: the same session run solo still suggests down — the guard is superset-specific");
+  if (errors.length) throw new Error("jsdom errors: " + errors.join("; "));
+  window.close();
+}
+
 async function main() {
   await checkSupersetHistoryDoesNotLowerTheBaseline();
   await checkBestQualifyingSessionInTheLastThree();
   await checkSubstitutedSessionsAreExcluded();
   await checkSupersetOnlyMovementStillProgresses();
   await checkRpe8PlateauSuggestsUp();
+  await checkSupersetRoundsCanRaiseTheBaseline();
   await checkAgainstRealHistory();
   console.log("ALL PASS");
 }

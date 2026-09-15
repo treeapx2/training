@@ -330,8 +330,8 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
 // see build.js) so a stale cached build is identifiable on the device
 // instead of silently running fixed-but-not-yet-deployed code.
 const BUILD_INFO = {
-  sha: "29f622b",
-  builtAt: "2026-09-15T18:50:05.258Z"
+  sha: "ee3d16e",
+  builtAt: "2026-09-15T19:27:50.947Z"
 };
 function formatBuildStamp() {
   const d = new Date(BUILD_INFO.builtAt);
@@ -1692,8 +1692,7 @@ function parseCurrentWeight(current) {
 // logged regardless of reps. History doesn't record which logged sets were
 // warmups vs. working sets, so "heaviest (qualifying) set" is the best
 // available proxy for "the working set" throughout this section.
-function movementSessionSummaries(history, movName, targetReps, opts) {
-  const excludeSupersets = !!(opts && opts.excludeSupersets);
+function movementSessionSummaries(history, movName, targetReps) {
   const out = [];
   history.forEach(session => {
     const mov = session.movements.find(m => m.name === movName);
@@ -1709,7 +1708,6 @@ function movementSessionSummaries(history, movName, targetReps, opts) {
     // supersets last precisely to finish a muscle group under fatigue. Those
     // sessions must not set (or lower) the movement's own baseline.
     const inSuperset = !!mov.supersetId;
-    if (excludeSupersets && inSuperset) return;
     const sets = mov.sets.filter(s => s.weight && parseFloat(s.weight) > 0);
     if (!sets.length) return;
     // Evaluate the heaviest weight actually logged — not the heaviest
@@ -1751,32 +1749,39 @@ function movementSessionSummaries(history, movName, targetReps, opts) {
   return out;
 }
 
-// The sessions that may legitimately drive progression for a movement, most
-// recent first (see CHANGES.md Sep 8 2026, Phase 2). Superset sessions are
-// dropped first; only a movement with NO non-superset history at all falls
-// back to counting them.
+// Superset sessions and the baseline (CHANGES-2026-09-13, Phase 4).
 //
-// DEVIATION from the work order, flagged deliberately: Phase 2 says a
-// superset-only movement should "fall back to the best non-superset session,
-// then to BLOCK.current". Taken literally that means BLOCK.current — there is
-// no non-superset session to fall back to — which would freeze every
-// permanent superset member (after Phase 3 that is Shoulder Press, Lateral
-// Raise, Cable Curl, Hammer Curl, Goblet Squat, Calf Raise) at a
-// hand-authored string forever. That is exactly the staleness the target
-// picker was built to remove, and it would defeat this phase's own goal. So
-// superset history is used when it is the only history there is; the
-// "must not lower its own baseline" guarantee still holds, because
-// deriveCurrentWeight takes the BEST qualifying session in the window, never
-// the most recent one. Raise this with the owner if the frozen-baseline
-// reading was actually intended.
-function progressionSummaries(history, movName, targetReps) {
-  const solo = movementSessionSummaries(history, movName, targetReps, {
-    excludeSupersets: true
-  });
-  if (solo.length) return solo;
-  return movementSessionSummaries(history, movName, targetReps);
-}
-
+// Sep 8 excluded superset sessions from progression outright, whenever ANY
+// solo history existed. The intent was directional — "a superset round must
+// never LOWER the baseline", because the owner weight-matches across a pair
+// and runs it last under fatigue, so that output is deliberately sub-maximal.
+// Implementing it as wholesale invisibility went too far: a superset round
+// could no longer RAISE the baseline either, so a movement that lives
+// permanently inside a pair got judged on stale solo data forever.
+//
+// That is the Calf Raise bug. It has been in the Goblet Squat superset since
+// Aug 10, so its best and cleanest work — 45x15x3 @ RPE 6 (Aug 25) and
+// 45x15x4 @ RPE 6-7 (Sep 3) — was discarded, and the baseline fell back to
+// Jul 29's 40x20 with a `down` suggestion on top. Goblet Squat escaped the
+// same fate only by luck: its stale solo sessions happen to sit at 50, its
+// best. So the symptom was movement-specific while the cause was not.
+//
+// NOT the cause, despite the reasonable suspicion: rep-range bounds. Calf
+// Raise's `reps: 15` is a single lower bound, not a 15-20 range, and
+// `hitFloor`/`hitTarget` already score with >=. Both Aug 25 and Sep 3 come
+// through as clean passes; they were simply thrown away before scoring
+// mattered.
+//
+// The guarantee is now enforced by DIRECTION rather than by exclusion:
+//   - deriveCurrentWeight takes the MAX qualifying weight in the window, so a
+//     weight-matched superset round can only ever raise it.
+//   - suggestChip refuses to return `down` off a superset session (see the
+//     guard there), so sub-maximal output still can't read as regression.
+// Both keep the Sep 8 fixtures green while letting real superset work count.
+//
+// This also retires the flagged Sep 8 deviation about superset-only movements
+// falling back to `BLOCK.current`: there is no solo-preference left to fall
+// back from, so the question no longer arises.
 // The "hold" chip's weight — the heaviest weight that reached the rep range's
 // lower bound across the last THREE eligible sessions containing this
 // movement, not whatever the most recent session happened to land on
@@ -1788,22 +1793,42 @@ function progressionSummaries(history, movName, targetReps) {
 // repeated `suggested: up` was pointing at 20 instead of 30. The owner was not
 // disagreeing with the suggestion; the baseline under it was wrong.
 //
-// Superset sessions are excluded by progressionSummaries. Taking the max
-// across the window (rather than the most recent entry) is also what makes
-// the "a superset round must never LOWER the baseline" guarantee hold in the
-// fallback case where superset sessions are all there is.
+// Taking the MAX across the window (rather than the most recent entry) is
+// what enforces "a superset round must never LOWER the baseline" — see the
+// note above deriveCurrentWeight on why that replaced excluding those
+// sessions outright.
 //
 // Falls back to BLOCK.current only when the movement has never been logged.
-function deriveCurrentWeight(history, mov) {
-  const window = progressionSummaries(history, mov.name, mov.reps).slice(0, 3);
-  if (!window.length) return parseFloat(parseCurrentWeight(mov.current)) || 0;
-  // "Qualifying" = reached the rep range's lower bound. If nothing in the
-  // window did, fall back to the most recent session's top weight rather
-  // than the window's max — a failed heavy attempt should not become the new
-  // baseline just for being the heaviest number present.
+// The best weight a window of sessions supports: the heaviest that reached the
+// rep range's lower bound, or — if none did — the most recent top weight,
+// rather than the window's heaviest failed attempt.
+function baselineFrom(window) {
+  if (!window.length) return null;
   const qualifying = window.filter(s => s.hitFloor);
   if (!qualifying.length) return window[0].topWeight;
   return Math.max(...qualifying.map(s => s.topWeight));
+}
+function deriveCurrentWeight(history, mov) {
+  const all = movementSessionSummaries(history, mov.name, mov.reps);
+  if (!all.length) return parseFloat(parseCurrentWeight(mov.current)) || 0;
+  // Two windows, three sessions each, scored separately — which is what makes
+  // "never lower, may raise" hold. A straight max over the last three sessions
+  // of any kind would NOT: a movement that has been in a superset for its last
+  // three outings would have its solo history pushed out of the window
+  // entirely, which is how Hammer Curl derived 15 against a best of 25 before
+  // Sep 8, and how it started doing so again when this was first simplified.
+  const solo = all.filter(s => !s.inSuperset).slice(0, 3);
+  const superset = all.filter(s => s.inSuperset).slice(0, 3);
+  const soloBase = baselineFrom(solo);
+  // Superset rounds contribute only their best QUALIFYING weight, and never
+  // the "nothing qualified" fallback — they may raise the baseline, never set
+  // it downward.
+  const ssQualifying = superset.filter(s => s.hitFloor).map(s => s.topWeight);
+  const ssBest = ssQualifying.length ? Math.max(...ssQualifying) : null;
+  if (soloBase == null && ssBest == null) return all[0].topWeight;
+  if (soloBase == null) return ssBest;
+  if (ssBest == null) return soloBase;
+  return Math.max(soloBase, ssBest);
 }
 
 // Today's total set count, authored per movement (CHANGES-2026-09-13, Phase 1).
@@ -1836,8 +1861,8 @@ function setCountFor(mov) {
 // consolidated, not a failure.
 //
 // Sep 8 2026 (CHANGES.md Phase 2) added the plateau break (isPlateaued,
-// below) and moved the history read onto progressionSummaries, so superset
-// rounds no longer feed the suggestion either. Rules, in evaluation order:
+// below). Sep 13 2026 (Phase 4) then replaced the blanket superset exclusion
+// with the directional `notDown` guard. Rules, in evaluation order:
 //   last session's (first) top-weight set at RPE >= 9        -> down
 //   three consecutive sessions parked at target reps, RPE <=8 -> up
 //   missed the floor, fresh jump, target-4..target-2, RPE <=8 -> hold
@@ -1846,10 +1871,16 @@ function setCountFor(mov) {
 //   reached the floor but neither up condition                -> hold
 //   fewer than 2 eligible sessions                            -> hold
 function suggestChip(history, movName, targetReps) {
-  const summaries = progressionSummaries(history, movName, targetReps);
+  const summaries = movementSessionSummaries(history, movName, targetReps);
   if (summaries.length < 2) return "hold";
   const [last, prev] = summaries;
-  if (last.topRpe >= 9) return "down";
+  // A superset session must never produce a `down` (CHANGES-2026-09-13,
+  // Phase 4). Weight-matched output run last under fatigue is sub-maximal by
+  // design, so reading it as regression is exactly the mistake Sep 8 set out
+  // to prevent — this is that guarantee stated directionally, rather than by
+  // hiding the session entirely and losing its upside too.
+  const notDown = call => call === "down" && last.inSuperset ? "hold" : call;
+  if (last.topRpe >= 9) return notDown("down");
   if (isPlateaued(summaries)) return "up";
   if (!last.hitFloor) {
     const newlyIncreased = last.topWeight > prev.topWeight;
@@ -1857,7 +1888,7 @@ function suggestChip(history, movName, targetReps) {
     if (newlyIncreased && last.topReps >= consolidationFloor && last.topRpe <= 8) {
       return "hold";
     }
-    return "down";
+    return notDown("down");
   }
   if (last.hitTarget && last.topRpe <= 7 && prev.hitTarget && prev.topRpe <= 7) return "up";
   return "hold";
