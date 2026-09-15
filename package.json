@@ -23,6 +23,7 @@
     "test:session-timer": "node scripts/test-session-timer.js",
     "test:chart-windowing": "node scripts/test-chart-windowing.js",
     "test:cardio-skip": "node scripts/test-cardio-skip.js",
+    "test:cardio-reminder": "node scripts/test-cardio-reminder.js",
     "prepare": "git config core.hooksPath githooks"
   },
   "devDependencies": {

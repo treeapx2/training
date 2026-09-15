@@ -3209,6 +3209,11 @@ const EMPTY_TIMER = {
   cardioMs: 0,
   running: false,
   startedAt: null,
+  // Cardio reminder bookkeeping (CHANGES-2026-09-13, Phase 3). Lives on the
+  // timer so it rides the existing draft persistence — a reminder dismissed
+  // before the app was backgrounded stays dismissed when it comes back.
+  remindersDismissed: 0,
+  lastReminderMin: 0,
 };
 function startedTimer(now) {
   return { ...EMPTY_TIMER, running: true, startedAt: now != null ? now : Date.now() };
@@ -3245,6 +3250,46 @@ function timerResumed(timer, now) {
 function timerCardioStarted(timer, now) {
   const banked = timerBanked(timer, now);
   return { ...banked, phase: "cardio", running: true, startedAt: now != null ? now : Date.now() };
+}
+
+// The 45-minute cardio reminder (CHANGES-2026-09-13, Phase 3).
+//
+// > "Instead of automatically switching to cardio, add a reminder at 45 mins
+// > that asks me to switch to cardio."
+//
+// The problem it solves is a measurement one: the owner lifted straight
+// through the cardio block on Sep 9, so `liftingMin` recorded 52 when actual
+// lifting was ~39 — the stairmaster time was banked as lifting. Nothing
+// switches automatically; the prompt only asks.
+//
+// "If dismissed, do not nag repeatedly — at most one further reminder, well
+// later." So: fires at 45 minutes of LIFTING time, and if dismissed, once
+// more CARDIO_REMINDER_GAP_MIN later, then never again. Both the count and
+// the lifting-minute mark of the last dismissal live on the timer, so this
+// survives backgrounding and reload like everything else there.
+//
+// Derived from elapsed time rather than scheduled, which is what makes
+// backgrounding work: an app that comes back at minute 50 finds the reminder
+// already due instead of having missed a timer that never fired.
+const CARDIO_REMINDER_GAP_MIN = 15;
+const MAX_CARDIO_REMINDERS = 2;
+function cardioReminderDue(timer, elapsed) {
+  const t = timer || EMPTY_TIMER;
+  if (t.phase !== "lifting") return false;
+  const dismissed = t.remindersDismissed || 0;
+  if (dismissed >= MAX_CARDIO_REMINDERS) return false;
+  const mins = (elapsed ? elapsed.liftingMs : 0) / 60000;
+  if (dismissed === 0) return mins >= LIFTING_TARGET_MIN;
+  const since = t.lastReminderMin || LIFTING_TARGET_MIN;
+  return mins >= since + CARDIO_REMINDER_GAP_MIN;
+}
+function timerReminderDismissed(timer, elapsed) {
+  const t = timer || EMPTY_TIMER;
+  return {
+    ...t,
+    remindersDismissed: (t.remindersDismissed || 0) + 1,
+    lastReminderMin: (elapsed ? elapsed.liftingMs : 0) / 60000,
+  };
 }
 function formatDuration(ms) {
   const total = Math.max(Math.round(ms / 1000), 0);
@@ -4180,6 +4225,9 @@ function SessionScreen({ history, setHistory, syncLast, onSynced }) {
   const elapsed = timerElapsed(timer, timer.running ? timerNow : undefined);
   const overBudget =
     timer.phase === "lifting" && elapsed.liftingMs >= LIFTING_TARGET_MIN * 60000;
+  // Non-blocking cardio reminder (CHANGES-2026-09-13, Phase 3) — asks, never
+  // switches on its own.
+  const remindCardio = cardioReminderDue(timer, elapsed);
   // Group consecutive movements sharing a supersetId into a pair for
   // SupersetRow; everything else renders as a single MovementRow. Pairing
   // only takes effect when the two are adjacent — see seedSupersets.
@@ -4344,6 +4392,62 @@ function SessionScreen({ history, setHistory, syncLast, onSynced }) {
           </div>
         </div>
       </div>
+      {remindCardio && (
+        /*#__PURE__*/ <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 10,
+            padding: "10px 12px",
+            marginBottom: 14,
+            border: "0.5px solid #e0c060",
+            borderRadius: 10,
+            background: "#FEF8E7",
+          }}
+        >
+          <div style={{ fontSize: 12, color: "#7a5c00", flex: 1 }}>
+            {LIFTING_TARGET_MIN} min of lifting — switch to cardio?
+          </div>
+          <div style={{ display: "flex", gap: 10, flexShrink: 0 }}>
+            <button
+              onClick={() => {
+                setTimer((t) => timerReminderDismissed(t, timerElapsed(t)));
+              }}
+              style={{
+                fontSize: 12,
+                color: "#8a7030",
+                background: "none",
+                border: "none",
+                padding: 0,
+                cursor: "pointer",
+                textDecoration: "underline",
+                textDecorationStyle: "dotted",
+              }}
+            >
+              not yet
+            </button>
+            <button
+              onClick={() => {
+                setTimer((t) => timerCardioStarted(t));
+                setTimerNow(Date.now());
+              }}
+              style={{
+                fontSize: 12,
+                fontWeight: 600,
+                color: "#fff",
+                background: "#b8860b",
+                border: "none",
+                borderRadius: 8,
+                padding: "5px 10px",
+                cursor: "pointer",
+              }}
+            >
+              start cardio
+            </button>
+          </div>
+        </div>
+      )}
       <div
         style={{
           display: "flex",

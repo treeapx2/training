@@ -334,4 +334,18 @@ check("22. cardio skip behavior (test-cardio-skip.js)", () => {
   );
 });
 
+// 23. the 45-minute cardio reminder (see CLAUDE.md "Session timer" → "Cardio
+// reminder"): fires at 45 minutes of lifting and not before, never switches
+// automatically, is non-blocking, dismisses quietly and returns exactly once
+// well later before going silent for good, persists the dismissal to the
+// draft, and is derived from elapsed time so backgrounding past the mark
+// finds it due rather than missed.
+check("23. cardio reminder behavior (test-cardio-reminder.js)", () => {
+  execFileSync(
+    process.execPath,
+    [path.join(repoRoot, "scripts", "test-cardio-reminder.js")],
+    { stdio: "pipe" },
+  );
+});
+
 process.exit(failed ? 1 : 0);
