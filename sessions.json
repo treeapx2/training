@@ -1,5 +1,262 @@
 [
   {
+    "id": 1789502916968,
+    "type": "push",
+    "label": "Push",
+    "date": "Sep 13, 2026",
+    "note": "",
+    "cardio": {
+      "machine": "Stairmaster",
+      "duration": "13",
+      "level": "4",
+      "rpe": "6",
+      "skipped": false,
+      "skipReason": ""
+    },
+    "durationMin": 3197,
+    "liftingMin": 46,
+    "cardioMin": 3151,
+    "movements": [
+      {
+        "name": "DB Bench Press",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "40",
+            "reps": "10",
+            "rpe": "5",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "45",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "45",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 4,
+            "weight": "50",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 5,
+            "weight": "50",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          }
+        ],
+        "note": "45s and 50s only from now on",
+        "order": 0,
+        "targetWeight": "50",
+        "chipChoice": "up",
+        "suggested": "up"
+      },
+      {
+        "name": "Pec Fly",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "135",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "135",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "150",
+            "reps": "10",
+            "rpe": "8",
+            "note": ""
+          },
+          {
+            "set": 4,
+            "weight": "150",
+            "reps": "8",
+            "rpe": "8",
+            "note": ""
+          }
+        ],
+        "note": "",
+        "order": 1,
+        "targetWeight": "150",
+        "chipChoice": "up",
+        "suggested": "up"
+      },
+      {
+        "name": "Rope Pushdown",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "42.5",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "42.5",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "47.5",
+            "reps": "10",
+            "rpe": "8",
+            "note": ""
+          },
+          {
+            "set": 4,
+            "weight": "47.5",
+            "reps": "10",
+            "rpe": "8",
+            "note": ""
+          }
+        ],
+        "note": "",
+        "order": 2,
+        "targetWeight": "47.5",
+        "chipChoice": "up",
+        "suggested": "up"
+      },
+      {
+        "name": "Skull Crusher",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "15",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "15",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "15",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 4,
+            "weight": "15",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          }
+        ],
+        "note": "",
+        "order": 3,
+        "targetWeight": "20",
+        "chipChoice": "hold",
+        "suggested": "hold"
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "75",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "75",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "75",
+            "reps": "10",
+            "rpe": "8",
+            "note": ""
+          },
+          {
+            "set": 4,
+            "weight": "75",
+            "reps": "8",
+            "rpe": "8",
+            "note": ""
+          }
+        ],
+        "note": "",
+        "order": 4,
+        "targetWeight": "75",
+        "chipChoice": "hold",
+        "suggested": "hold",
+        "supersetId": "seed_0"
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "15",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "15",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "15",
+            "reps": "10",
+            "rpe": "8",
+            "note": ""
+          },
+          {
+            "set": 4,
+            "weight": "15",
+            "reps": "10",
+            "rpe": "8",
+            "note": ""
+          }
+        ],
+        "note": "",
+        "order": 5,
+        "targetWeight": "15",
+        "chipChoice": "hold",
+        "suggested": "hold",
+        "supersetId": "seed_0"
+      }
+    ]
+  },
+  {
     "id": 1789159248112,
     "type": "pull",
     "label": "Pull",
