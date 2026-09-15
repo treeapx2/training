@@ -57,7 +57,7 @@ const BLOCK = {
         { name: "Leg Press", current: "185 lb", increment: 15, reps: 10, sets: 5, target: "BANK 185 at RPE 7 \u2014 test passed 7/29 (185x10x2 @ RPE 8) but that's the rep ceiling. Two clean sessions at RPE 7, then TEST 200. Fresh opener, straight sets, 2-2.5 min rest." },
         { name: "Leg Extension", current: "150 lb", increment: 15, reps: 10, sets: 5, target: "TEST 165 \u2014 broke the 8-rep wall: 150x10x2 @ RPE 8 (7/26) then @ RPE 7 (7/29). The old plateau was fatigue placement, not a ceiling." },
         { name: "Leg Curl", current: "90 lb", increment: 15, reps: 10, sets: 4, target: "One more clean 10x10 @ 90, RPE \u22647, then TEST 105. Low-back compensation resolved (clean 7/26 and 7/29). Stop the set if the back takes over." },
-        { name: "Goblet Squat", current: "50 lb", steps: DUMBBELL_STEPS, reps: 10, sets: 4, target: "Two clean sessions at 50 (10 @ RPE 7 then 8 on 7/29), then 55. Controlled depth, knee-monitor." },
+        { name: "Goblet Squat", current: "50 lb", steps: DUMBBELL_STEPS, single: true, reps: 10, sets: 4, target: "Two clean sessions at 50 (10 @ RPE 7 then 8 on 7/29), then 55. Controlled depth, knee-monitor." },
         { name: "Calf Raise", current: "40 lb", increment: 5, reps: 15, sets: 4, target: "TEST 45 \u2014 40x20x3 @ RPE 6-7 (7/29) was the easiest pass of the day. Superset with Leg Extension." }
       ]
     },
@@ -1667,15 +1667,32 @@ const SET_TYPE_LABEL = {
   W: "W",
 };
 
-// Dumbbell weights are logged PER HAND — the owner writes "35s" meaning 35 lb
-// in each hand (CHANGES.md Sep 8 2026, Phase 4 item 3). Every weight field
-// label goes through here so the two rendering sites (SetLogger's column
-// header and SupersetRow's per-round rows) can't drift apart. Keyed off
-// `steps`, which is exactly the dumbbell classification the rack array
-// encodes — machine and cable movements are a single loaded stack and stay
-// plain "lb".
+// Paired dumbbell weights are logged PER HAND — the owner writes "35s" meaning
+// 35 lb in each hand (CHANGES.md Sep 8 2026, Phase 4 item 3). Every weight
+// field label goes through here so the rendering sites can't drift apart.
+//
+// `steps` alone is not enough (CHANGES-2026-09-13, Phase 5): "goblet squats
+// are one dumbbell so not 'per hand'" (Sep 9). A movement using ONE dumbbell
+// held in both hands carries `single: true` and reads as total weight.
+//
+//   machine / cable   -> "lb"        one loaded stack
+//   single dumbbell   -> "lb total"  one bell, both hands (Goblet Squat)
+//   paired dumbbell   -> "lb/hand"   a bell in each hand
+//
+// This is a LABELLING fix only — no historical record is rewritten, and the
+// numbers themselves are unchanged.
+//
+// SCOPE NOTE: the work order enumerates both lists explicitly (single: Goblet
+// Squat; paired: DB Bench Press, DB Row, Skull Crusher, Hammer Curl, Zottman
+// Curl, Reverse Fly, Lateral Raise). The remaining dumbbell movements in the
+// library — OHE, Shoulder Press (DB), RDL, Glute Bridge, Incline DB Press,
+// Flat DB Press, Floor Press, Rows — are in neither list, so they keep the
+// existing paired default rather than being reclassified on a guess. Some of
+// them (OHE and Glute Bridge especially) look like single-dumbbell movements;
+// that's the owner's call, not one to make here.
 function weightLabelFor(mov) {
-  return mov && mov.steps ? "lb/hand" : "lb";
+  if (!mov || !mov.steps) return "lb";
+  return mov.single ? "lb total" : "lb/hand";
 }
 
 // Compact inline input — 16px prevents iOS zoom, minimal padding
@@ -1860,7 +1877,7 @@ function ChipPicker({ mov, history, chipChoice, suggested, onChipTap }) {
             marginTop: 2,
           }}
         >
-          lb per hand
+          {mov.single ? "one dumbbell, total weight" : "lb per hand"}
         </div>
       )}
     </div>
@@ -3123,7 +3140,8 @@ function SupersetRow({
                     marginBottom: 4,
                   }}
                 >
-                  {(movA.steps ? movA.name : movB.name)} is per hand
+                  {movA.name} in {weightLabelFor(movA)} · {movB.name} in{" "}
+                  {weightLabelFor(movB)}
                 </div>
               )}
               {Array.from({ length: maxSets }).map((_, i) => (
@@ -3350,13 +3368,17 @@ function formatSessionDuration(entry) {
 // existing library movement, or define a new one. A new definition persists
 // (loadCustomMovements/saveCustomMovements) so it's there next session.
 const EQUIPMENT_OPTIONS = [
-  { label: "Dumbbell (rack steps, per hand)", value: "dumbbell" },
+  { label: "Dumbbell pair (per hand)", value: "dumbbell" },
+  { label: "Single dumbbell (total weight)", value: "dumbbell-single" },
   { label: "Machine (15 lb plates)", value: "machine" },
   { label: "Cable (5 lb stack)", value: "cable" },
 ];
 function equipmentConfigFor(value) {
   if (value === "machine") return { increment: 15 };
   if (value === "cable") return { increment: 5 };
+  // Both dumbbell kinds walk the same rack array; `single` only changes how
+  // the weight is labelled (see weightLabelFor).
+  if (value === "dumbbell-single") return { steps: DUMBBELL_STEPS, single: true };
   return { steps: DUMBBELL_STEPS };
 }
 function AddMovementPicker({ sessionType, present, customs, onAdd, onCancel }) {

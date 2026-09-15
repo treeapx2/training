@@ -225,12 +225,20 @@ async function checkDefiningANewMovementPersists() {
 async function checkDumbbellWeightsAreLabelledPerHand() {
   const { window, errors } = await mount();
 
-  // The label helper is the single source both rendering sites use.
+  // The label helper is the single source every rendering site uses.
   if (window.weightLabelFor({ steps: [5, 10] }) !== "lb/hand") {
-    throw new Error("a dumbbell movement's weight label must say per hand");
+    throw new Error("a paired dumbbell movement's weight label must say per hand");
   }
   if (window.weightLabelFor({ increment: 15 }) !== "lb") {
     throw new Error("a machine movement's weight label must stay plain lb");
+  }
+  // "goblet squats are one dumbbell so not 'per hand'" (Sep 9) —
+  // CHANGES-2026-09-13, Phase 5.
+  if (window.weightLabelFor({ steps: [5, 10], single: true }) !== "lb total") {
+    throw new Error("a single-dumbbell movement must be labelled as total weight, not per hand");
+  }
+  if (window.weightLabelFor({ steps: [5, 10], single: true }).includes("hand")) {
+    throw new Error("a single-dumbbell movement's label must not mention hands at all");
   }
 
   click(window, byText(window, "button", "Push"));
@@ -267,6 +275,69 @@ async function checkDumbbellWeightsAreLabelledPerHand() {
     throw new Error("a machine movement's weight column must not claim per-hand weights");
   }
   console.log("PASS: dumbbell weight fields are labelled per hand; machine fields are not");
+
+  // Goblet Squat is THE single-dumbbell movement, and the seven paired ones
+  // the work order names must stay per-hand. Read from the authored data so a
+  // mislabelled movement fails here rather than only on screen.
+  const appSrc = fs.readFileSync(path.join(repoRoot, "src", "app.jsx"), "utf8");
+  const flagFor = (name) => {
+    const m = appSrc.match(new RegExp("\\{ name: \"" + name + "\",[^}]*?\\}"));
+    if (!m) throw new Error("no library entry found for " + name);
+    return /\bsingle: true\b/.test(m[0]);
+  };
+  if (!flagFor("Goblet Squat")) {
+    throw new Error("Goblet Squat must be flagged as a single dumbbell");
+  }
+  ["DB Bench Press", "DB Row", "Skull Crusher", "Hammer Curl", "Zottman Curl", "Reverse Fly", "Lateral Raise"].forEach((name) => {
+    if (flagFor(name)) throw new Error(name + " is a paired dumbbell movement and must not be flagged single");
+  });
+  console.log("PASS: Goblet Squat is flagged single; the seven paired dumbbell movements are not");
+
+  // Defining a single-dumbbell movement in-app carries the flag through.
+  const singleDef = window.equipmentConfigFor("dumbbell-single");
+  if (!singleDef.single || !singleDef.steps) {
+    throw new Error("the single-dumbbell equipment option must set both steps and single");
+  }
+  if (window.equipmentConfigFor("dumbbell").single) {
+    throw new Error("the paired dumbbell option must not set single");
+  }
+  console.log("PASS: a movement defined in-app can be declared a single dumbbell");
+  if (errors.length) throw new Error("jsdom errors: " + errors.join("; "));
+  window.close();
+}
+
+async function checkSingleDumbbellInTheLiveApp() {
+  // Goblet Squat is paired with Calf Raise on Legs, so it renders inside the
+  // combined SUPERSET card rather than a standalone movement card.
+  const { window, errors } = await mount();
+  click(window, byText(window, "button", "Legs"));
+  await sleep(window, 60);
+  const pairHeader = Array.from(window.document.querySelectorAll("div")).find(
+    (d) =>
+      (d.getAttribute("style") || "").includes("cursor: pointer") &&
+      d.textContent.trim().startsWith("SUPERSET ·"),
+  );
+  if (!pairHeader) throw new Error("no superset card found on Legs");
+  if (!pairHeader.textContent.includes("Goblet Squat")) {
+    throw new Error("expected Goblet Squat in the Legs superset card");
+  }
+  const card = pairHeader.parentElement;
+  click(window, pairHeader);
+  await sleep(window, 40);
+  const stars = Array.from(card.querySelectorAll("button")).filter((b) => b.textContent.includes("★"));
+  for (const s of stars) {
+    click(window, s);
+    await sleep(window, 40);
+  }
+  await sleep(window, 40);
+
+  if (card.textContent.includes("lb/hand") || card.textContent.includes("per hand")) {
+    throw new Error("Goblet Squat's card must not say per hand — it is one dumbbell held in both hands");
+  }
+  if (!card.textContent.includes("total")) {
+    throw new Error("Goblet Squat should be labelled as total weight on its card");
+  }
+  console.log("PASS: Goblet Squat reads as total weight in the live app, never per hand");
   if (errors.length) throw new Error("jsdom errors: " + errors.join("; "));
   window.close();
 }
@@ -277,6 +348,7 @@ async function main() {
   await checkAddingAnOptionalMovementInTheLiveApp();
   await checkDefiningANewMovementPersists();
   await checkDumbbellWeightsAreLabelledPerHand();
+  await checkSingleDumbbellInTheLiveApp();
   console.log("ALL PASS");
 }
 
