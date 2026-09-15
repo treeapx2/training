@@ -3540,11 +3540,50 @@ function formatDuration(ms) {
 function durationMinutes(ms) {
   return Math.max(Math.round(ms / 60000), 0);
 }
+// Plausibility guard for recorded durations.
+//
+// Stopping the clock at the cardio transition prevents NEW bad values, but the
+// Sep 13 record already carries durationMin: 3197 (about 53 hours) and the log
+// is never rewritten — see CLAUDE.md "Scope boundary" and the dedup rule.
+// Filtering at read time is safer than mutating history: it is reversible, it
+// can't corrupt anything, and it keeps the record honest about what was
+// actually stored.
+//
+// Three hours is well above any real session (the budget is 45 minutes of
+// lifting plus a ~15-minute finisher) and well below a timer left running
+// overnight, so it separates the two cleanly without needing to be precise.
+//
+// ANY aggregate over durations — an average, a chart, a trend — must filter
+// through isPlausibleDuration first. There are no such aggregates today; this
+// is the gate for when there are.
+const MAX_PLAUSIBLE_SESSION_MIN = 180;
+function isPlausibleDuration(entry) {
+  return (
+    !!entry &&
+    entry.durationMin != null &&
+    entry.durationMin > 0 &&
+    entry.durationMin <= MAX_PLAUSIBLE_SESSION_MIN
+  );
+}
+
 // One line of session duration for display sites that have a record, not a
 // live timer. Returns "" when the record predates the timer (Phase 5) — every
 // session logged before Sep 8 2026 does — so nothing renders a bare "0 min".
+//
+// An implausible total renders as a visible OUTLIER rather than as a number:
+// presenting 3197 minutes as a duration would be asserting something false.
+// The lifting figure rides along when it is itself plausible, since the
+// lifting clock is usually the trustworthy half — on Sep 13 it correctly read
+// 46 minutes and only the cardio phase ran away.
 function formatSessionDuration(entry) {
   if (!entry || entry.durationMin == null) return "";
+  if (!isPlausibleDuration(entry)) {
+    const lift =
+      entry.liftingMin != null && entry.liftingMin <= MAX_PLAUSIBLE_SESSION_MIN
+        ? " \u00b7 " + entry.liftingMin + "m lifting logged"
+        : "";
+    return "\u26a0 timer overran" + lift;
+  }
   const parts = [];
   if (entry.liftingMin != null) parts.push(entry.liftingMin + "m lifting");
   if (entry.cardioMin) parts.push(entry.cardioMin + "m cardio");

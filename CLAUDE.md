@@ -1189,6 +1189,26 @@ from the clock, never replayed.
 - Shown in both history sites and in the coach handoff.
   `formatSessionDuration()` returns `""` for a record with no `durationMin`,
   so the pre-Sep-8-2026 back catalogue renders nothing rather than "0 min".
+- **Plausibility guard.** `isPlausibleDuration(entry)` bounds a recorded
+  session at `MAX_PLAUSIBLE_SESSION_MIN` (180, inclusive). Three hours is well
+  above any real session — the budget is 45 minutes of lifting plus a
+  ~15-minute finisher — and well below a timer left running overnight, so it
+  separates the two without needing to be precise.
+
+  An implausible total renders as a visible **outlier** rather than a number
+  ("⚠ timer overran · 46m lifting logged"): presenting 3197 minutes as a
+  duration would assert something false. The lifting figure rides along when
+  it is itself plausible, since the lifting clock is usually the trustworthy
+  half.
+
+  **Any aggregate over durations — an average, a chart, a trend — must filter
+  through `isPlausibleDuration` first.** There are none today; this is the
+  gate for when there are.
+
+  The guard stays even though the one bad record has been corrected and the
+  clock can no longer run away: it is cheap, and read-time filtering is how
+  this repo handles suspect data generally (see `substituted`, and the
+  superset guards in **Target picker**).
 - Past 45 minutes of lifting the clock turns amber and nothing else happens:
   "no alarms, no blocking".
 

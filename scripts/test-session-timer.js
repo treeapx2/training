@@ -300,12 +300,90 @@ async function checkDurationPersistsOnTheRecordAndInHistory() {
   window.close();
 }
 
+async function checkImplausibleDurationsAreGuarded() {
+  const { window, errors } = await mount();
+  if (errors.length) throw new Error("jsdom errors on mount: " + errors.join("; "));
+
+  // Stopping the clock at the cardio transition prevents NEW bad values, but
+  // records written before that fix can still carry one. Three hours is well
+  // above any real session and well below a timer left running overnight.
+  const at = (durationMin, extra) => ({ id: 1, type: "push", label: "Push", date: "Sep 13, 2026", durationMin, ...extra });
+  if (!window.isPlausibleDuration(at(59, { liftingMin: 46, cardioMin: 13 }))) {
+    throw new Error("a 59-minute session is plausible");
+  }
+  if (!window.isPlausibleDuration(at(180))) {
+    throw new Error("180 minutes is the inclusive boundary");
+  }
+  if (window.isPlausibleDuration(at(181))) {
+    throw new Error("181 minutes is over the bound");
+  }
+  if (window.isPlausibleDuration(at(3197))) {
+    throw new Error("the Sep 13 shape must not read as plausible");
+  }
+  if (window.isPlausibleDuration({ id: 1 })) {
+    throw new Error("a record with no duration at all is not a plausible duration");
+  }
+  console.log("PASS: isPlausibleDuration bounds sessions at 180 minutes inclusive");
+
+  // An implausible total renders as an OUTLIER, never as a number — showing
+  // 3197 minutes as a duration would assert something false.
+  const shown = window.formatSessionDuration(at(3197, { liftingMin: 46, cardioMin: 3151 }));
+  if (/3197|3151/.test(shown)) {
+    throw new Error(`an implausible duration must not render as a number, got "${shown}"`);
+  }
+  if (!/overran/.test(shown)) {
+    throw new Error(`expected an obvious outlier marker, got "${shown}"`);
+  }
+  // The lifting half is usually the trustworthy one and rides along.
+  if (!/46m lifting/.test(shown)) {
+    throw new Error(`expected the plausible lifting figure alongside the marker, got "${shown}"`);
+  }
+  console.log(`PASS: an implausible duration renders as an outlier: "${shown}"`);
+
+  // If lifting is implausible too, nothing numeric is claimed at all.
+  const bothBad = window.formatSessionDuration(at(5000, { liftingMin: 4000, cardioMin: 1000 }));
+  if (/\d/.test(bothBad)) {
+    throw new Error(`nothing numeric should be claimed when lifting is bad too, got "${bothBad}"`);
+  }
+  console.log("PASS: when the lifting figure is implausible too, no number is shown at all");
+
+  // A plausible record is unaffected.
+  const good = window.formatSessionDuration(at(59, { liftingMin: 46, cardioMin: 13 }));
+  if (good !== "59 min (46m lifting + 13m cardio)") {
+    throw new Error(`a plausible duration must render normally, got "${good}"`);
+  }
+  console.log("PASS: plausible durations are unaffected by the guard");
+
+  // Against the committed log: every recorded duration is now plausible, and
+  // the Sep 13 record specifically reads as lifting + entered cardio.
+  const hist = JSON.parse(fs.readFileSync(path.join(repoRoot, "sessions.json"), "utf8"));
+  const withDuration = hist.filter((s) => s.durationMin != null);
+  const bad = withDuration.filter((s) => !window.isPlausibleDuration(s));
+  if (bad.length) {
+    throw new Error(`implausible durations in the committed log: ${JSON.stringify(bad.map((s) => [s.date, s.durationMin]))}`);
+  }
+  const sep13 = hist.find((s) => s.type === "push" && s.date === "Sep 13, 2026");
+  if (sep13) {
+    const entered = parseFloat(sep13.cardio && sep13.cardio.duration);
+    if (sep13.cardioMin !== Math.round(entered)) {
+      throw new Error(`Sep 13 cardioMin ${sep13.cardioMin} should equal the entered ${entered}`);
+    }
+    if (sep13.durationMin !== sep13.liftingMin + sep13.cardioMin) {
+      throw new Error(`Sep 13 durationMin should be lifting + cardio, got ${sep13.durationMin}`);
+    }
+  }
+  console.log(`PASS: all ${withDuration.length} recorded durations in the committed log are plausible`);
+  if (errors.length) throw new Error("jsdom errors: " + errors.join("; "));
+  window.close();
+}
+
 async function main() {
   await checkTimerArithmetic();
   await checkTimerStartsAutomaticallyAndPauses();
   await checkPausedStateSurvivesAReload();
   await checkRunningTimerCountsTimeTheAppWasAway();
   await checkDurationPersistsOnTheRecordAndInHistory();
+  await checkImplausibleDurationsAreGuarded();
   console.log("ALL PASS");
 }
 
