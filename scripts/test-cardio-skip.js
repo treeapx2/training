@@ -180,6 +180,12 @@ async function checkFinishPersistsTheSkip() {
   if (entry.cardio.skipReason !== "machine in use") {
     throw new Error(`expected skipReason 'machine in use', got ${entry.cardio.skipReason}`);
   }
+  // Phase 6: no performance data rides along on a skip.
+  if (entry.cardio.duration || entry.cardio.level || entry.cardio.rpe) {
+    throw new Error(
+      `a skipped finisher reached the record with performance data: ${JSON.stringify(entry.cardio)}`,
+    );
+  }
   console.log("PASS: finish() persists the cardio skip and its reason onto the record");
 
   // The record shows the skip in history rather than looking untracked.
@@ -209,11 +215,79 @@ async function checkUntouchedCardioStillOmitted() {
   window.close();
 }
 
+async function checkSkippedCardioCarriesNoPerformanceData() {
+  const { window, errors } = await mount();
+  if (errors.length) throw new Error("jsdom errors on mount: " + errors.join("; "));
+
+  // The Sep 8 record went out as skipped with duration 13 and level 4 still
+  // attached — the numbers were entered before the machine turned out to be
+  // taken (CHANGES-2026-09-13, Phase 6).
+  const dirty = {
+    machine: "Stairmaster",
+    duration: "13",
+    level: "4",
+    rpe: "6",
+    skipped: true,
+    skipReason: "machine in use",
+  };
+  const clean = window.cardioForRecord(dirty);
+  if (clean.duration || clean.level || clean.rpe) {
+    throw new Error(`a skipped finisher must not reach the record with performance data: ${JSON.stringify(clean)}`);
+  }
+  if (clean.skipped !== true || clean.skipReason !== "machine in use") {
+    throw new Error("sanitising must keep the skip and its reason");
+  }
+  if (clean.machine !== "Stairmaster") {
+    throw new Error("the machine that was unavailable is still worth recording");
+  }
+  console.log("PASS: a skipped finisher is stripped of duration/level/rpe before it reaches the record");
+
+  // A finisher that was actually performed is untouched.
+  const performed = { machine: "Rower", duration: "12", level: "4", rpe: "6" };
+  if (window.cardioForRecord(performed) !== performed) {
+    throw new Error("a performed finisher should pass through unchanged");
+  }
+  console.log("PASS: a performed finisher passes through untouched");
+
+  // Records already written in the inconsistent shape can't be rewritten —
+  // sessions.json is never migrated — so the read side has to ignore them.
+  const history = [
+    { id: 1, type: "push", label: "Push", date: "Sep 5, 2026", note: "", cardio: { machine: "Stairmaster", duration: "13", level: "4", rpe: "6" }, movements: [] },
+    { id: 2, type: "push", label: "Push", date: "Sep 8, 2026", note: "", cardio: dirty, movements: [] },
+  ];
+  const trend = window.getCardioHistory(history);
+  if (trend.length !== 1) {
+    throw new Error(`the inconsistent skipped record must stay off the trend, got ${trend.length} entries`);
+  }
+  if (trend[0].date !== "Sep 5, 2026") throw new Error("the wrong entry survived into the trend");
+  console.log("PASS: an already-written skipped-with-data record is still excluded from the trend");
+
+  // And it displays as a skip rather than as a 13-minute session.
+  const shown = window.formatCardio(dirty);
+  if (!shown.includes("skipped") || shown.includes("13")) {
+    throw new Error(`a skipped finisher must display as a skip, got "${shown}"`);
+  }
+  console.log("PASS: it displays as a skip, not as a 13-minute finisher");
+
+  // Phase 6 also asks to confirm the pre-fill guard still holds: the
+  // Stairmaster default alone must not make an untouched block look done.
+  if (window.hasCardioData({ machine: "Stairmaster", duration: "", level: "", rpe: "" })) {
+    throw new Error("the Stairmaster pre-fill alone must not count as cardio data");
+  }
+  if (!window.hasCardioData({ machine: "Rower", duration: "", level: "", rpe: "" })) {
+    throw new Error("a deliberately changed machine should still count");
+  }
+  console.log("PASS: the hasCardioData pre-fill guard still holds with the Stairmaster default");
+  if (errors.length) throw new Error("jsdom errors: " + errors.join("; "));
+  window.close();
+}
+
 async function main() {
   await checkSkipIsDataNotAbsence();
   await checkSkipFlowInTheLiveApp();
   await checkFinishPersistsTheSkip();
   await checkUntouchedCardioStillOmitted();
+  await checkSkippedCardioCarriesNoPerformanceData();
   console.log("ALL PASS");
 }
 

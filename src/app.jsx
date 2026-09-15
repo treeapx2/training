@@ -231,6 +231,31 @@ function hasCardioData(cardio) {
       (cardio.machine && cardio.machine !== "Stairmaster"))
   );
 }
+// A skipped finisher must not carry performance data (CHANGES-2026-09-13,
+// Phase 6). The Sep 8 record went out with skipped: true, skipReason
+// "machine in use" AND duration: 13, level: 4 — the owner had entered the
+// numbers before the machine turned out to be taken, and marking it skipped
+// left them behind.
+//
+// Sanitising happens at the WRITE boundary rather than when the skip is
+// tapped, deliberately: the entry fields are hidden while a movement is
+// skipped anyway, so keeping the values in session state costs nothing on
+// screen and makes "un-skip" non-destructive if the owner changes their mind
+// mid-session. Only what reaches the permanent record is cleaned.
+//
+// The read side is already defensive — formatCardio short-circuits on a skip
+// and getCardioHistory drops skipped entries — so records already written in
+// the inconsistent shape (the Sep 8 one is on the phone, not yet synced here)
+// display and chart correctly without being rewritten. sessions.json is never
+// migrated.
+function cardioForRecord(cardio) {
+  if (!cardio || !cardio.skipped) return cardio;
+  return {
+    machine: cardio.machine,
+    skipped: true,
+    skipReason: cardio.skipReason || "",
+  };
+}
 function formatCardio(cardio) {
   if (!hasCardioData(cardio)) return "";
   if (cardio.skipped) {
@@ -257,9 +282,11 @@ function getCardioHistory(history) {
   const entries = [];
   history.forEach((session) => {
     if (!hasCardioData(session.cardio)) return;
-    // A skipped finisher carries no duration/level/RPE, so it has nothing to
-    // contribute to a trend — it stays out of the chart while remaining
-    // visible in the session record and the handoff (Phase 7).
+    // A skipped finisher has nothing to contribute to a trend — it stays out
+    // of the chart while remaining visible in the session record and the
+    // handoff. This guard is what keeps an already-written inconsistent
+    // record (skipped with a duration still attached) off the chart, since
+    // those can't be fixed retroactively without rewriting sessions.json.
     if (session.cardio.skipped) return;
     entries.push({
       date: session.date,
@@ -3901,7 +3928,7 @@ function SessionScreen({ history, setHistory, syncLast, onSynced }) {
       label: s.label,
       date: formattedDate,
       note: sessionNote,
-      cardio: hasCardioData(cardio) ? cardio : undefined,
+      cardio: hasCardioData(cardio) ? cardioForRecord(cardio) : undefined,
       // Session duration, split so the 45/15 budget is visible rather than
       // collapsed into one number. Omitted entirely (like `cardio`) when the
       // clock never ran, so a record can't claim a bogus 0-minute session.
