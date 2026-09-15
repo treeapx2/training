@@ -266,13 +266,26 @@ async function checkAgainstRealHistory() {
   const history = JSON.parse(fs.readFileSync(path.join(repoRoot, "sessions.json"), "utf8"));
 
   // The four movements the work order names, against the committed log.
+  // These pin DERIVATIONS, not suggestions. A derivation encodes the bug that
+  // was fixed and stays true as long as the history containing it does; a
+  // suggestion is a moment-in-time call that changes the moment the owner acts
+  // on it.
+  //
+  // This file used to assert Seated Row and Lat Pulldown suggest `up`, which
+  // documented the RPE-8 plateau they were stuck in. On Sep 11 the owner took
+  // that jump and hit 150x10 ` RPE 8 on both, so they now derive 150 and
+  // correctly say `hold` — consolidate a brand-new weight rather than jump
+  // again off one RPE-8 session. The assertion had frozen "the plateau hasn't
+  // been broken yet" into a test, and broke when the feature worked. The
+  // plateau RULE is pinned by checkRpe8PlateauSuggestsUp above, on a synthetic
+  // fixture that can't go stale.
   const expected = [
+    // Superset rounds must never lower a baseline: both of these live in a
+    // pair and would otherwise derive from weight-matched sub-maximal work.
     { name: "Hammer Curl", reps: 10, steps: true, current: "20 lb", derived: 25 },
     { name: "Goblet Squat", reps: 10, steps: true, current: "50 lb", derived: 50 },
-    { name: "Seated Row", reps: 10, increment: 15, current: "135 lb", suggested: "up" },
-    { name: "Lat Pulldown", reps: 10, increment: 15, current: "135 lb", suggested: "up" },
     // Phase 4: was deriving 40 with a `down` suggestion off stale solo data.
-    { name: "Calf Raise", reps: 15, increment: 5, current: "45 lb", derived: 45 },
+    { name: "Calf Raise", reps: 15, increment: 5, current: "45 lb", derived: 45, notSuggested: "down" },
   ];
   expected.forEach((e) => {
     const mov = {
@@ -287,14 +300,14 @@ async function checkAgainstRealHistory() {
         throw new Error(`${e.name}: expected derived ${e.derived} against real history, got ${got}`);
       }
     }
-    if (e.suggested != null) {
+    if (e.notSuggested != null) {
       const got = window.suggestChip(history, e.name, e.reps);
-      if (got !== e.suggested) {
-        throw new Error(`${e.name}: expected ${e.suggested} against real history, got ${got}`);
+      if (got === e.notSuggested) {
+        throw new Error(`${e.name}: must never suggest ${e.notSuggested} against real history`);
       }
     }
   });
-  console.log("PASS: against the committed log — Hammer Curl 25, Goblet Squat 50, Seated Row/Lat Pulldown up");
+  console.log("PASS: against the committed log — Hammer Curl 25, Goblet Squat 50, Calf Raise 45 and never down");
   if (errors.length) throw new Error("jsdom errors: " + errors.join("; "));
   window.close();
 }
