@@ -187,6 +187,28 @@ function checkAuthoredSetCounts() {
   const total = Object.values(EXPECTED_SETS).flat().length;
   console.log(`PASS: all ${total} default movements carry their tabulated set count`);
 
+  // Declared ORDER matters, not just membership — queue position drives which
+  // movement gets the fresh slot. Skull Crusher ahead of Rope Pushdown is the
+  // Phase 2 fix: "cant do 20s after pushdowns" (Sep 8). Skull Crusher dropped
+  // every time it followed the pushdowns — Aug 27 (20x10,8,5 then down to 12),
+  // Sep 5 (20x8,6 then down to 15), Sep 8 (15x10x4, chip `down`).
+  Object.entries(EXPECTED_SETS).forEach(([type, rows]) => {
+    const block = src.match(new RegExp(`\\b${type}: \\{[\\s\\S]*?movements: \\[([\\s\\S]*?)\\n      \\]`));
+    if (!block) throw new Error(`could not read the ${type} movement list`);
+    const declared = [...block[1].matchAll(/name: "([^"]+)"/g)].map((m) => m[1]);
+    const expected = rows.map(([name]) => name);
+    if (JSON.stringify(declared) !== JSON.stringify(expected)) {
+      throw new Error(
+        `${type} default order wrong:\n  expected ${JSON.stringify(expected)}\n  got      ${JSON.stringify(declared)}`,
+      );
+    }
+  });
+  const push = EXPECTED_SETS.push.map(([n]) => n);
+  if (push.indexOf("Skull Crusher") > push.indexOf("Rope Pushdown")) {
+    throw new Error("this test's own table has the triceps pair the wrong way round");
+  }
+  console.log("PASS: default movement order matches the Phase 1 tables, Skull Crusher ahead of Rope Pushdown");
+
   // A movement with no authored count falls back to the default rather than
   // generating nothing.
   const totals = Object.fromEntries(

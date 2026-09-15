@@ -69,8 +69,8 @@ const BLOCK = {
       movements: [
         { name: "DB Bench Press", current: "35 lb", steps: DUMBBELL_STEPS, reps: 10, sets: 5, target: "Build clean 10/10 at 35 per hand \u2192 then 40. Logged 30s\u00d710\u00d73 @ RPE 5-6 and 35s\u00d710\u00d72 @ RPE 7 (9/5). Currently the preferred chest movement over the Chest Press machine." },
         { name: "Pec Fly", current: "120 lb", increment: 15, reps: 10, sets: 4, target: "TEST 135 \u2014 120x10x2 @ RPE 7 (7/28), room to spare." },
-        { name: "Rope Pushdown", current: "42.5 lb", increment: 5, reps: 10, sets: 4, target: "Confirm 2nd clean 10/10 @ 42.5 then 47.5. Skipped 7/28 (machine in use)." },
         { name: "Skull Crusher", current: "20 lb", steps: DUMBBELL_STEPS, reps: 10, sets: 4, target: "TEST 25 \u2014 20x10x4 @ RPE 6-7 (7/28), elbow quiet. Sharp pain = stop." },
+        { name: "Rope Pushdown", current: "42.5 lb", increment: 5, reps: 10, sets: 4, target: "Confirm 2nd clean 10/10 @ 42.5 then 47.5. Skipped 7/28 (machine in use)." },
         { name: "Shoulder Press", current: "90 lb", increment: 15, reps: 10, sets: 4, target: "HOLD 90 \u2014 needs a FRESH lead to confirm. Hit 90x10x2 when run first (7/5), dropped to 75x8 @ RPE 8 when run second (7/28). Confirm then 105. Thumb watch. Superset with Lateral Raise." },
         { name: "Lateral Raise", current: "15 lb", steps: DUMBBELL_STEPS, reps: 12, sets: 4, target: "Back to 15 \u2014 12x10x4 reached RPE 8 at position #4 (7/28). 15x10x2 already done 7/5. Superset with Shoulder Press." }
       ]
