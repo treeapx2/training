@@ -1111,21 +1111,68 @@ function ChartWindowControls({ total, range, offset, onRange, onOffset, compact 
     </div>
   );
 }
+// Density presets: roughly how many points fill the visible width. Scrolling
+// covers everything beyond that, so these are a ZOOM level rather than a slice
+// of history — "all" fits the whole series on screen at once, which is the
+// zoomed-out view that answers "am I trending up over months".
+const CHART_DENSITIES = [12, 25, "all"];
+const DEFAULT_CHART_DENSITY = 12;
+// Minimum horizontal room per point. Below roughly this, date labels collide —
+// which is what made the charts unreadable as history grew.
+const CHART_MIN_SPACING = 26;
+
+function ChartDensityControls({ density, onDensity, compact }) {
+  return (
+    /*#__PURE__*/ <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 4,
+        padding: compact ? "2px 0 0" : "4px 0 0",
+      }}
+    >
+      {CHART_DENSITIES.map((d) => (
+        /*#__PURE__*/ <button
+          key={d}
+          onClick={() => onDensity(d)}
+          style={{
+            padding: compact ? "1px 6px" : "2px 8px",
+            border: "0.5px solid " + (d === density ? "#111" : "#e5e5e3"),
+            borderRadius: 6,
+            background: d === density ? "#111" : "#fff",
+            color: d === density ? "#fff" : "#888",
+            fontSize: 10,
+            fontWeight: 600,
+            cursor: "pointer",
+            lineHeight: 1.6,
+          }}
+        >
+          {d}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function MovementChart({ data, color, compact = false }) {
-  // Window state lives here so both call sites (the in-card compact chart and
-  // the Progress tab's full one) get it for free. Declared before the
-  // too-little-data early return — hooks can't be called conditionally.
-  const [range, setRange] = useState(DEFAULT_CHART_RANGE);
-  const [offset, setOffset] = useState(0);
-  const total = data.length;
-  const windowed = windowSlice(data, range, offset);
+  // The chart plots the WHOLE series and scrolls horizontally; `density` only
+  // sets how much of it fits on screen at once. That replaced slicing the
+  // series into a window with prev/next paging — "is it possible to scroll
+  // across the graphs so that all time data can be viewed without switching
+  // the duration?" With scrolling, panning is native and the pan buttons are
+  // gone.
+  const [density, setDensity] = useState(DEFAULT_CHART_DENSITY);
+  const scrollRef = useRef(null);
+  // Open on the most recent data, which is the end a reader starts from.
+  // Re-runs on density change because the scroll width changes with it.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el) el.scrollLeft = el.scrollWidth;
+  }, [density, data.length]);
   const controls = (
-    /*#__PURE__*/ <ChartWindowControls
-      total={total}
-      range={range}
-      offset={offset}
-      onRange={setRange}
-      onOffset={setOffset}
+    /*#__PURE__*/ <ChartDensityControls
+      density={density}
+      onDensity={setDensity}
       compact={compact}
     />
   );
@@ -1144,27 +1191,38 @@ function MovementChart({ data, color, compact = false }) {
         need 2+ sessions to chart
       </div>
     );
-  const LABEL_H = compact ? 44 : 60;
+  const LABEL_H = compact ? 34 : 44;
   const DOT_AREA_H = compact ? 100 : 180;
   const H = DOT_AREA_H + LABEL_H;
-  const W = 320;
-  const PAD_L = 10;
-  const PAD_R = 10;
-  const PAD_TOP = 24; // room above highest dot for weight label
+  const AXIS_W = 34;
+  // The visible plot area, once the fixed y-axis column is taken out. 320 is
+  // the phone-width baseline the chart was originally drawn against.
+  const VIEW_W = 320 - AXIS_W;
+  const PAD_L = 8;
+  const PAD_R = 8;
+  const PAD_TOP = 10;
   const PAD_BOT = 8;
   const chartH = DOT_AREA_H - PAD_TOP - PAD_BOT;
-  // Everything below plots the WINDOW, not the whole series — including the
-  // y-axis scale, so a window of similar weights uses the full height instead
-  // of flattening against an all-time max that isn't on screen.
-  const weights = windowed.map((d) => d.weight);
+  const n = data.length;
+
+  // Spacing per point. At a numeric density that many points fill the visible
+  // width; "all" fits the entire series instead. Either way a floor applies so
+  // labels never collide — which is what the scrolling is for.
+  const fitAll = density === "all";
+  const rawSpacing = fitAll
+    ? (VIEW_W - PAD_L - PAD_R) / Math.max(n - 1, 1)
+    : (VIEW_W - PAD_L - PAD_R) / Math.max(density - 1, 1);
+  const spacing = fitAll ? rawSpacing : Math.max(rawSpacing, CHART_MIN_SPACING);
+  const W = Math.max(PAD_L + PAD_R + spacing * (n - 1), VIEW_W);
+
+  // The y-axis scale spans the WHOLE series now that the whole series is
+  // plotted, so scrolling never changes what a height means.
+  const weights = data.map((d) => d.weight);
   const minW = Math.min(...weights);
   const maxW = Math.max(...weights);
   const span = maxW - minW || 1;
-  const n = windowed.length;
-  const xs = windowed.map((_, i) =>
-    n === 1 ? (W - PAD_L - PAD_R) / 2 + PAD_L : PAD_L + (i / (n - 1)) * (W - PAD_L - PAD_R),
-  );
-  const ys = windowed.map(
+  const xs = data.map((_, k) => PAD_L + k * spacing);
+  const ys = data.map(
     (d) => PAD_TOP + chartH - ((d.weight - minW) / span) * chartH,
   );
 
@@ -1173,104 +1231,108 @@ function MovementChart({ data, color, compact = false }) {
     const d = new Date(str);
     return `${d.getMonth() + 1}/${d.getDate()}`;
   };
+  // Show about one date label per 44px of width, so labels thin out rather
+  // than overlapping when the series is zoomed out.
+  const labelEvery = Math.max(Math.ceil(44 / spacing), 1);
+  const gridlines = [0, 0.5, 1];
+
   return (
     /*#__PURE__*/ <div>
-      <svg
-        viewBox={`0 0 ${W} ${H}`}
-        style={{
-          width: "100%",
-          height: H,
-          display: "block",
-        }}
-      >
-      {[0, 0.5, 1].map((t, i) => {
-        const y = PAD_TOP + chartH - t * chartH;
-        const wVal = Math.round(minW + t * span);
-        return (
-          /*#__PURE__*/ <g key={i}>
-            <line
-              x1={PAD_L}
-              y1={y}
-              x2={W - PAD_R}
-              y2={y}
-              stroke="#e5e5e3"
-              strokeWidth="0.5"
-            />
-            <text
-              x={PAD_L}
-              y={y - 3}
+      <div style={{ display: "flex", alignItems: "flex-start" }}>
+        {/* Fixed y-axis column — stays put while the plot scrolls, so the
+            weight scale is always readable. It is the only place weights are
+            printed now: the per-point value labels are gone. */}
+        <svg
+          viewBox={`0 0 ${AXIS_W} ${H}`}
+          style={{ width: AXIS_W, height: H, flexShrink: 0, display: "block" }}
+        >
+          {gridlines.map((t, k) => (
+            /*#__PURE__*/ <text
+              key={k}
+              x={AXIS_W - 4}
+              y={PAD_TOP + chartH - t * chartH - 3}
               fontSize="9"
               fill="#bbb"
-              textAnchor="start"
+              textAnchor="end"
             >
-              {wVal} lb
+              {Math.round(minW + t * span)}
             </text>
-          </g>
-        );
-      })}
-      <polyline
-        points={xs.map((x, i) => `${x},${ys[i]}`).join(" ")}
-        fill="none"
-        stroke={color}
-        strokeWidth="1.5"
-        strokeLinejoin="round"
-      />
-      {windowed.map((d, i) => {
-        const x = xs[i];
-        const y = ys[i];
-        const isFirst = i === 0;
-        const isLast = i === n - 1;
-        const dotR = isLast ? 5 : 3.5;
-        const dotColor = rpeColor(d.rpe);
-        const anchor = isFirst ? "start" : isLast ? "end" : "middle";
-        const wLabel = `${d.weight}`;
-        const dateLabel = shortDate(d.date);
-        const rpeLabel = d.rpe ? `${d.rpe}` : "";
-        return (
-          /*#__PURE__*/ <g key={d.id}>
-            <text
-              x={x}
-              y={y - dotR - 4}
-              fontSize="10"
-              fill="#555"
-              textAnchor={anchor}
-              fontWeight={isLast ? "700" : "400"}
-            >
-              {wLabel}
-            </text>
-            <circle
-              cx={x}
-              cy={y}
-              r={dotR}
-              fill={dotColor}
-              stroke={dotColor}
+          ))}
+        </svg>
+        <div
+          ref={scrollRef}
+          style={{ overflowX: "auto", overflowY: "hidden", flex: 1, WebkitOverflowScrolling: "touch" }}
+        >
+          <svg
+            viewBox={`0 0 ${W} ${H}`}
+            style={{ width: W, height: H, display: "block" }}
+          >
+            {gridlines.map((t, k) => (
+              /*#__PURE__*/ <line
+                key={k}
+                x1={0}
+                y1={PAD_TOP + chartH - t * chartH}
+                x2={W}
+                y2={PAD_TOP + chartH - t * chartH}
+                stroke="#e5e5e3"
+                strokeWidth="0.5"
+              />
+            ))}
+            <polyline
+              points={xs.map((x, k) => `${x},${ys[k]}`).join(" ")}
+              fill="none"
+              stroke={color}
               strokeWidth="1.5"
+              strokeLinejoin="round"
             />
-            <text
-              x={x}
-              y={DOT_AREA_H + 13}
-              fontSize="9"
-              fill="#aaa"
-              textAnchor={anchor}
-            >
-              {dateLabel}
-            </text>
-            {rpeLabel ? (
-              /*#__PURE__*/ <text
-                x={x}
-                y={DOT_AREA_H + 25}
-                fontSize="9"
-                fill={dotColor}
-                textAnchor={anchor}
-                fontWeight="600"
-              >
-                {rpeLabel}
-              </text>
-            ) : null}
-          </g>
-        );
-      })}
-      </svg>
+            {data.map((d, k) => {
+              const x = xs[k];
+              const y = ys[k];
+              const isLast = k === n - 1;
+              const dotR = isLast ? 5 : 3.5;
+              const dotColor = rpeColor(d.rpe);
+              // Thin the date labels out from the newest backwards, so the
+              // most recent session is always labelled.
+              const showDate = (n - 1 - k) % labelEvery === 0;
+              return (
+                /*#__PURE__*/ <g key={d.id}>
+                  <circle
+                    cx={x}
+                    cy={y}
+                    r={dotR}
+                    fill={dotColor}
+                    stroke={dotColor}
+                    strokeWidth="1.5"
+                  />
+                  {showDate ? (
+                    /*#__PURE__*/ <text
+                      x={x}
+                      y={DOT_AREA_H + 13}
+                      fontSize="9"
+                      fill="#aaa"
+                      textAnchor="middle"
+                    >
+                      {shortDate(d.date)}
+                    </text>
+                  ) : null}
+                  {showDate && d.rpe ? (
+                    /*#__PURE__*/ <text
+                      x={x}
+                      y={DOT_AREA_H + 25}
+                      fontSize="9"
+                      fill={dotColor}
+                      textAnchor="middle"
+                      fontWeight="600"
+                    >
+                      {d.rpe}
+                    </text>
+                  ) : null}
+                </g>
+              );
+            })}
+          </svg>
+        </div>
+      </div>
       {controls}
     </div>
   );

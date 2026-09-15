@@ -3,15 +3,20 @@
 // windowing" — CHANGES.md Sep 8 2026, Phase 6). Registered as validation bar
 // check #21; also runnable alone via `npm run test:chart-windowing`.
 //
-// Charts became unreadable as history grew, with date labels overlapping.
-// Each chart now defaults to the most recent 12 data points, with 12/25/all
-// presets and a pan control.
+// Two different mechanisms live here, for two different shapes of data:
 //
-// The load-bearing detail is that the window counts DATA POINTS, not calendar
-// dates: for a per-movement chart, 12 means 12 sessions containing that
-// movement. Twelve calendar sessions would be roughly four legs sessions,
-// which would make leg charts far sparser than cardio charts for no visible
-// reason.
+//   - The per-movement CHARTS plot the whole series and scroll horizontally.
+//     Density presets (12/25/all) set how much fits on screen at once; they
+//     never slice history away, so all-time data is reachable by scrolling
+//     without switching preset. Per-point value labels are gone — they were
+//     the thing that squished — and the weight scale lives on a fixed axis.
+//   - The cardio TREND is a table, so it still uses windowSlice's paging.
+//
+// The load-bearing detail either way is that a window counts DATA POINTS, not
+// calendar dates: for a per-movement view, 12 means 12 sessions containing
+// that movement. Twelve calendar sessions would be roughly four legs
+// sessions, which would make leg charts far sparser than cardio charts for no
+// visible reason.
 const fs = require("fs");
 const path = require("path");
 const { JSDOM } = require("jsdom");
@@ -124,10 +129,10 @@ function buildHistory(movName, n, otherName) {
   return out;
 }
 
-async function checkPerMovementChartCountsSessionsContainingThatMovement() {
+async function checkPerMovementChartPlotsEverythingAndScrolls() {
   // 20 Leg Press sessions, each separated by two Push sessions that don't
-  // contain it. A date-based window would show ~4 points; a point-based one
-  // shows 12.
+  // contain it — so a date-based view would show a handful of points where a
+  // per-movement one shows twenty.
   const history = buildHistory("Leg Press", 20, "Pec Fly");
   const { window, errors } = await mount(history);
 
@@ -138,20 +143,7 @@ async function checkPerMovementChartCountsSessionsContainingThatMovement() {
   if (history.length !== 60) {
     throw new Error(`fixture broken: expected 60 total sessions, got ${history.length}`);
   }
-  const windowed = window.windowSlice(data, 12, 0);
-  if (windowed.length !== 12) {
-    throw new Error(`expected 12 Leg Press points in the default window, got ${windowed.length}`);
-  }
-  // Every point in the window is a session that actually contains the
-  // movement — the whole distinction this phase draws.
-  if (!windowed.every((d) => d.weight)) {
-    throw new Error("the window must only contain sessions with logged data for that movement");
-  }
-  console.log("PASS: a per-movement window counts sessions containing THAT movement, not calendar sessions");
 
-  // In the live app: the Block tab's per-movement chart renders the newest 12
-  // dots. (The Progress tab carries the weekly breakdown and the cardio trend;
-  // the per-movement progression charts are on Block.)
   click(window, byText(window, "button", "Block"));
   await sleep(window, 60);
   const legPress = Array.from(window.document.querySelectorAll("div")).find(
@@ -163,51 +155,82 @@ async function checkPerMovementChartCountsSessionsContainingThatMovement() {
   click(window, row);
   await sleep(window, 80);
   const card = row.parentElement;
-  const svg = card.querySelector("svg");
-  if (!svg) throw new Error("no chart rendered for the opened movement");
-  const dots = svg.querySelectorAll("circle");
-  if (dots.length !== 12) {
-    throw new Error(`expected 12 plotted points by default, got ${dots.length}`);
-  }
-  console.log("PASS: the Block tab's per-movement chart plots the most recent 12 points by default");
 
-  // Presets and pan are offered, and changing them changes what's plotted.
-  const all = Array.from(card.querySelectorAll("button")).find((b) => b.textContent.trim() === "all");
-  if (!all) throw new Error("no 'all' range preset alongside the chart");
+  // Every point is plotted — scrolling reaches the rest of history, rather
+  // than a preset slicing it away.
+  const dots = () => card.querySelectorAll("circle");
+  if (dots().length !== 20) {
+    throw new Error(`expected all 20 points plotted, got ${dots().length}`);
+  }
+  console.log("PASS: the chart plots every session containing that movement, not a slice of them");
+
+  // The plot sits in a horizontally scrollable container wider than its
+  // viewport — which is what makes all-time data reachable without changing
+  // the density preset.
+  const scroller = Array.from(card.querySelectorAll("div")).find((d) =>
+    (d.getAttribute("style") || "").includes("overflow-x: auto"),
+  );
+  if (!scroller) throw new Error("the chart plot must sit in a horizontally scrollable container");
+  const plot = scroller.querySelector("svg");
+  if (!plot) throw new Error("no plot svg inside the scroll container");
+  const widthOf = (svg) => Number((svg.getAttribute("viewBox") || "0 0 0 0").split(" ")[2]);
+  const scrolledWidth = widthOf(plot);
+  if (!(scrolledWidth > 286)) {
+    throw new Error(`expected the plot to be wider than the viewport, got ${scrolledWidth}`);
+  }
+  console.log("PASS: the plot is wider than its viewport and lives in a scrollable container");
+
+  // The y-axis is a separate, fixed svg so the weight scale stays put while
+  // the plot scrolls.
+  const svgs = Array.from(card.querySelectorAll("svg"));
+  const axis = svgs.find((s) => !scroller.contains(s));
+  if (!axis) throw new Error("expected a fixed y-axis svg outside the scroll container");
+  if (!axis.textContent.trim()) throw new Error("the fixed axis should carry the weight scale");
+  console.log("PASS: the weight scale is a fixed axis that does not scroll away");
+
+  // No per-point value labels — the squish the owner reported. Weights appear
+  // only on the axis.
+  const plotText = Array.from(plot.querySelectorAll("text")).map((t) => t.textContent.trim());
+  const weightsPlotted = data.map((d) => String(d.weight));
+  const leaked = plotText.filter((t) => weightsPlotted.includes(t));
+  if (leaked.length) {
+    throw new Error(`per-point weight values should be gone from the plot, found ${JSON.stringify(leaked)}`);
+  }
+  console.log("PASS: per-point weight values are gone from the plot (they squished); the axis keeps them readable");
+
+  // Density changes how much fits on screen, NOT how much exists.
+  const byLabel = (t) => Array.from(card.querySelectorAll("button")).find((b) => b.textContent.trim() === t);
+  const all = byLabel("all");
+  if (!all) throw new Error("no density presets alongside the chart");
   click(window, all);
   await sleep(window, 60);
-  if (card.querySelector("svg").querySelectorAll("circle").length !== 20) {
-    throw new Error("the 'all' preset should plot every point");
+  if (dots().length !== 20) {
+    throw new Error("the all preset must still plot every point");
   }
-  const twelve = Array.from(card.querySelectorAll("button")).find((b) => b.textContent.trim() === "12");
-  click(window, twelve);
+  const fitted = widthOf(scroller.querySelector("svg"));
+  if (fitted > scrolledWidth) {
+    throw new Error("the all preset should fit the series on screen, not widen it");
+  }
+  click(window, byLabel("12"));
   await sleep(window, 60);
-  if (card.querySelector("svg").querySelectorAll("circle").length !== 12) {
-    throw new Error("switching back to 12 should re-window the chart");
+  if (dots().length !== 20) {
+    throw new Error("switching density must not drop points");
   }
-  console.log("PASS: the 12 / 25 / all presets re-window the live chart");
+  if (widthOf(scroller.querySelector('svg')) <= fitted) {
+    throw new Error("a denser preset should widen the scrollable plot back out");
+  }
+  console.log("PASS: density presets change how much fits on screen, never how much data exists");
 
-  // Panning back shows older data — a different newest point than before.
-  const newestBefore = Array.from(card.querySelectorAll("svg text"))
-    .map((t) => t.textContent)
-    .join("|");
-  const older = Array.from(card.querySelectorAll("button")).find((b) => b.textContent.trim().includes("older"));
-  if (!older) throw new Error("no pan control alongside the chart");
-  click(window, older);
-  await sleep(window, 60);
-  const newestAfter = Array.from(card.querySelectorAll("svg text"))
-    .map((t) => t.textContent)
-    .join("|");
-  if (newestBefore === newestAfter) throw new Error("panning older did not change the plotted window");
-  if (card.querySelector("svg").querySelectorAll("circle").length !== 12) {
-    throw new Error("panning should keep the window size");
+  // The pan buttons are gone — scrolling replaces them.
+  if (byLabel("◀ older") || byLabel("newer ▶")) {
+    throw new Error("the pan buttons should be gone now that the plot scrolls natively");
   }
-  console.log("PASS: the pan control moves the window further back through history");
+  console.log("PASS: the prev/next pan buttons are gone — scrolling replaces them");
   if (errors.length) throw new Error("jsdom errors: " + errors.join("; "));
   window.close();
 }
 
-async function checkNoControlsForShortHistories() {
+async function checkShortHistoryStillRenders() {
   const history = buildHistory("Leg Press", 5, null);
   const { window, errors } = await mount(history);
   click(window, byText(window, "button", "Block"));
@@ -220,16 +243,13 @@ async function checkNoControlsForShortHistories() {
   click(window, row);
   await sleep(window, 80);
   const card = row.parentElement;
-  if (card.querySelector("svg").querySelectorAll("circle").length !== 5) {
+  if (card.querySelectorAll("circle").length !== 5) {
     throw new Error("a short series should plot every point");
   }
-  const preset = Array.from(card.querySelectorAll("button")).find((b) => b.textContent.trim() === "25");
-  if (preset) throw new Error("range controls should stay hidden when everything already fits on screen");
-  console.log("PASS: a history that already fits in one window renders no range controls");
+  console.log("PASS: a short history plots every point without scrolling");
   if (errors.length) throw new Error("jsdom errors: " + errors.join("; "));
   window.close();
 }
-
 async function checkCardioTrendIsWindowedToo() {
   // 20 Stairmaster finishers — more than one window's worth.
   const history = Array.from({ length: 20 }, (_, i) => ({
@@ -279,8 +299,8 @@ async function checkCardioTrendIsWindowedToo() {
 
 async function main() {
   await checkWindowSliceArithmetic();
-  await checkPerMovementChartCountsSessionsContainingThatMovement();
-  await checkNoControlsForShortHistories();
+  await checkPerMovementChartPlotsEverythingAndScrolls();
+  await checkShortHistoryStillRenders();
   await checkCardioTrendIsWindowedToo();
   console.log("ALL PASS");
 }
