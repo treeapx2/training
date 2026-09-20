@@ -1,5 +1,186 @@
 [
   {
+    "id": 1789913885876,
+    "type": "pull",
+    "label": "Pull",
+    "date": "Sep 17, 2026",
+    "note": "",
+    "cardio": {
+      "machine": "Stairmaster",
+      "duration": "13",
+      "level": "4",
+      "rpe": "6",
+      "skipped": false,
+      "skipReason": ""
+    },
+    "durationMin": 55,
+    "liftingMin": 42,
+    "cardioMin": 13,
+    "movements": [
+      {
+        "name": "Seated Row",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "135",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "135",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "150",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 4,
+            "weight": "150",
+            "reps": "10",
+            "rpe": "8",
+            "note": ""
+          },
+          {
+            "set": 5,
+            "weight": "150",
+            "reps": "10",
+            "rpe": "8",
+            "note": ""
+          }
+        ],
+        "note": "",
+        "order": 0,
+        "targetWeight": "150",
+        "chipChoice": "hold",
+        "suggested": "hold"
+      },
+      {
+        "name": "Lat Pulldown",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "135",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "135",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "150",
+            "reps": "10",
+            "rpe": "8",
+            "note": ""
+          },
+          {
+            "set": 4,
+            "weight": "150",
+            "reps": "10",
+            "rpe": "8",
+            "note": ""
+          }
+        ],
+        "note": "",
+        "order": 1,
+        "targetWeight": "150",
+        "chipChoice": "hold",
+        "suggested": "hold"
+      },
+      {
+        "name": "Hammer Curl",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "20",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "20",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "20",
+            "reps": "10",
+            "rpe": "8",
+            "note": ""
+          },
+          {
+            "set": 4,
+            "weight": "20",
+            "reps": "10",
+            "rpe": "8",
+            "note": ""
+          }
+        ],
+        "note": "",
+        "order": 4,
+        "targetWeight": "20",
+        "chipChoice": "down",
+        "suggested": "hold",
+        "supersetId": "link_1789680206009"
+      },
+      {
+        "name": "Cable Curl",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "52.5",
+            "reps": "8",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "52.5",
+            "reps": "6",
+            "rpe": "8",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "47.5",
+            "reps": "6",
+            "rpe": "8",
+            "note": ""
+          },
+          {
+            "set": 4,
+            "weight": "47.5",
+            "reps": "6",
+            "rpe": "8",
+            "note": ""
+          }
+        ],
+        "note": "couldnt push - strain in hip area from hockey - also thinking the curls need to come before the hammers (I did the other way this time)",
+        "order": 5,
+        "targetWeight": "52.5",
+        "chipChoice": "hold",
+        "suggested": "hold",
+        "supersetId": "link_1789680206009"
+      }
+    ]
+  },
+  {
     "id": 1789509453859,
     "type": "legs",
     "label": "Legs",
