@@ -1,5 +1,201 @@
 [
   {
+    "id": 1790716286371,
+    "type": "pull",
+    "label": "Pull",
+    "date": "Sep 29, 2026",
+    "note": "Short on time for this one -\nno cardio. Yesterday’s was also 40 mins lifting no cardio (forgot to press finish -\nplease update)",
+    "durationMin": 34,
+    "liftingMin": 34,
+    "movements": [
+      {
+        "name": "Seated Row",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "135",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "135",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "150",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 4,
+            "weight": "150",
+            "reps": "10",
+            "rpe": "8",
+            "note": ""
+          }
+        ],
+        "note": "",
+        "order": 0,
+        "targetWeight": "150",
+        "chipChoice": "hold",
+        "suggested": "up"
+      },
+      {
+        "name": "Lat Pulldown",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "135",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "135",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "150",
+            "reps": "10",
+            "rpe": "8",
+            "note": ""
+          },
+          {
+            "set": 4,
+            "weight": "150",
+            "reps": "10",
+            "rpe": "8",
+            "note": ""
+          }
+        ],
+        "note": "",
+        "order": 1,
+        "targetWeight": "150",
+        "chipChoice": "hold",
+        "suggested": "hold"
+      },
+      {
+        "name": "Cable Curl",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "52.5",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "52.5",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "52.5",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 4,
+            "weight": "52.5",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          }
+        ],
+        "note": "",
+        "order": 2,
+        "targetWeight": "52.5",
+        "chipChoice": "hold",
+        "suggested": "hold",
+        "supersetId": "seed_1"
+      },
+      {
+        "name": "Hammer Curl",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "20",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "20",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "20",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 4,
+            "weight": "20",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          }
+        ],
+        "note": "",
+        "order": 3,
+        "targetWeight": "20",
+        "chipChoice": "down",
+        "suggested": "up",
+        "supersetId": "seed_1"
+      },
+      {
+        "name": "DB Row",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "40",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "40",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "40",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          }
+        ],
+        "note": "",
+        "order": 4,
+        "targetWeight": "45",
+        "chipChoice": "down",
+        "suggested": "hold"
+      }
+    ]
+  },
+  {
     "id": 1790714167783,
     "type": "push",
     "label": "Push",
