@@ -1,5 +1,231 @@
 [
   {
+    "id": 1791129800633,
+    "type": "legs",
+    "label": "Legs",
+    "date": "Oct 3, 2026",
+    "note": "",
+    "cardio": {
+      "machine": "Stairmaster",
+      "duration": "10",
+      "level": "3",
+      "rpe": "5",
+      "skipped": false,
+      "skipReason": ""
+    },
+    "durationMin": 49,
+    "liftingMin": 39,
+    "cardioMin": 10,
+    "movements": [
+      {
+        "name": "Leg Press",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "170",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "170",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "185",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 4,
+            "weight": "185",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 5,
+            "weight": "185",
+            "reps": "10",
+            "rpe": "8",
+            "note": ""
+          }
+        ],
+        "note": "",
+        "order": 0,
+        "targetWeight": "185",
+        "chipChoice": "hold",
+        "suggested": "up"
+      },
+      {
+        "name": "Leg Extension",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "150",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "150",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "165",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 4,
+            "weight": "165",
+            "reps": "10",
+            "rpe": "8",
+            "note": ""
+          },
+          {
+            "set": 5,
+            "weight": "165",
+            "reps": "10",
+            "rpe": "8",
+            "note": ""
+          }
+        ],
+        "note": "",
+        "order": 1,
+        "targetWeight": "165",
+        "chipChoice": "hold",
+        "suggested": "up"
+      },
+      {
+        "name": "Leg Curl",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "90",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "105",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "105",
+            "reps": "10",
+            "rpe": "8",
+            "note": ""
+          },
+          {
+            "set": 4,
+            "weight": "105",
+            "reps": "10",
+            "rpe": "8",
+            "note": ""
+          }
+        ],
+        "note": "",
+        "order": 2,
+        "targetWeight": "105",
+        "chipChoice": "hold",
+        "suggested": "up"
+      },
+      {
+        "name": "Goblet Squat",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "45",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "45",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "45",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 4,
+            "weight": "45",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          }
+        ],
+        "note": "",
+        "order": 3,
+        "targetWeight": "50",
+        "chipChoice": "hold",
+        "suggested": "hold",
+        "supersetId": "seed_2"
+      },
+      {
+        "name": "Calf Raise",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "45",
+            "reps": "15",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "45",
+            "reps": "15",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "45",
+            "reps": "15",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 4,
+            "weight": "45",
+            "reps": "15",
+            "rpe": "6",
+            "note": ""
+          }
+        ],
+        "note": "",
+        "order": 4,
+        "targetWeight": "45",
+        "chipChoice": "hold",
+        "suggested": "hold",
+        "supersetId": "seed_2"
+      }
+    ]
+  },
+  {
     "id": 1790716286371,
     "type": "pull",
     "label": "Pull",
