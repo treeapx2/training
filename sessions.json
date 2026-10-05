@@ -1,5 +1,535 @@
 [
   {
+    "id": 1791241288421,
+    "type": "pull",
+    "label": "Pull",
+    "date": "Oct 5, 2026",
+    "note": "",
+    "cardio": {
+      "machine": "Stairmaster",
+      "duration": "13",
+      "level": "4",
+      "rpe": "6",
+      "skipped": false,
+      "skipReason": ""
+    },
+    "durationMin": 58,
+    "liftingMin": 45,
+    "cardioMin": 13,
+    "movements": [
+      {
+        "name": "Seated Row",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "135",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "150",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "150",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 4,
+            "weight": "150",
+            "reps": "10",
+            "rpe": "8",
+            "note": ""
+          },
+          {
+            "set": 5,
+            "weight": "165",
+            "reps": "5",
+            "rpe": "9",
+            "note": ""
+          }
+        ],
+        "note": "lot of recs to go up weight even though im clearly not ready for that",
+        "order": 0,
+        "targetWeight": "150",
+        "chipChoice": "hold",
+        "suggested": "up"
+      },
+      {
+        "name": "Lat Pulldown",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "135",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "150",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "150",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 4,
+            "weight": "150",
+            "reps": "10",
+            "rpe": "8",
+            "note": ""
+          },
+          {
+            "set": 5,
+            "weight": "165",
+            "reps": "6",
+            "rpe": "9",
+            "note": ""
+          }
+        ],
+        "note": "",
+        "order": 1,
+        "targetWeight": "150",
+        "chipChoice": "hold",
+        "suggested": "hold"
+      },
+      {
+        "name": "DB Row",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "50",
+            "reps": "8",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "50",
+            "reps": "8",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "50",
+            "reps": "8",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 4,
+            "weight": "50",
+            "reps": "8",
+            "rpe": "7",
+            "note": ""
+          }
+        ],
+        "note": "should be no up rec when we hit max available weight",
+        "order": 2,
+        "targetWeight": "50",
+        "chipChoice": "hold",
+        "suggested": "up",
+        "supersetId": "link_1791238418171"
+      },
+      {
+        "name": "Reverse Fly",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "15",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "15",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "15",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 4,
+            "weight": "15",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          }
+        ],
+        "note": "",
+        "order": 3,
+        "targetWeight": "50",
+        "chipChoice": "hold",
+        "suggested": "hold",
+        "supersetId": "link_1791238418171"
+      },
+      {
+        "name": "Hammer Curl",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "25",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "25",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "25",
+            "reps": "10",
+            "rpe": "8",
+            "note": ""
+          },
+          {
+            "set": 4,
+            "weight": "25",
+            "reps": "8",
+            "rpe": "8",
+            "note": ""
+          }
+        ],
+        "note": "",
+        "order": 4,
+        "targetWeight": "25",
+        "chipChoice": "hold",
+        "suggested": "up",
+        "supersetId": "link_1791239409652"
+      },
+      {
+        "name": "Dumbbell Curl",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "25",
+            "reps": "8",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "25",
+            "reps": "8",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "25",
+            "reps": "8",
+            "rpe": "8",
+            "note": ""
+          },
+          {
+            "set": 4,
+            "weight": "25",
+            "reps": "6",
+            "rpe": "8",
+            "note": ""
+          }
+        ],
+        "note": "",
+        "order": 5,
+        "targetWeight": "25",
+        "chipChoice": "hold",
+        "suggested": "hold",
+        "supersetId": "link_1791239409652"
+      }
+    ]
+  },
+  {
+    "id": 1791133807446,
+    "type": "push",
+    "label": "Push",
+    "date": "Oct 4, 2026",
+    "note": "forgot to stop lifting time. subtract cardio time",
+    "cardio": {
+      "machine": "Stairmaster",
+      "duration": "12",
+      "level": "4",
+      "rpe": "6",
+      "skipped": false,
+      "skipReason": ""
+    },
+    "durationMin": 79,
+    "liftingMin": 67,
+    "cardioMin": 12,
+    "movements": [
+      {
+        "name": "DB Bench Press",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "45",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "45",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "45",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 4,
+            "weight": "45",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 5,
+            "weight": "45",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          }
+        ],
+        "note": "",
+        "order": 0,
+        "targetWeight": "50",
+        "chipChoice": "hold",
+        "suggested": "hold"
+      },
+      {
+        "name": "Pec Fly",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "135",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "135",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "150",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 4,
+            "weight": "150",
+            "reps": "8",
+            "rpe": "8",
+            "note": ""
+          },
+          {
+            "set": 5,
+            "weight": "150",
+            "reps": "8",
+            "rpe": "8",
+            "note": ""
+          }
+        ],
+        "note": "",
+        "order": 1,
+        "targetWeight": "150",
+        "chipChoice": "hold",
+        "suggested": "up"
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "75",
+            "reps": "8",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "75",
+            "reps": "8",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "75",
+            "reps": "8",
+            "rpe": "8",
+            "note": ""
+          },
+          {
+            "set": 4,
+            "weight": "75",
+            "reps": "8",
+            "rpe": "8",
+            "note": ""
+          }
+        ],
+        "note": "",
+        "order": 2,
+        "targetWeight": "75",
+        "chipChoice": "hold",
+        "suggested": "up",
+        "supersetId": "link_1791131045362"
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "15",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "15",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "15",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 4,
+            "weight": "15",
+            "reps": "10",
+            "rpe": "8",
+            "note": ""
+          }
+        ],
+        "note": "",
+        "order": 3,
+        "targetWeight": "15",
+        "chipChoice": "hold",
+        "suggested": "hold",
+        "supersetId": "link_1791131045362"
+      },
+      {
+        "name": "Rope Pushdown",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "42.5",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "42.5",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "47.5",
+            "reps": "8",
+            "rpe": "8",
+            "note": ""
+          },
+          {
+            "set": 4,
+            "weight": "47.5",
+            "reps": "8",
+            "rpe": "8",
+            "note": ""
+          }
+        ],
+        "note": "",
+        "order": 4,
+        "targetWeight": "47.5",
+        "chipChoice": "hold",
+        "suggested": "hold"
+      },
+      {
+        "name": "Skull Crusher",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "20",
+            "reps": "8",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "20",
+            "reps": "8",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "20",
+            "reps": "8",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 4,
+            "weight": "20",
+            "reps": "8",
+            "rpe": "7",
+            "note": ""
+          }
+        ],
+        "note": "",
+        "order": 5,
+        "targetWeight": "20",
+        "chipChoice": "hold",
+        "suggested": "hold"
+      }
+    ]
+  },
+  {
     "id": 1791129800633,
     "type": "legs",
     "label": "Legs",
