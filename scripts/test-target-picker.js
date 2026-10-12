@@ -13,6 +13,7 @@
 //     rules themselves.)
 //   - suggestChip's four rules (up / hold / down / <2 sessions -> hold).
 //   - applyPositionalDowngrade: up -> hold only in the last two positions.
+//   - applyCeilingDowngrade: up -> hold once the rack has no heavier pair.
 //   - End-to-end: tapping a chip in a live session and finishing persists
 //     targetWeight/chipChoice/suggested on the record.
 const fs = require("fs");
@@ -222,11 +223,65 @@ async function checkFinishPersistsTargetPickerFields() {
   window.close();
 }
 
+// "should be no up rec when we hit max available weight" (DB Row, Oct 5 2026).
+// stepWeight clamps at the end of a steps array, so at the rack ceiling the
+// `up` chip shows the same number as `hold` and the star points at a no-op.
+async function checkCeilingDowngrade() {
+  const { window, errors } = await mount(null);
+  if (errors.length) throw new Error("jsdom errors on mount: " + errors.join("; "));
+  const rack = [5, 10, 12, 15, 20, 25, 30, 35, 40, 45, 50];
+  const db = { name: "DB Row", steps: rack, reps: 10 };
+
+  // Below the ceiling nothing changes.
+  if (window.applyCeilingDowngrade("up", db, 45) !== "up") {
+    throw new Error("45 lb is a step below the ceiling and must keep 'up'");
+  }
+  // At it, there is no next weight to suggest.
+  if (window.applyCeilingDowngrade("up", db, 50) !== "hold") {
+    throw new Error("50 lb is the rack's ceiling and 'up' must become 'hold'");
+  }
+  // Above it (a legacy log heavier than today's rack, e.g. Shoulder Press (DB)
+  // at 70) still clamps, so still no 'up'.
+  if (window.applyCeilingDowngrade("up", db, 70) !== "hold") {
+    throw new Error("a weight above the rack's ceiling must not suggest 'up'");
+  }
+  // Only `up` is affected.
+  if (window.applyCeilingDowngrade("down", db, 50) !== "down") {
+    throw new Error("'down' must still be reachable at the ceiling");
+  }
+  if (window.applyCeilingDowngrade("hold", db, 50) !== "hold") {
+    throw new Error("'hold' must not be altered");
+  }
+  // A plate-loaded movement has no ceiling, so it is never downgraded.
+  const machine = { name: "Leg Press", increment: 15, reps: 10 };
+  if (window.applyCeilingDowngrade("up", machine, 185) !== "up") {
+    throw new Error("an increment movement has no ceiling and must keep 'up'");
+  }
+  console.log("PASS: 'up' is withheld at the rack ceiling and nowhere else");
+
+  // In the live app: Goblet Squat sits at the 50 lb ceiling against the
+  // committed log, so its star must not be on a chip identical to hold.
+  const hist = JSON.parse(fs.readFileSync(path.join(repoRoot, "sessions.json"), "utf8"));
+  const goblet = { name: "Goblet Squat", steps: rack, single: true, reps: 10, current: "50 lb" };
+  const hold = window.deriveCurrentWeight(hist, goblet);
+  if (window.stepWeight(goblet, hold, 1) !== hold) {
+    throw new Error(`fixture broken: Goblet Squat should be at the ceiling, derived ${hold}`);
+  }
+  const raw = window.suggestChip(hist, "Goblet Squat", 10);
+  const final = window.applyCeilingDowngrade(raw, goblet, hold);
+  if (final === "up") {
+    throw new Error("Goblet Squat is at the ceiling and must not be suggested up");
+  }
+  console.log(`PASS: Goblet Squat at the 50 lb ceiling suggests ${final}, not up (was ${raw})`);
+  window.close();
+}
+
 async function main() {
   await checkRampShape();
   await checkDeriveCurrentWeightAndSetCount();
   await checkSuggestionRules();
   await checkPositionalDowngrade();
+  await checkCeilingDowngrade();
   await checkFinishPersistsTargetPickerFields();
   console.log("ALL PASS");
 }

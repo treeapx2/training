@@ -1767,6 +1767,29 @@ function applyPositionalDowngrade(suggested, position, total) {
   return isLastTwo && suggested === "up" ? "hold" : suggested;
 }
 
+// "should be no up rec when we hit max available weight" — DB Row, Oct 5 2026.
+//
+// stepWeight clamps at the end of a `steps` array, so once a movement reaches
+// the rack's heaviest pair the `up` chip renders the same number as `hold` and
+// the star sits on a chip that does nothing. Goblet Squat and DB Row both live
+// at the 50 lb ceiling. Starring `hold` instead is honest: there is no next
+// weight to suggest, and the owner can still tap `down`.
+//
+// Deliberately decided from `stepWeight` rather than from a declared ceiling,
+// so it tracks whatever the rack actually holds (DUMBBELL_STEPS) and applies
+// equally to a plate-loaded movement that ever gains an upper bound.
+//
+// The test is "up isn't actually up", not "up equals hold", because those come
+// apart when history sits ABOVE the rack: Shoulder Press (DB) was logged at 70
+// per hand, so stepWeight snaps 70 into the array before stepping and the `up`
+// chip comes back as 50 — lower than hold. Suggesting that is worse than
+// suggesting a no-op.
+function applyCeilingDowngrade(suggested, mov, holdWeight) {
+  if (suggested !== "up") return suggested;
+  if (!mov || !(holdWeight > 0)) return suggested;
+  return stepWeight(mov, holdWeight, 1) <= holdWeight ? "hold" : suggested;
+}
+
 // Steps one chip position from `value`: n=-1 down, +1 up, 0 = same. Movements
 // with a `steps` array (every dumbbell movement shares DUMBBELL_STEPS, the
 // rack's actual available plates) walk the array, snapping to the nearest
@@ -2420,10 +2443,14 @@ function useMovementPicker(mov, history, position, total, onChange) {
   // (positional downgrade — a movement run late is not a valid place to
   // attempt a weight increase), recomputed fresh each render since it's
   // cheap and history/position don't change mid-session.
-  const suggested = applyPositionalDowngrade(
-    suggestChip(history, mov.name, mov.reps),
-    position,
-    total,
+  const suggested = applyCeilingDowngrade(
+    applyPositionalDowngrade(
+      suggestChip(history, mov.name, mov.reps),
+      position,
+      total,
+    ),
+    mov,
+    deriveCurrentWeight(history, mov),
   );
   const [chipChoice, setChipChoice] = useState(mov._chipChoice || null);
   const [targetWeight, setTargetWeight] = useState(mov._targetWeight || null);
