@@ -1555,6 +1555,13 @@ function movementSessionSummaries(history, movName, targetReps) {
       // The heaviest weight attempted and missed on top of a completed
       // session, or null. Never contributes to the baseline; withholds `up`.
       probeWeight,
+      // The target picker's own audit trail, as written by finish(): what was
+      // starred, what the owner actually tapped, and at what weight. Read back
+      // by `recentlyRejectedUp` (see suggestChip). Undefined on records from
+      // before the target picker (Aug 10 2026).
+      suggestedThen: mov.suggested,
+      choseThen: mov.chipChoice,
+      plannedWeight: hasPlan ? planned : null,
       // A working set is "successful" once it reaches the rep range's
       // lower bound (target - 2), not only the exact target rep count —
       // 8 reps at a 10-rep target is a pass, not a miss (Phase 7).
@@ -1671,6 +1678,52 @@ function setCountFor(mov) {
   return typeof n === "number" && n > 0 ? n : DEFAULT_SET_COUNT;
 }
 
+// "lot of recs to go up weight even though im clearly not ready for that"
+// — Seated Row, Oct 5 2026.
+//
+// Across 158 recorded suggestions the owner accepted 62%, but of 41 `up`
+// suggestions they rejected 29 (71%). The engine had no way to notice: once
+// the plateau rule fires, holding the weight at RPE 7 EXTENDS the same-weight
+// streak, so the rule re-fires every session forever. Leg Press was starred
+// `up` on Sep 9, Sep 15, Oct 3 and Oct 9 — against a flag that says in so many
+// words not to add weight, because the limiter is unracking off the hinges
+// rather than the working reps.
+//
+// Every record already carries `suggested` and `chipChoice`; CLAUDE.md says
+// that is exactly why they were persisted ("what makes suggestion quality
+// auditable"). Nothing read them back. This does: if `up` was starred at this
+// weight at least REJECTED_UP_LIMIT times in the recent window and the owner
+// never once took it, stop starring it.
+//
+// Window and threshold are deliberate. Counting across a four-session window
+// rather than requiring an unbroken run from the most recent session is what
+// makes the silence last: a suppressed suggestion writes `hold` to the next
+// record, which would immediately break a consecutive-streak test and let `up`
+// return the session after. And a single rejection is not evidence — a
+// movement run late, or a day the owner felt off, is exactly the sort of noise
+// the two-session rules already tolerate.
+//
+// Tied to the WEIGHT, so it clears itself: move up voluntarily, or come back
+// down to a weight with no rejections against it, and the engine suggests
+// freely again. Taking the `up` chip even once also clears it, since the
+// owner engaging with the call is the opposite of rejecting it.
+const REJECTED_UP_WINDOW = 4;
+const REJECTED_UP_LIMIT = 2;
+function recentlyRejectedUp(summaries) {
+  if (!summaries.length) return false;
+  const weight = summaries[0].topWeight;
+  const window = summaries.slice(0, REJECTED_UP_WINDOW);
+  let rejected = 0;
+  for (let i = 0; i < window.length; i++) {
+    const s = window[i];
+    if (s.plannedWeight !== weight) continue;
+    if (s.suggestedThen !== "up") continue;
+    if (s.choseThen === "up") return false;
+    if (s.choseThen) rejected++;
+  }
+  return rejected >= REJECTED_UP_LIMIT;
+}
+
 // down/hold/up suggestion, evaluated against the last two sessions
 // containing the movement. Rewritten Aug 19 2026 (CHANGES.md Phase 7) —
 // across 33 movement instances Aug 10-19 the owner overrode the engine's
@@ -1711,7 +1764,10 @@ function suggestChip(history, movName, targetReps) {
   // is three sessions, matching deriveCurrentWeight's, so it clears on its own
   // after a couple of outings rather than parking the movement forever.
   const probedRecently = summaries.slice(0, 3).some((x) => x.probeWeight != null);
-  const notUp = (call) => (call === "up" && probedRecently ? "hold" : call);
+  // ...and so does an `up` the owner has already turned down at this weight
+  // (see recentlyRejectedUp).
+  const withholdUp = probedRecently || recentlyRejectedUp(summaries);
+  const notUp = (call) => (call === "up" && withholdUp ? "hold" : call);
   if (last.topRpe >= 9) return notDown("down");
   if (isPlateaued(summaries)) return notUp("up");
   if (!last.hitFloor) {

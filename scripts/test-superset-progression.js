@@ -392,6 +392,129 @@ async function checkSupersetRoundsCanRaiseTheBaseline() {
   window.close();
 }
 
+// "lot of recs to go up weight even though im clearly not ready for that"
+// — Seated Row, Oct 5 2026. The plateau rule above cannot stop firing on its
+// own: holding the weight at RPE 7 extends the same-weight streak it reads, so
+// once it fires it re-fires every session. Leg Press was starred `up` on
+// Sep 9, Sep 15, Oct 3 and Oct 9 against a flag that says not to add weight.
+//
+// Every record already carries `suggested` and `chipChoice`. This check pins
+// that they are read back.
+async function checkRepeatedlyRejectedUpGoesQuiet() {
+  const { window } = await mount();
+
+  // A parked lift: same weight, target reps, RPE 7 — the plateau shape.
+  const parked = (date, opts) => {
+    const o = opts || {};
+    const sets = [1, 2, 3].map((n) => ({ set: n, weight: "185", reps: "10", rpe: "7", note: "" }));
+    const mov = { name: "Leg Press", sets, note: "", order: 0, targetWeight: 185 };
+    if (o.suggested) mov.suggested = o.suggested;
+    if (o.chose) mov.chipChoice = o.chose;
+    return { id: date.length, type: "legs", label: "Legs", date, note: "", movements: [mov] };
+  };
+
+  // Baseline: three parked sessions with no audit trail at all (records from
+  // before the target picker) still plateau-break to `up`.
+  const noTrail = [parked("Oct 9, 2026"), parked("Oct 3, 2026"), parked("Sep 15, 2026")];
+  if (window.suggestChip(noTrail, "Leg Press", 10) !== "up") {
+    throw new Error("the plateau rule must still fire when there is no audit trail to read");
+  }
+  console.log("PASS: with no recorded suggestion history, the plateau rule is unchanged");
+
+  // One rejection is noise, not evidence — a late slot, or an off day.
+  const once = [
+    parked("Oct 9, 2026", { suggested: "up", chose: "hold" }),
+    parked("Oct 3, 2026"),
+    parked("Sep 15, 2026"),
+  ];
+  if (window.suggestChip(once, "Leg Press", 10) !== "up") {
+    throw new Error("a single rejection must not silence the suggestion");
+  }
+  console.log("PASS: one rejected up is treated as noise");
+
+  // Two is a pattern.
+  const twice = [
+    parked("Oct 9, 2026", { suggested: "up", chose: "hold" }),
+    parked("Oct 3, 2026", { suggested: "up", chose: "hold" }),
+    parked("Sep 15, 2026"),
+  ];
+  if (window.suggestChip(twice, "Leg Press", 10) !== "hold") {
+    throw new Error(`two rejections at the same weight must silence up, got ${window.suggestChip(twice, "Leg Press", 10)}`);
+  }
+  console.log("PASS: up starred and turned down twice at the same weight goes quiet");
+
+  // The suppression has to SURVIVE the record it produces. The next session
+  // writes `suggested: hold`, which would break any consecutive-run test and
+  // let `up` back in immediately — the whole point is that it doesn't.
+  const after = [parked("Oct 12, 2026", { suggested: "hold", chose: "hold" }), ...twice];
+  if (window.suggestChip(after, "Leg Press", 10) !== "hold") {
+    throw new Error("suppression must outlive the hold record it produces");
+  }
+  console.log("PASS: suppression survives the session it produced, instead of flipping back next time");
+
+  // Taking the chip even once clears it — engaging with the call is the
+  // opposite of rejecting it.
+  const accepted = [
+    parked("Oct 9, 2026", { suggested: "up", chose: "up" }),
+    parked("Oct 3, 2026", { suggested: "up", chose: "hold" }),
+    parked("Sep 15, 2026", { suggested: "up", chose: "hold" }),
+  ];
+  if (window.suggestChip(accepted, "Leg Press", 10) !== "up") {
+    throw new Error("accepting the chip once must clear the suppression");
+  }
+  console.log("PASS: accepting up once clears the suppression");
+
+  // And it is tied to the WEIGHT, so moving off that weight clears it too.
+  const moved = JSON.parse(JSON.stringify(twice));
+  moved.forEach((sess) => {
+    sess.movements[0].targetWeight = 170;
+    sess.movements[0].sets.forEach((st) => { st.weight = "170"; });
+  });
+  moved.unshift(parked("Oct 12, 2026"));
+  if (window.suggestChip(moved, "Leg Press", 10) !== "up") {
+    throw new Error("rejections at a different weight must not silence up at this one");
+  }
+  console.log("PASS: the suppression is tied to the weight it was rejected at");
+  window.close();
+}
+
+// The live log: the movements the Oct 5/Oct 10 notes complained about.
+async function checkRejectedUpAgainstRealHistory() {
+  const { window } = await mount();
+  const hist = JSON.parse(fs.readFileSync(path.join(repoRoot, "sessions.json"), "utf8"));
+  const rack = [5, 10, 12, 15, 20, 25, 30, 35, 40, 45, 50];
+
+  // Repeatedly rejected: these must no longer be starred up.
+  [
+    { name: "Leg Press", reps: 10, increment: 15 },
+    { name: "Leg Extension", reps: 10, increment: 15 },
+    { name: "Pec Fly", reps: 10, increment: 15 },
+  ].forEach((mov) => {
+    const sums = window.movementSessionSummaries(hist, mov.name, mov.reps);
+    if (!window.recentlyRejectedUp(sums)) {
+      throw new Error(`${mov.name} has repeated rejected up suggestions in the log and must register as such`);
+    }
+    const call = window.suggestChip(hist, mov.name, mov.reps);
+    if (call === "up") throw new Error(`${mov.name} must not be starred up after repeated rejections`);
+    console.log(`PASS: ${mov.name} suggests ${call}, not up (rejected repeatedly at this weight)`);
+  });
+
+  // Still earned elsewhere — the guard must not flatten every suggestion to
+  // hold. Each of these matches its own authored coach target.
+  [
+    { name: "DB Bench Press", reps: 10, steps: rack, current: "40 lb/hand" },
+    { name: "Calf Raise", reps: 15, increment: 5, current: "45 lb" },
+  ].forEach((mov) => {
+    const derived = window.deriveCurrentWeight(hist, mov);
+    const call = window.applyCeilingDowngrade(window.suggestChip(hist, mov.name, mov.reps), mov, derived);
+    if (call !== "up") {
+      throw new Error(`${mov.name} is genuinely ready to progress and must still be starred up, got ${call}`);
+    }
+    console.log(`PASS: ${mov.name} is still starred up at ${derived} -> ${window.stepWeight(mov, derived, 1)}`);
+  });
+  window.close();
+}
+
 async function main() {
   await checkSupersetHistoryDoesNotLowerTheBaseline();
   await checkBestQualifyingSessionInTheLastThree();
@@ -399,6 +522,8 @@ async function main() {
   await checkSupersetOnlyMovementStillProgresses();
   await checkRpe8PlateauSuggestsUp();
   await checkSupersetRoundsCanRaiseTheBaseline();
+  await checkRepeatedlyRejectedUpGoesQuiet();
+  await checkRejectedUpAgainstRealHistory();
   await checkAgainstRealHistory();
   console.log("ALL PASS");
 }
