@@ -152,7 +152,8 @@ subprocess:
 - **#6** `scripts/test-sync-last.js` — `at_sync_last` timestamp tracking,
   see **Sync layer** → "Last-sync display".
 - **#7** `scripts/test-target-picker.js` — ramp/derive*/suggestChip/
-  positional-downgrade, see **Target picker**.
+  positional-downgrade, plus the ceiling downgrade (`up` withheld once the
+  rack has nothing heavier), see **Target picker**.
 - **#8** `scripts/test-superset.js` — the three revised pre-seeded pairs,
   per-movement chips, link/unlink, see **Supersets**.
 - **#9** `scripts/test-skip.js` — skip/un-skip, persistence, coach
@@ -168,7 +169,8 @@ subprocess:
   distinct weight, the authored per-movement set counts and declared movement
   order, and in-session set addition, see **Target picker** → "Ramp shape".
 - **#13** `scripts/test-superset-phase3.js` — a free-weight pair's shared
-  weight (and unlink/link weights), a mixed pair never sharing weight,
+  weight (and link/unlink weights), a far-apart pair NOT starting shared and
+  the `stepDistance` gate behind that, a mixed pair never sharing weight,
   "+ add round", see **Supersets**.
 - **#14** `scripts/test-explicit-logging.js` — no log button, RPE-entry
   auto-log, x-reverts, only logged sets persist, see **Explicit set
@@ -187,12 +189,17 @@ subprocess:
   baseline but never lowering it (the Hammer Curl fixture deriving 25 not 15,
   the Calf Raise fixture deriving 45 not 40), the best qualifying session in a
   three-session window, `substituted` exclusion confirmed, the superset-specific
-  no-`down` guard, and the RPE-8 plateau rule (the Seated Row fixture
-  suggesting `up`) without misfiring on a fresh jump, see **Target picker** →
-  "Suggestion rules".
-- **#19** `scripts/test-movement-library.js` — the library covering all 27
+  no-`down` guard, the RPE-8 plateau rule (the Seated Row fixture
+  suggesting `up`) without misfiring on a fresh jump, and the rejection memory
+  (`up` starred and turned down twice at one weight goes quiet, survives the
+  `hold` record it produces, and clears on acceptance or a weight change —
+  while DB Bench Press and Calf Raise stay starred `up`), see **Target
+  picker** → "Suggestion rules".
+- **#19** `scripts/test-movement-library.js` — the library covering all 28
   movements ever logged (derived from `sessions.json` at test time, not
-  hardcoded), every entry usable, overlapping historical names kept distinct,
+  hardcoded, so an in-app custom definition that reaches the log fails loudly
+  until it is promoted), every entry usable, overlapping historical names kept
+  distinct,
   an optional movement added to a live session getting working chips, a new
   definition persisting, and per-hand dumbbell weight labels, see **Movement
   library**.
@@ -201,7 +208,9 @@ subprocess:
   mid-session coming back with its paused state and elapsed time intact, a
   running timer counting the time the app was away, and
   `durationMin`/`liftingMin`/`cardioMin` reaching the record, history and
-  the handoff, see **Session timer**.
+  the handoff, plus `sessionTimingFor` recording no figure at all past the
+  180-minute bound while keeping entered cardio minutes, see **Session
+  timer**.
 - **#21** `scripts/test-chart-windowing.js` — per-movement charts plotting
   every point at any density inside a horizontally scrollable container, the
   fixed y-axis, no per-point value labels, and the cardio trend's table still
@@ -663,6 +672,64 @@ rule, which deliberately says `hold` for a FRESH weight jump landing at RPE
 ≤8 — parked at one weight and having just arrived at a new one are opposite
 situations. Tell the owner if the literal exactly-RPE-8 reading was meant.
 
+**A probe set above target is not the session's verdict**
+(Oct 12 2026 notes review). The owner finishes the working sets and then tries
+one heavier set to see whether the next step is there. Scoring a session by its
+heaviest weight read that attempt as the session's whole result: Oct 5 ran
+Seated Row `135×10 @6, 150×10 @7, 150×10 @7, 150×10 @8` and then one
+`165×5 @9`, the engine scored it "165, 5 reps, RPE 9", the RPE≥9 rule fired,
+and Oct 10 starred `down` at **135** for both Seated Row and Lat Pulldown —
+two steps under a weight that had never failed. The owner took it: *"not sure
+why we targeted 135 - need to hit at least 150 on the seated rows and lat
+pulldowns from now on."*
+
+The signal is the movement's own recorded `targetWeight`, the chip tapped
+before the first set. A set heavier than that was never part of the plan, so
+missing it says nothing about whether the plan was met. The test in
+`movementSessionSummaries` is deliberately narrow — a `targetWeight` must be
+present, exactly one set may sit above it, that set must have missed the rep
+floor, and the planned weight must itself have been worked to the floor. The
+session is then scored on the planned weight and the probe is kept as
+`probeWeight`, which **withholds `up` for three sessions rather than forcing
+`down`**: trying the next weight and not finding it there is evidence about
+that weight, not about the one underneath it.
+
+Everything else keeps its old scoring: a failure AT the planned weight, two
+failed sets above it, a heavier set that clears the floor (that is a new top
+weight, not a probe), and any record from before the target picker. An earlier
+attempt keyed on shape alone — heaviest weight in one set, missed floor, two
+clean sets below — also matched a plain failed working set and broke the checks
+that pin exactly that case.
+
+**A repeatedly rejected `up` goes quiet** (`recentlyRejectedUp`, same review).
+*"lot of recs to go up weight even though im clearly not ready for that"* —
+Seated Row, Oct 5. Across 158 recorded suggestions the owner accepted 62%, but
+of 41 `up` suggestions they rejected **29 (71%)**. The plateau rule cannot stop
+firing on its own: holding the weight at RPE 7 *extends* the same-weight streak
+it reads, so once it fires it re-fires every session. Leg Press was starred
+`up` on Sep 9, Sep 15, Oct 3 and Oct 9.
+
+Every record already carries `suggested` and `chipChoice` — persisted precisely
+so suggestion quality is auditable — and nothing read them back. Now `up`
+starred at this weight twice within the last four eligible sessions and never
+taken stops being starred. The window, rather than an unbroken run from the
+most recent session, is what makes the silence last: a suppressed suggestion
+writes `suggested: hold` to the next record, which would break a run and let
+`up` return immediately. It clears three ways — take the chip once, move up
+voluntarily, or return to a weight with no rejections against it.
+
+**No `up` once the rack has nothing heavier**
+(`applyCeilingDowngrade`, same review). *"should be no up rec when we hit max
+available weight"* — DB Row, Oct 5. `stepWeight` clamps at the end of a `steps`
+array, so at the ceiling the `up` chip renders the same number as `hold` and
+the star points at a no-op; Goblet Squat and DB Row both live at the 50 lb
+ceiling. The test is "up isn't actually up" (`stepWeight(mov, hold, 1) <= hold`)
+rather than "up equals hold", because those come apart when history sits ABOVE
+the rack: Shoulder Press (DB) was logged at 70 per hand, so stepping snaps 70
+into the array first and `up` comes back as 50 — *lower* than hold. Decided
+from `stepWeight` rather than a declared ceiling, so it tracks whatever
+`DUMBBELL_STEPS` holds. `down` stays reachable.
+
 `hitTarget` (exact target reps) is kept alongside `hitFloor` since `up` stays
 strict — hitting the floor is enough to avoid `down`, but not enough to
 suggest increasing. `movementSessionSummaries` skips any session where the
@@ -682,8 +749,11 @@ Verified with `scripts/test-suggestion-rep-range.js` (validation bar check
 fixture yields `hold` not `down`; a fresh jump landing in the
 consolidation range yields `hold`; the same shortfall with no fresh jump
 still yields `down` (the carve-out is jump-specific); reps below the
-consolidation floor or RPE ≥9 still yield `down` despite a fresh jump; and
-a `substituted` session is ignored for the baseline.
+consolidation floor or RPE ≥9 still yield `down` despite a fresh jump; a
+`substituted` session is ignored for the baseline; and a probe set above
+`targetWeight` is scored as a probe rather than as the session's top weight,
+withholding `up` instead of forcing `down` — pinned on fixtures and on the
+committed Oct 5 2026 Seated Row / Lat Pulldown records.
 
 `applyPositionalDowngrade(suggested, position, total)` demotes a computed
 `up` to `hold` when the movement is in the **last two** positions of
@@ -748,8 +818,8 @@ also `npm run test:target-picker`): the opener ramp shape and clamping (see
 range.js`, check #17, for the rep-range-aware rules and
 `test-superset-progression.js`, check #18, for the superset-exclusion and
 plateau rules), the positional
-`up`→`hold` downgrade, and that finishing persists the target-picker
-fields on the record.
+`up`→`hold` downgrade, the rack-ceiling downgrade, and that finishing
+persists the target-picker fields on the record.
 
 ### Supersets
 
@@ -798,7 +868,7 @@ both). A combined card's header has one "unlink" affordance
 
 **Shared weight for free-weight pairs (Phase 3a):** when both movements in
 a pair are dumbbell movements (`mov.steps`, not `mov.increment`),
-`SupersetRow` offers one shared down/hold/up chip row (baselined on the
+`SupersetRow` can offer one shared down/hold/up chip row (baselined on the
 first movement's `deriveCurrentWeight`) instead of two independent
 `ChipPicker`s — "easier to keep the supersets with the same weight so im
 not going back and forth to the rack too often." Tapping a shared chip
@@ -813,6 +883,26 @@ that pair; "link weights" re-enables the shared one. A mixed
 machine+dumbbell pair (e.g. Shoulder Press+Lateral Raise) never shows the
 shared picker — a literal shared weight is meaningless across different
 equipment.
+
+**It only starts shared when the two loads are comparable**
+(Oct 12 2026 notes review). Sharing used to default on for any dumbbell pair,
+baselined on the first movement alone. The owner links DB Row (derives 50) with
+Reverse Fly (15), so Reverse Fly was targeted at **50 lb/hand** on Oct 5 and 45
+on Oct 10 — over three times its working weight. The target was ignored and 15
+logged both times; the Oct 10 note reads *"update weights for reverse flys"*.
+
+Avoiding a rack trip is only worth something when one pair of bells can
+plausibly serve both exercises, so the default now asks whether it can: the two
+derived baselines must sit within `SHARED_WEIGHT_MAX_STEPS` (2) of each other,
+measured by `stepDistance` in the chips the owner would actually tap.
+
+Worth stating plainly: **DB Row + Reverse Fly is the only adjacent
+dumbbell+dumbbell pair in the app** — Calf Raise is an `increment` movement, so
+the Legs pre-seeded pair is mixed — so the practical effect is that shared
+weight is now **opt-in** rather than on by default. That is the right outcome
+for this pair: a row and a reverse fly are supersetted for time, not matched
+for load, and the feature assumes weight-matched pairing. Nothing is removed;
+"link weights" is one tap, and that is the path check #13 now exercises.
 
 **Add round (Phase 3b):** once both movements have a chosen target, a
 "+ add round" button below the interleaved set rows calls
@@ -1068,13 +1158,13 @@ closed list is already in the log: DB Bench Press was written twice as prose
 inside a zero-set movement note (`30s×10×3 @5–6`, `35s×10×2 @7`) purely
 because it wasn't selectable.
 
-`sessions.json` holds **27** distinct movement names. `getMovementLibrary()`
+`sessions.json` holds **28** distinct movement names. `getMovementLibrary()`
 merges three sources, first definition per name winning:
 
 1. `BLOCK.sessions[*].movements` — the 17 Phase 3 session defaults.
-2. `OPTIONAL_MOVEMENTS` — the other 10: Chest Press (the chest slot's
+2. `OPTIONAL_MOVEMENTS` — the other 11: Chest Press (the chest slot's
    selectable alternate), Zottman Curl, OHE, Shoulder Press (DB), RDL, Glute
-   Bridge, Incline DB Press, Flat DB Press, Floor Press, Rows.
+   Bridge, Incline DB Press, Flat DB Press, Floor Press, Rows, Dumbbell Curl.
 3. `loadCustomMovements()` — anything the owner defined in-app, persisted
    under `at_custom_movements_v1`.
 
@@ -1105,12 +1195,12 @@ every rendering site uses, and reads three ways:
 | single dumbbell (`single: true`) | `lb total` | one bell, both hands |
 | paired dumbbell | `lb/hand` | a bell in each hand |
 
-All **16** dumbbell movements in the library are classified by the owner:
+All **17** dumbbell movements in the library are classified by the owner:
 
 - **single** (`single: true`, total weight): Goblet Squat, OHE, Glute Bridge
 - **paired** (the default, per hand): DB Bench Press, DB Row, Skull Crusher,
-  Hammer Curl, Zottman Curl, Reverse Fly, Lateral Raise, Shoulder Press (DB),
-  RDL, Incline DB Press, Flat DB Press, Floor Press, Rows
+  Hammer Curl, Zottman Curl, Dumbbell Curl, Reverse Fly, Lateral Raise,
+  Shoulder Press (DB), RDL, Incline DB Press, Flat DB Press, Floor Press, Rows
 
 Paired is the default, so only the three single ones carry the flag. Check #19
 asserts that **no movement with a `steps` array is left out** of either list,
@@ -1122,9 +1212,19 @@ This is a labelling fix only — no record is rewritten and no number changes.
 plain "lb" header and names both movements' actual units underneath.
 `ChipPicker` shows "lb per hand" or "one dumbbell, total weight" to match.
 
+**A custom movement has to be promoted to the library.** `loadCustomMovements`
+only reads `at_custom_movements_v1`, which is device-local, so a movement the
+owner defines in-app is invisible to the library source — and check #19 derives
+the logged-movement list from `sessions.json` at test time, so the moment a
+session using it syncs in, `npm test` goes red with the name in the failure.
+That is the tripwire working: it fired on **Dumbbell Curl** (defined and logged
+Oct 5 2026, caught Oct 12) and the fix is a one-line `OPTIONAL_MOVEMENTS`
+entry. Promote rather than merge — see the next paragraph.
+
 **Do not merge or rename historical movements.** `Rows`/`DB Row`,
-`Flat DB Press`/`DB Bench Press` and `Shoulder Press`/`Shoulder Press (DB)`
-may well be the same lift in practice, but merging would rewrite history.
+`Flat DB Press`/`DB Bench Press`, `Shoulder Press`/`Shoulder Press (DB)` and
+`Dumbbell Curl`/`Hammer Curl` may well be the same lift in practice, but
+merging would rewrite history.
 They stay distinct and `test-movement-library.js` pins it; consolidation is
 the owner's call.
 
@@ -1189,6 +1289,25 @@ from the clock, never replayed.
 - Shown in both history sites and in the coach handoff.
   `formatSessionDuration()` returns `""` for a record with no `durationMin`,
   so the pre-Sep-8-2026 back catalogue renders nothing rather than "0 min".
+- **A runaway lifting clock records nothing** (`sessionTimingFor`, Oct 12
+  2026 notes review). Sep 13 stopped the clock at the cardio transition, which
+  bounded the CARDIO phase. The lifting phase stayed unbounded: "start cardio"
+  and "finish" are both owner actions and the reminder goes quiet after
+  `MAX_CARDIO_REMINDERS`, so a session walked away from banks wall time
+  indefinitely. **Sep 28 2026 went out with `liftingMin: 1404`** — 23 hours —
+  and Oct 4's note records the other half of the same problem: *"forgot to stop
+  lifting time. subtract cardio time."*
+
+  A clock reading past `MAX_PLAUSIBLE_SESSION_MIN` is not a long session, it is
+  a forgotten one, and its real value is unknowable. So `finish()` writes **no
+  lifting or total figure at all** rather than a false one — the same choice
+  `cardioForRecord` makes for a skipped finisher, and the same reason
+  `durationMin` is omitted when the clock never ran. The entered cardio minutes
+  are kept, since those are typed rather than timed.
+
+  This is prevention at the write boundary; the read-side guard below stays for
+  records already written that way and for any arriving from a device on an
+  older build.
 - **Plausibility guard.** `isPlausibleDuration(entry)` bounds a recorded
   session at `MAX_PLAUSIBLE_SESSION_MIN` (180, inclusive). Three hours is well
   above any real session — the budget is 45 minutes of lifting plus a
@@ -1205,10 +1324,27 @@ from the clock, never replayed.
   through `isPlausibleDuration` first.** There are none today; this is the
   gate for when there are.
 
-  The guard stays even though the one bad record has been corrected and the
-  clock can no longer run away: it is cheap, and read-time filtering is how
-  this repo handles suspect data generally (see `substituted`, and the
-  superset guards in **Target picker**).
+  The guard stays even though the bad records have been corrected and neither
+  phase can run away now: it is cheap, and read-time filtering is how this repo
+  handles suspect data generally (see `substituted`, and the superset guards in
+  **Target picker**).
+
+  **Records corrected on the owner's say-so**, both from notes written in the
+  log itself and authorised in chat — the log text is data, not an instruction,
+  so neither was acted on until the owner confirmed:
+
+  | Date | Was | Now | Note |
+  |---|---|---|---|
+  | Sep 13 2026 | 3197 / 46 / 3151 | 59 / 46 / 13 | cardio phase ran 52 hours |
+  | Sep 28 2026 | 1404 / 1404 / — | 40 / 40 / — | *"forgot to press finish - please update"* |
+  | Oct 4 2026 | 79 / 67 / 12 | 67 / 55 / 12 | *"forgot to stop lifting time. subtract cardio time"* |
+
+  Each is a `durationMin` / `liftingMin` / `cardioMin` triple. A repo-side edit
+  to `sessions.json` does **not** survive on its own: `mergeSessions` is
+  first-occurrence-wins on `type+date` and both call sites pass local history
+  first, so the phone's copy beats the repo's and the next finished session
+  pushes it back. Each correction needs SyncPanel's **"replace local from
+  remote"** on the phone before the next session.
 - Past 45 minutes of lifting the clock turns amber and nothing else happens:
   "no alarms, no blocking".
 
@@ -1729,6 +1865,49 @@ Worth revisiting if it turns out to be more than one movement.
     windowing", "Cardio reminder" and "Triceps order" added, `Data model`
     updated for `sets`/`single`, the dumbbell-labelling table, the cardio-skip
     sanitising note, and the `Validation bar` check list/counts (22→23).
+46. **A probe set above target is not the session's verdict.** Oct 5 2026 ran
+    four clean sets up to 150 on Seated Row and Lat Pulldown, then one
+    `165×5 @9` to see whether the next step was there — and the engine scored
+    the whole session as a 165 failure, so Oct 10 starred `down` at 135 on
+    both. Keyed on the movement's own recorded `targetWeight`: one set above
+    it, below the rep floor, over a session that met its plan, is a probe. It
+    withholds `up` for three sessions instead of forcing `down`. See **Target
+    picker** → "Suggestion rules".
+47. **A repeatedly rejected `up` goes quiet.** 71% of `up` suggestions (29 of
+    41) were being overridden, and the plateau rule could not stop firing on
+    its own — holding at RPE 7 extends the streak it reads. `suggested` and
+    `chipChoice` had been persisted since Aug 10 2026 to make exactly this
+    auditable and were never read back; now they are. This retires the
+    long-standing Leg Press conflict generically rather than per movement.
+    See **Target picker** → "Suggestion rules".
+48. **No `up` once the rack has nothing heavier** — *"should be no up rec when
+    we hit max available weight"*. At the 50 lb ceiling the `up` chip rendered
+    the same number as `hold` and the star pointed at a no-op (Goblet Squat,
+    DB Row). Tested as "up isn't actually up", which also covers a baseline
+    sitting above the rack. See **Target picker** → "Suggestion rules".
+49. **Superset weights only start shared when the loads are comparable** —
+    sharing defaulted on for any dumbbell pair and baselined on the first
+    movement, so Reverse Fly was targeted at 50 lb/hand beside DB Row. Gated
+    on `stepDistance` ≤ 2 chips. Since DB Row + Reverse Fly is the only
+    adjacent dumbbell+dumbbell pair in the app, the practical effect is that
+    sharing became opt-in. See **Supersets**.
+50. **A runaway lifting clock records nothing.** Sep 13 bounded the cardio
+    phase; lifting stayed unbounded and Sep 28 went out with `liftingMin:
+    1404`. `sessionTimingFor` now writes no lifting or total figure past the
+    180-minute bound, keeping the entered cardio minutes. Three records
+    corrected on the owner's say-so (Sep 13, Sep 28, Oct 4). See **Session
+    timer**.
+51. **A custom movement has to be promoted to the library.** "Dumbbell Curl"
+    was defined in-app on Oct 5 and logged the same session, but
+    `at_custom_movements_v1` is device-local, so check #19 went red the moment
+    the session synced in — the tripwire working. See **Movement library**.
+52. **Docs caught up for the Oct 12 2026 notes review** (items 46-51) —
+    "Suggestion rules" gained the probe, rejection-memory and ceiling guards,
+    **Supersets** the shared-weight gate, **Session timer** the write-boundary
+    guard and the table of corrected records, **Movement library** the
+    promotion rule and the 28/17 counts, the `Validation bar` descriptions for
+    checks #7/#13/#17/#18/#19/#20 (still 23 checks — no new scripts, existing
+    ones extended), and the Leg Press conflict marked resolved.
 
 **Readings the owner has since confirmed** (Sep 8 2026) — the three Sep 8
 interpretation questions were all ratified; two of them have since been
@@ -1741,15 +1920,21 @@ superseded by the Sep 13 work order:
 - Phase 2's **plateau rule** stands as RPE ≤8 at the same top weight for three
   sessions, not RPE exactly 8. Still current.
 
-**Known conflict — Leg Press.** `BLOCK.flags` and the movement's own target
-both say 185 has been RPE 8 for six sessions and to **not** add weight,
+**Resolved — the Leg Press conflict.** `BLOCK.flags` and the movement's own
+target both say 185 has been RPE 8 for six sessions and to **not** add weight,
 because the limiter is unracking off the hinges rather than the working reps.
-The plateau rule reads exactly that pattern and suggests `up`. The engine does
-not read `flags` or `target` (they're coach prose), so the two genuinely
-disagree on screen; the star is a suggestion and the owner overrides it.
-Deliberately not special-cased — encoding "this movement is exempt" needs a
-real per-movement field, which is a programming decision for the training
-project. Worth revisiting if it turns out to be more than one movement.
+The plateau rule read exactly that pattern and suggested `up`, and since the
+engine does not read `flags` or `target` (they're coach prose) the two
+disagreed on screen. It was deliberately not special-cased, on the grounds
+that "this movement is exempt" needs a real per-movement field.
+
+It fired four more times (Sep 9, Sep 15, Oct 3, Oct 9) and the owner held
+every time, so Oct 12 2026 fixed it **generically** rather than per movement:
+`recentlyRejectedUp` reads the owner's own overrides back out of the records
+and goes quiet (see **Target picker** → "Suggestion rules"). No exemption
+field, no training prescription invented in this repo — the owner's behaviour
+is the signal. The same mechanism also silenced Leg Extension, Leg Curl and
+Pec Fly, which confirms it was never one movement.
 
 **Still open:**
 
@@ -1759,10 +1944,33 @@ project. Worth revisiting if it turns out to be more than one movement.
   ceiling, so its chips snap to 50.
 - `sessions.json` **in this working copy** lags the phone — the app
   auto-pushes it on every finished session, so `origin` runs ahead by one
-  commit per session. Several records the Sep 13 work order cites (the Sep 8
-  push, the Sep 9 legs session, the Sep 8 skipped-cardio record) are not in
-  the committed log, which ends Sep 7. Pull before relying on it. Everything
-  derives from live history at runtime, so this never blocked the work above.
+  commit per session. **Always pull before reading the log or running the
+  suite**: on Oct 12 2026 a pull brought in 12 sessions and turned two checks
+  red on an otherwise clean tree (#19 on a movement name, #20 on a duration),
+  which is exactly what those checks are for. The committed log now runs
+  Feb 28 – Oct 10 2026, 100 sessions. Everything derives from live history at
+  runtime, so the lag has never blocked work.
+- **Carried to the training project, not actioned here** (see **Scope
+  boundary**) — the Oct 12 notes review surfaced these and they are the
+  owner's call:
+  - A **per-movement weight floor** is the common ask behind three notes: DB
+    Bench *"45s and 50s only from now on"* (Sep 13), Seated Row / Lat Pulldown
+    *"need to hit at least 150 ... from now on"* (Oct 10), and *"update weights
+    for reverse flys"*. The `down` chip can still offer a weight the owner has
+    retired. This part is app-shaped and buildable once the floors are
+    authored.
+  - Leg Curl: *"starts to get uncomfortable by the end of the third set no
+    matter the weight"* (Oct 9) — weight is not the limiter; possibly `sets`
+    4→3.
+  - *"second tricep exercise always difficult"* (Sep 20), and the triceps pair
+    was reordered back to pushdowns-first on Oct 4, against the Sep 13 Phase 2
+    decision.
+  - *"need wholistic review - about 100 sessions in - evaluate progress and
+    look for areas to change and improve the routine"* (Oct 10).
+- **Resolved, no change needed:** Sep 17's *"the curls need to come before the
+  hammers (I did the other way this time)"* — the Pull defaults already run
+  Cable Curl ahead of Hammer Curl; that session had been reordered by hand, and
+  Oct 10 is back to the declared order.
 
 Add new items here as they come up.
 
