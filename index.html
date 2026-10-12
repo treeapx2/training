@@ -330,8 +330,8 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
 // see build.js) so a stale cached build is identifiable on the device
 // instead of silently running fixed-but-not-yet-deployed code.
 const BUILD_INFO = {
-  sha: "5eb517c",
-  builtAt: "2026-10-12T20:59:44.541Z"
+  sha: "fad94e4",
+  builtAt: "2026-10-12T21:07:29.360Z"
 };
 function formatBuildStamp() {
   const d = new Date(BUILD_INFO.builtAt);
@@ -1883,7 +1883,52 @@ function movementSessionSummaries(history, movName, targetReps) {
     // (see buildRamp), so if the real top-weight attempt missed its reps, a
     // lighter warmup set "succeeding" at the same rep count must not mask
     // that miss.
-    const topWeight = Math.max(...sets.map(s => parseFloat(s.weight)));
+    const floorReps = Math.max(targetReps - 2, 1);
+    // A PROBE SET is not the session's verdict (Oct 12 2026 notes review).
+    //
+    // The owner finishes the working sets and then tries one heavier set to
+    // see whether the next step is there. Scoring the session by its heaviest
+    // weight read that attempt as the whole session's result: Oct 5 2026 ran
+    // Seated Row 135x10 @6, 150x10 @7, 150x10 @7, 150x10 @8 and then one
+    // 165x5 @9, and the engine scored it "165, 5 reps, RPE 9" — a failure.
+    // Rule 1 (RPE >= 9 -> down) fired, so Oct 10 put the star on 135 for both
+    // Seated Row and Lat Pulldown, two steps below a weight that had never
+    // actually failed. The owner took it and logged 135: "not sure why we
+    // targeted 135 - need to hit at least 150 on the seated rows and lat
+    // pulldowns from now on."
+    //
+    // What makes a probe identifiable is the movement's OWN recorded
+    // `targetWeight` — the chip the owner tapped before the first set. A set
+    // heavier than that was never part of the plan, so missing it says nothing
+    // about whether the plan was met. The test is deliberately narrow:
+    //
+    //   - the record carries a `targetWeight` (records before the target
+    //     picker, Aug 10 2026, don't, and keep their old scoring);
+    //   - exactly ONE set sits above it — one attempt, not a session that
+    //     drifted heavy;
+    //   - that set missed the rep floor (a heavier set that CLEARS the floor
+    //     is not a probe at all, it is a new top weight and qualifies);
+    //   - and the planned weight was itself worked to the floor, so there
+    //     really is a completed session underneath the probe.
+    //
+    // Scoring then ignores the sets above target. Note this does NOT catch the
+    // Chest Press Aug 11 fixture (135x8 @8 then 135x5 @9) — those are AT the
+    // target, not above it, and are already handled by scoring the first set
+    // at the top weight, below. Nor does it catch a genuine failure at the
+    // planned weight, which is what the `down` rules are for.
+    //
+    // The probe is kept as `probeWeight`: evidence the next step up is not
+    // ready yet, which suggestChip reads to withhold `up` rather than to force
+    // `down`.
+    const planned = parseFloat(mov.targetWeight);
+    const hasPlan = !isNaN(planned) && planned > 0;
+    const repsOf = st => parseInt(st.reps, 10) || 0;
+    const aboveTarget = hasPlan ? sets.filter(st => parseFloat(st.weight) > planned) : [];
+    const workedThePlan = hasPlan && sets.some(st => parseFloat(st.weight) <= planned && repsOf(st) >= floorReps);
+    const isProbe = aboveTarget.length === 1 && repsOf(aboveTarget[0]) < floorReps && workedThePlan;
+    const probeWeight = isProbe ? parseFloat(aboveTarget[0].weight) : null;
+    const scored = isProbe ? sets.filter(st => parseFloat(st.weight) <= planned) : sets;
+    const topWeight = Math.max(...scored.map(s => parseFloat(s.weight)));
     // Evaluate the FIRST set logged at the top weight, not the worst across
     // every set at that weight (see CHANGES.md Aug 19 2026, Phase 7). A
     // second or third set at the same top weight is a fatigue backoff, not
@@ -1892,7 +1937,7 @@ function movementSessionSummaries(history, movName, targetReps) {
     // clean pass; scoring the session by the worst of the two (as the old
     // max-across-topSets logic did) is what produced the wrong "down" call
     // the owner had to override.
-    const topSet = sets.find(s => parseFloat(s.weight) === topWeight);
+    const topSet = scored.find(s => parseFloat(s.weight) === topWeight);
     const topReps = parseInt(topSet.reps, 10) || 0;
     const topRpe = parseFloat(topSet.rpe) || 0;
     out.push({
@@ -1900,13 +1945,16 @@ function movementSessionSummaries(history, movName, targetReps) {
       ts: parseSessionDate(session.date).getTime(),
       topWeight,
       topReps,
+      // The heaviest weight attempted and missed on top of a completed
+      // session, or null. Never contributes to the baseline; withholds `up`.
+      probeWeight,
       // A working set is "successful" once it reaches the rep range's
       // lower bound (target - 2), not only the exact target rep count —
       // 8 reps at a 10-rep target is a pass, not a miss (Phase 7).
       // hitTarget is kept separately (exact target reps) since the "up"
       // suggestion is intentionally stricter than a plain pass.
       hitTarget: topReps >= targetReps,
-      hitFloor: topReps >= Math.max(targetReps - 2, 1),
+      hitFloor: topReps >= floorReps,
       topRpe,
       totalSets: mov.sets.length,
       inSuperset
@@ -2047,8 +2095,18 @@ function suggestChip(history, movName, targetReps) {
   // to prevent — this is that guarantee stated directionally, rather than by
   // hiding the session entirely and losing its upside too.
   const notDown = call => call === "down" && last.inSuperset ? "hold" : call;
+  // A failed probe withholds `up`; it does not force `down` (Oct 12 2026
+  // notes review — see the probe-set note in movementSessionSummaries).
+  //
+  // Trying the next weight and not finding it there is evidence about THAT
+  // weight, not about the one underneath it. So a recent failed probe
+  // suppresses an increase while leaving the working weight alone. The window
+  // is three sessions, matching deriveCurrentWeight's, so it clears on its own
+  // after a couple of outings rather than parking the movement forever.
+  const probedRecently = summaries.slice(0, 3).some(x => x.probeWeight != null);
+  const notUp = call => call === "up" && probedRecently ? "hold" : call;
   if (last.topRpe >= 9) return notDown("down");
-  if (isPlateaued(summaries)) return "up";
+  if (isPlateaued(summaries)) return notUp("up");
   if (!last.hitFloor) {
     const newlyIncreased = last.topWeight > prev.topWeight;
     const consolidationFloor = Math.max(targetReps - 4, 1);
@@ -2057,7 +2115,7 @@ function suggestChip(history, movName, targetReps) {
     }
     return notDown("down");
   }
-  if (last.hitTarget && last.topRpe <= 7 && prev.hitTarget && prev.topRpe <= 7) return "up";
+  if (last.hitTarget && last.topRpe <= 7 && prev.hitTarget && prev.topRpe <= 7) return notUp("up");
   return "hold";
 }
 

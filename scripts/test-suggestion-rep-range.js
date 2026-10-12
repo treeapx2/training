@@ -192,6 +192,137 @@ async function checkSubstitutedMovementIgnoredForBaseline() {
   window.close();
 }
 
+// A probe set above the owner's own recorded targetWeight is not the
+// session's verdict (Oct 12 2026 notes review). The real Oct 5 2026 shape:
+// Seated Row ran four sets up to 150 cleanly and then one 165x5 @ RPE 9 to see
+// whether the next step was there. The engine scored the session "165, 5 reps,
+// RPE 9", fired the RPE>=9 down rule, and put Oct 10's star on 135 — two steps
+// below a weight that had never failed. "not sure why we targeted 135 - need
+// to hit at least 150 on the seated rows and lat pulldowns from now on."
+async function checkProbeAboveTargetWithholdsUpInsteadOfForcingDown() {
+  const { window } = await mount();
+
+  // A completed session at the planned 150, plus one failed attempt at 165.
+  const probeSession = (date) => ({
+    id: date.length, type: "pull", label: "Pull", date, note: "",
+    movements: [{
+      name: "Seated Row", note: "", order: 0, targetWeight: 150, chipChoice: "hold",
+      sets: [
+        { set: 1, weight: "135", reps: "10", rpe: "6", note: "" },
+        { set: 2, weight: "150", reps: "10", rpe: "7", note: "" },
+        { set: 3, weight: "150", reps: "10", rpe: "7", note: "" },
+        { set: 4, weight: "150", reps: "10", rpe: "8", note: "" },
+        { set: 5, weight: "165", reps: "5", rpe: "9", note: "" },
+      ],
+    }],
+  });
+  const clean = (date, weight) => ({
+    id: date.length, type: "pull", label: "Pull", date, note: "",
+    movements: [{
+      name: "Seated Row", note: "", order: 0, targetWeight: weight, chipChoice: "hold",
+      sets: [1, 2, 3].map((n) => ({ set: n, weight: String(weight), reps: "10", rpe: "7", note: "" })),
+    }],
+  });
+
+  const hist = [probeSession("Oct 5, 2026"), clean("Sep 29, 2026", 150)];
+  const sums = window.movementSessionSummaries(hist, "Seated Row", 10);
+
+  // The session is scored on the planned weight that was actually worked.
+  if (sums[0].topWeight !== 150 || sums[0].topReps !== 10 || sums[0].topRpe !== 7) {
+    throw new Error(`the probe session must be scored on the worked 150x10 @7, got ${sums[0].topWeight}x${sums[0].topReps} @${sums[0].topRpe}`);
+  }
+  if (!sums[0].hitFloor) throw new Error("a completed session at the planned weight must read as a pass");
+  if (sums[0].probeWeight !== 165) {
+    throw new Error(`the probe must be recorded as 165, got ${sums[0].probeWeight}`);
+  }
+  console.log("PASS: a set above targetWeight is scored as a probe, not as the session's top weight");
+
+  // The baseline is the worked weight, never the failed probe.
+  const mov = { name: "Seated Row", reps: 10, increment: 15, current: "135 lb" };
+  if (window.deriveCurrentWeight(hist, mov) !== 150) {
+    throw new Error(`expected a 150 baseline, got ${window.deriveCurrentWeight(hist, mov)}`);
+  }
+
+  // And the call is `hold`, not `down` (the old bug) and not `up` (the probe
+  // is evidence 165 is not there yet) — two clean 150x10 @7 sessions would
+  // otherwise satisfy the up rule outright.
+  const got = window.suggestChip(hist, "Seated Row", 10);
+  if (got !== "hold") {
+    throw new Error(`expected hold after a failed probe above target, got ${got}`);
+  }
+  console.log("PASS: a failed probe withholds up rather than forcing down");
+
+  // Without the probe, those same two sessions DO suggest up — so the
+  // withholding is the probe's doing, not an unrelated block.
+  const noProbe = [clean("Oct 5, 2026", 150), clean("Sep 29, 2026", 150)];
+  if (window.suggestChip(noProbe, "Seated Row", 10) !== "up") {
+    throw new Error("two clean sessions at target and RPE<=7 must still suggest up");
+  }
+  console.log("PASS: the same history without a probe still suggests up");
+
+  // A heavier single set that CLEARS the floor is not a probe — it is a new
+  // top weight and must count.
+  const cleared = JSON.parse(JSON.stringify(probeSession("Oct 5, 2026")));
+  cleared.movements[0].sets[4] = { set: 5, weight: "165", reps: "10", rpe: "7", note: "" };
+  const clearedSums = window.movementSessionSummaries([cleared, clean("Sep 29, 2026", 150)], "Seated Row", 10);
+  if (clearedSums[0].probeWeight != null || clearedSums[0].topWeight !== 165) {
+    throw new Error(`a heavier set that clears the floor is a new top weight, got ${clearedSums[0].topWeight} probe=${clearedSums[0].probeWeight}`);
+  }
+  console.log("PASS: a heavier set that clears the rep floor counts as a new top weight, not a probe");
+
+  // Two sets above target is not one probe — that is a session that drifted
+  // heavy, and its failure is real.
+  const drifted = JSON.parse(JSON.stringify(probeSession("Oct 5, 2026")));
+  drifted.movements[0].sets.push({ set: 6, weight: "165", reps: "4", rpe: "9", note: "" });
+  const driftedSums = window.movementSessionSummaries([drifted, clean("Sep 29, 2026", 150)], "Seated Row", 10);
+  if (driftedSums[0].probeWeight != null) {
+    throw new Error("two sets above target must not read as a single probe");
+  }
+  if (window.suggestChip([drifted, clean("Sep 29, 2026", 150)], "Seated Row", 10) !== "down") {
+    throw new Error("a session that drifted heavy and failed twice still yields down");
+  }
+  console.log("PASS: two failed sets above target is a real failure, not a probe");
+
+  // A record with no targetWeight at all (anything before the target picker,
+  // Aug 10 2026) keeps its old scoring.
+  const legacy = JSON.parse(JSON.stringify(probeSession("Oct 5, 2026")));
+  delete legacy.movements[0].targetWeight;
+  const legacySums = window.movementSessionSummaries([legacy, clean("Sep 29, 2026", 150)], "Seated Row", 10);
+  if (legacySums[0].probeWeight != null || legacySums[0].topWeight !== 165) {
+    throw new Error("a record with no targetWeight must keep its original scoring");
+  }
+  console.log("PASS: records predating the target picker are scored exactly as before");
+  window.close();
+}
+
+// The live log, not a fixture: both movements the Oct 10 note named must now
+// sit at 150 and hold there.
+async function checkOct5ProbeInTheCommittedLog() {
+  const { window } = await mount();
+  const hist = JSON.parse(fs.readFileSync(path.join(repoRoot, "sessions.json"), "utf8"));
+  [["Seated Row", 15], ["Lat Pulldown", 15]].forEach(([name, increment]) => {
+    const sums = window.movementSessionSummaries(hist, name, 10);
+    const oct5 = sums.find((x) => x.date === "Oct 5, 2026");
+    if (!oct5) throw new Error(`no Oct 5 session found for ${name}`);
+    if (oct5.probeWeight !== 165) {
+      throw new Error(`${name} Oct 5 should record a 165 probe, got ${oct5.probeWeight}`);
+    }
+    if (oct5.topWeight !== 150 || !oct5.hitFloor) {
+      throw new Error(`${name} Oct 5 should score as a clean 150, got ${oct5.topWeight} floor=${oct5.hitFloor}`);
+    }
+    const derived = window.deriveCurrentWeight(hist, { name, reps: 10, increment, current: "135 lb" });
+    if (derived !== 150) {
+      throw new Error(`${name} should derive 150 ("need to hit at least 150 ... from now on"), got ${derived}`);
+    }
+    const call = window.suggestChip(hist, name, 10);
+    if (call === "down") {
+      throw new Error(`${name} must not suggest down off a probe session`);
+    }
+    console.log(`PASS: ${name} derives 150 and suggests ${call} against the committed log`);
+  });
+  window.close();
+}
+
 async function main() {
   await checkChestPressFixtureYieldsHoldNotDown();
   await checkFreshJumpInConsolidationRangeYieldsHold();
@@ -199,6 +330,8 @@ async function main() {
   await checkBelowConsolidationFloorOrHighRpeStillYieldsDown();
   await checkPositionalDowngradeNeverFiresInFirstTwoPositions();
   await checkSubstitutedMovementIgnoredForBaseline();
+  await checkProbeAboveTargetWithholdsUpInsteadOfForcingDown();
+  await checkOct5ProbeInTheCommittedLog();
   console.log("ALL PASS");
 }
 
