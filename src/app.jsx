@@ -1767,6 +1767,29 @@ function applyPositionalDowngrade(suggested, position, total) {
   return isLastTwo && suggested === "up" ? "hold" : suggested;
 }
 
+// How many chip positions apart two weights are for a given movement, used to
+// decide whether a superset pair can plausibly share one pair of dumbbells
+// (see SupersetRow). Returns Infinity when either weight is missing, so an
+// unknown baseline never reads as "close enough" to link.
+const SHARED_WEIGHT_MAX_STEPS = 2;
+function stepDistance(mov, a, b) {
+  if (!mov || !(a > 0) || !(b > 0)) return Infinity;
+  if (a === b) return 0;
+  // Walk from the lower weight up until it reaches or passes the higher one;
+  // this uses the same snapping/clamping stepWeight does, so the distance is
+  // measured in the chips the owner would actually have to tap.
+  const lo = Math.min(a, b);
+  const hi = Math.max(a, b);
+  let at = lo;
+  for (let n = 1; n <= 20; n++) {
+    const next = stepWeight(mov, at, 1);
+    if (next <= at) return Infinity; // clamped at the ceiling before reaching hi
+    at = next;
+    if (at >= hi) return n;
+  }
+  return Infinity;
+}
+
 // "should be no up rec when we hit max available weight" — DB Row, Oct 5 2026.
 //
 // stepWeight clamps at the end of a `steps` array, so once a movement reaches
@@ -2968,8 +2991,25 @@ function SupersetRow({
   // `increment`) — the same literal dumbbell pair has to work for both
   // exercises, which is meaningless for a machine/cable movement.
   const isFreeWeightPair = !!movA.steps && !!movB.steps;
-  const [weightsLinked, setWeightsLinked] = useState(isFreeWeightPair);
   const sharedHold = deriveCurrentWeight(history, movA);
+  // ...but only linked BY DEFAULT when the two movements actually train at
+  // comparable loads (Oct 12 2026 notes review).
+  //
+  // Sharing was switched on for any dumbbell pair, baselined on the first
+  // movement alone. The owner links DB Row (50) with Reverse Fly (15), so
+  // Reverse Fly got a target of 50 lb/hand on Oct 5 and 45 on Oct 10 — more
+  // than three times its working weight. The target was ignored and 15 logged
+  // both times; the Oct 10 note reads "update weights for reverse flys".
+  //
+  // Avoiding a rack trip is only worth anything when one pair of bells can
+  // plausibly serve both exercises, so the default now asks whether it can:
+  // the two derived baselines must sit within SHARED_WEIGHT_MAX_STEPS of each
+  // other on the shared rack. A far-apart pair starts with independent
+  // pickers and the "link weights" affordance is still right there — this
+  // changes the default, not what is possible.
+  const sharedCloseEnough = isFreeWeightPair
+    && stepDistance(movA, sharedHold, deriveCurrentWeight(history, movB)) <= SHARED_WEIGHT_MAX_STEPS;
+  const [weightsLinked, setWeightsLinked] = useState(sharedCloseEnough);
   const sharedChipValues = {
     down: stepWeight(movA, sharedHold, -1),
     hold: sharedHold,

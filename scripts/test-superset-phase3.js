@@ -4,15 +4,21 @@
 // bar check #13; also runnable alone via `npm run test:superset-phase3`.
 //
 // Covers:
-//   - A free-weight pair (both movements use `steps`, e.g. Rope Pushdown +
-//     Skull Crusher... no, Rope Pushdown is cable-machine — the real
-//     free-weight pre-seeded pair is none of the three by default, so this
-//     test manually links two dumbbell movements: DB Row + Reverse Fly
-//     Curl) offers one shared down/hold/up chip row instead of two
-//     independent pickers, and tapping a shared chip drives both movements
-//     to the identical target weight.
+//   - A free-weight pair (both movements use `steps`) can share one
+//     down/hold/up chip row instead of two independent pickers, and tapping a
+//     shared chip drives both movements to the identical target weight.
+//     DB Row + Reverse Fly is the only dumbbell+dumbbell adjacent pair in the
+//     app (Calf Raise is `increment`, so the Legs pre-seeded pair is mixed),
+//     so it is linked manually here.
+//   - Sharing is no longer the DEFAULT for a far-apart pair (Oct 12 2026
+//     notes review): DB Row derives 50 and Reverse Fly 15, seven chip
+//     positions apart, and defaulting to shared targeted Reverse Fly at
+//     50 lb/hand on Oct 5 2026. A pair only starts shared when the two
+//     baselines are within SHARED_WEIGHT_MAX_STEPS. Since that is the only
+//     free-weight pair here, the effect is that sharing is opt-in — one tap
+//     of "link weights", which is what the rest of this test exercises.
 //   - "unlink weights" reverts to two independent ChipPickers for that pair;
-//     "link weights" re-enables the shared picker.
+//     "link weights" enables the shared picker.
 //   - A mixed pair (one dumbbell, one machine — Shoulder Press + Lateral
 //     Raise, pre-seeded) never shows the shared-weight picker at all.
 //   - "+ add round" appends one more set to both movements at once.
@@ -73,9 +79,22 @@ async function checkFreeWeightPairSharesOneWeight() {
   click(window, header);
   await sleep(window, 40);
 
+  // DB Row (50) and Reverse Fly (15) are seven chip positions apart, so this
+  // pair must NOT start shared — that default is what targeted Reverse Fly at
+  // 50 lb/hand on Oct 5 2026, more than three times its working weight.
+  if (card.textContent.includes("shared weight")) {
+    throw new Error("a pair whose baselines are 7 steps apart must not default to a shared weight");
+  }
+  const optIn = Array.from(card.querySelectorAll("button")).find(
+    (b) => b.textContent.trim() === "link weights",
+  );
+  if (!optIn) throw new Error("expected a 'link weights' affordance to opt into sharing");
+  click(window, optIn);
+  await sleep(window, 40);
+
   const rootText = card.textContent;
   if (!rootText.includes("shared weight")) {
-    throw new Error("expected a shared-weight picker for a free-weight (dumbbell+dumbbell) pair");
+    throw new Error("expected a shared-weight picker after opting in");
   }
 
   const chipRow = Array.from(card.querySelectorAll("button")).filter((b) =>
@@ -107,7 +126,7 @@ async function checkFreeWeightPairSharesOneWeight() {
     );
   }
   if (errors.length) throw new Error("jsdom errors: " + errors.join("; "));
-  console.log("PASS: a free-weight superset offers one shared weight and drives both movements' ramps to it set-for-set");
+  console.log("PASS: a far-apart free-weight pair starts independent, and opting in shares one weight across both ramps set-for-set");
   window.close();
 }
 
@@ -120,29 +139,34 @@ async function checkUnlinkAndRelinkWeights() {
   click(window, clickableWithText(window, "SUPERSET · DB Row + Reverse Flyunlink"));
   await sleep(window, 40);
 
+  // The default is now independent for this pair, so link first, then unlink —
+  // the toggle has to work in both directions either way.
+  let rootText = window.document.getElementById("root").textContent;
+  if (!rootText.includes("DB Row") || !rootText.includes("Reverse Fly")) {
+    throw new Error("both movement names should render as independent chip pickers");
+  }
+  const linkBtn = byText(window, "button", "link weights");
+  if (!linkBtn) throw new Error("expected a 'link weights' affordance for a free-weight pair");
+  click(window, linkBtn);
+  await sleep(window, 40);
+  rootText = window.document.getElementById("root").textContent;
+  if (!rootText.includes("shared weight")) {
+    throw new Error("shared-weight picker should appear after 'link weights'");
+  }
+
   const unlinkWeightsBtn = byText(window, "button", "unlink weights");
-  if (!unlinkWeightsBtn) throw new Error("expected an 'unlink weights' affordance for a free-weight pair");
+  if (!unlinkWeightsBtn) throw new Error("expected an 'unlink weights' affordance once weights are shared");
   click(window, unlinkWeightsBtn);
   await sleep(window, 40);
-
-  let rootText = window.document.getElementById("root").textContent;
+  rootText = window.document.getElementById("root").textContent;
   if (rootText.includes("shared weight")) {
     throw new Error("shared-weight picker should be gone after 'unlink weights'");
   }
   if (!rootText.includes("DB Row") || !rootText.includes("Reverse Fly")) {
     throw new Error("both movement names should still render as independent chip pickers");
   }
-
-  const relinkBtn = byText(window, "button", "link weights");
-  if (!relinkBtn) throw new Error("expected a 'link weights' affordance to re-enable the shared picker");
-  click(window, relinkBtn);
-  await sleep(window, 40);
-  rootText = window.document.getElementById("root").textContent;
-  if (!rootText.includes("shared weight")) {
-    throw new Error("shared-weight picker should reappear after 'link weights'");
-  }
   if (errors.length) throw new Error("jsdom errors: " + errors.join("; "));
-  console.log("PASS: 'unlink weights' / 'link weights' toggles the shared picker without breaking the superset pairing");
+  console.log("PASS: 'link weights' / 'unlink weights' toggles the shared picker without breaking the superset pairing");
   window.close();
 }
 
@@ -209,10 +233,51 @@ async function checkAddRoundAppendsToBothMovements() {
   window.close();
 }
 
+// The closeness gate itself (Oct 12 2026). No pair of adjacent defaults is
+// both free-weight AND close, so the "starts shared" branch is covered here
+// directly rather than through the UI.
+async function checkSharedWeightClosenessGate() {
+  const { window } = await mount();
+  const rack = [5, 10, 12, 15, 20, 25, 30, 35, 40, 45, 50];
+  const db = { name: "X", steps: rack, reps: 10 };
+  const d = (a, b) => window.stepDistance(db, a, b);
+
+  if (d(45, 45) !== 0) throw new Error("the same weight is zero steps apart");
+  if (d(45, 50) !== 1) throw new Error("45 and 50 are one chip apart");
+  if (d(40, 50) !== 2) throw new Error("40 and 50 are two chips apart");
+  if (d(15, 50) !== 7) throw new Error(`DB Row vs Reverse Fly should be 7 chips apart, got ${d(15, 50)}`);
+  // Order must not matter — the pair is symmetric.
+  if (d(50, 15) !== d(15, 50)) throw new Error("step distance must be symmetric");
+  // An unknown baseline must never read as close enough to link.
+  if (d(0, 50) !== Infinity) throw new Error("a missing baseline is never close enough");
+  if (window.stepDistance(null, 45, 50) !== Infinity) throw new Error("a missing movement is never close enough");
+  // The rack's irregular 12 lb entry is walked, not assumed.
+  if (d(10, 15) !== 2) throw new Error(`10 -> 12 -> 15 is two chips, got ${d(10, 15)}`);
+
+  // A module-level const is not reachable on window — read the authored
+  // threshold out of the source, the way the other authored-data checks do.
+  const srcText = fs.readFileSync(path.join(repoRoot, "src/app.jsx"), "utf8");
+  const m = srcText.match(/const SHARED_WEIGHT_MAX_STEPS = (\d+);/);
+  if (!m) throw new Error("could not read SHARED_WEIGHT_MAX_STEPS from src/app.jsx");
+  const maxSteps = Number(m[1]);
+  if (!(maxSteps >= 1)) {
+    throw new Error("SHARED_WEIGHT_MAX_STEPS must allow at least one step of difference");
+  }
+  if (d(15, 50) <= maxSteps) {
+    throw new Error("the DB Row + Reverse Fly pair must fall outside the sharing threshold");
+  }
+  if (d(45, 50) > maxSteps) {
+    throw new Error("a one-chip gap must fall inside the sharing threshold");
+  }
+  console.log(`PASS: stepDistance gates shared weight at ${maxSteps} chips (DB Row/Reverse Fly is 7)`);
+  window.close();
+}
+
 async function main() {
   await checkFreeWeightPairSharesOneWeight();
   await checkUnlinkAndRelinkWeights();
   await checkMixedPairNeverSharesWeight();
+  await checkSharedWeightClosenessGate();
   await checkAddRoundAppendsToBothMovements();
   console.log("ALL PASS");
 }
