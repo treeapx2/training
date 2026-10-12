@@ -373,6 +373,60 @@ async function checkImplausibleDurationsAreGuarded() {
     }
   }
   console.log(`PASS: all ${withDuration.length} recorded durations in the committed log are plausible`);
+
+  // Prevention at the write boundary (Oct 12 2026). The read-side guard above
+  // only stops a runaway from being DISPLAYED as a number; sessionTimingFor
+  // stops it being recorded as one. "start cardio" and "finish" are both owner
+  // actions and the cardio reminder goes quiet after two, so a session walked
+  // away from banks wall time indefinitely — Sep 28 2026 recorded 1404
+  // minutes.
+  const timing = window.sessionTimingFor;
+  const normal = timing(46, 13);
+  if (normal.durationMin !== 59 || normal.liftingMin !== 46 || normal.cardioMin !== 13) {
+    throw new Error(`a normal session must record 46 + 13 = 59, got ${JSON.stringify(normal)}`);
+  }
+  if (normal.overran) throw new Error("a 46-minute lifting clock has not overrun");
+  const boundary = timing(180, 0);
+  if (boundary.liftingMin !== 180 || boundary.durationMin !== 180) {
+    throw new Error(`180 minutes of lifting is the inclusive boundary, got ${JSON.stringify(boundary)}`);
+  }
+  const over = timing(181, 0);
+  if (over.liftingMin != null || over.durationMin != null) {
+    throw new Error(`181 minutes of lifting must record no figure, got ${JSON.stringify(over)}`);
+  }
+  if (!over.overran) throw new Error("181 minutes of lifting must be flagged as overrun");
+  console.log("PASS: sessionTimingFor records lifting up to 180 minutes and nothing past it");
+
+  // The real Sep 28 shape: 1404 banked minutes, no cardio entered. Nothing
+  // numeric reaches the record, so the read-side guard has nothing to catch.
+  const runaway = timing(1404, 0);
+  if (runaway.durationMin != null || runaway.liftingMin != null || runaway.cardioMin != null) {
+    throw new Error(`the Sep 28 shape must record no timing at all, got ${JSON.stringify(runaway)}`);
+  }
+  if (window.formatSessionDuration({ id: 1, ...runaway }) !== "") {
+    throw new Error("a record with no timing renders nothing, not an outlier marker");
+  }
+  // Entered cardio minutes are typed rather than timed, so they survive a
+  // runaway lifting clock.
+  const runawayWithCardio = timing(1404, 13);
+  if (runawayWithCardio.cardioMin !== 13) {
+    throw new Error(`entered cardio minutes must survive a runaway clock, got ${JSON.stringify(runawayWithCardio)}`);
+  }
+  if (runawayWithCardio.durationMin != null) {
+    throw new Error("a total built on a runaway lifting clock must not be recorded");
+  }
+  console.log("PASS: a runaway lifting clock records no lifting or total, but keeps entered cardio minutes");
+
+  // The two records the Oct 10 notes asked to correct.
+  const sep28 = hist.find((s) => s.type === "push" && s.date === "Sep 28, 2026");
+  if (sep28 && sep28.liftingMin !== 40) {
+    throw new Error(`Sep 28 should read 40 minutes of lifting ("forgot to press finish"), got ${sep28.liftingMin}`);
+  }
+  const oct4 = hist.find((s) => s.type === "push" && s.date === "Oct 4, 2026");
+  if (oct4 && oct4.liftingMin + oct4.cardioMin !== oct4.durationMin) {
+    throw new Error(`Oct 4 should read lifting + cardio ("subtract cardio time"), got ${JSON.stringify([oct4.durationMin, oct4.liftingMin, oct4.cardioMin])}`);
+  }
+  console.log("PASS: the Sep 28 and Oct 4 records read as lifting + entered cardio");
   if (errors.length) throw new Error("jsdom errors: " + errors.join("; "));
   window.close();
 }

@@ -1019,8 +1019,8 @@
       "skipped": false,
       "skipReason": ""
     },
-    "durationMin": 79,
-    "liftingMin": 67,
+    "durationMin": 67,
+    "liftingMin": 55,
     "cardioMin": 12,
     "movements": [
       {
@@ -1697,8 +1697,8 @@
     "label": "Push",
     "date": "Sep 28, 2026",
     "note": "going lighter today coming off cold/flu",
-    "durationMin": 1404,
-    "liftingMin": 1404,
+    "durationMin": 40,
+    "liftingMin": 40,
     "movements": [
       {
         "name": "DB Bench Press",

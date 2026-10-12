@@ -15,7 +15,7 @@ const { JSDOM } = require("jsdom");
 const repoRoot = path.resolve(__dirname, "..");
 const indexPath = path.join(repoRoot, "index.html");
 
-// The 27 distinct movement names in sessions.json — the library must cover
+// The 28 distinct movement names in sessions.json — the library must cover
 // every one of them. Derived from the log at test time rather than hardcoded,
 // so a future sync that adds a movement fails this loudly instead of quietly
 // leaving it unreachable.
@@ -66,11 +66,11 @@ async function checkLibraryCoversEveryLoggedMovement() {
   if (missing.length) {
     throw new Error(`library is missing logged movements: ${JSON.stringify(missing)}`);
   }
-  if (logged.length !== 27) {
-    throw new Error(`expected 27 distinct logged movements, found ${logged.length} — update this test deliberately`);
+  if (logged.length !== 28) {
+    throw new Error(`expected 28 distinct logged movements, found ${logged.length} — update this test deliberately`);
   }
-  if (names.length !== 27) {
-    throw new Error(`expected a 27-entry library, got ${names.length}: ${JSON.stringify(names)}`);
+  if (names.length !== 28) {
+    throw new Error(`expected a 28-entry library, got ${names.length}: ${JSON.stringify(names)}`);
   }
   console.log(`PASS: the library covers all ${logged.length} movements ever logged`);
 
@@ -295,6 +295,7 @@ async function checkDumbbellWeightsAreLabelledPerHand() {
     "DB Bench Press", "DB Row", "Skull Crusher", "Hammer Curl", "Zottman Curl",
     "Reverse Fly", "Lateral Raise", "Shoulder Press (DB)", "RDL",
     "Incline DB Press", "Flat DB Press", "Floor Press", "Rows",
+    "Dumbbell Curl",
   ];
   SINGLE.forEach((name) => {
     if (!flagFor(name)) throw new Error(name + " must be flagged as a single dumbbell");

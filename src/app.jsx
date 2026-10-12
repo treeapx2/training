@@ -150,7 +150,7 @@ const MUSCLE_GROUPS = {
     },
     {
       label: "Biceps",
-      movements: ["Cable Curl", "Hammer Curl", "Zottman Curl"],
+      movements: ["Cable Curl", "Hammer Curl", "Zottman Curl", "Dumbbell Curl"],
     },
   ],
 };
@@ -474,7 +474,8 @@ const OPTIONAL_MOVEMENTS = [
   { name: "Incline DB Press", current: "40 lb", steps: DUMBBELL_STEPS, reps: 10, target: NO_COACH_TARGET + " Max 40, last logged Mar 29 2026." },
   { name: "Flat DB Press", current: "45 lb", steps: DUMBBELL_STEPS, reps: 10, target: NO_COACH_TARGET + " Max 45, last logged Mar 29 2026. Distinct from DB Bench Press by design; do not merge." },
   { name: "Floor Press", current: "35 lb", steps: DUMBBELL_STEPS, reps: 10, target: NO_COACH_TARGET + " Max 35, last logged Mar 16 2026." },
-  { name: "Rows", current: "35 lb", steps: DUMBBELL_STEPS, reps: 10, target: NO_COACH_TARGET + " Max 35, last logged Mar 16 2026. Distinct from DB Row by design; do not merge." }
+  { name: "Rows", current: "35 lb", steps: DUMBBELL_STEPS, reps: 10, target: NO_COACH_TARGET + " Max 35, last logged Mar 16 2026. Distinct from DB Row by design; do not merge." },
+  { name: "Dumbbell Curl", current: "25 lb/hand", steps: DUMBBELL_STEPS, reps: 10, target: NO_COACH_TARGET + " Defined in-app on Oct 5 2026 and logged the same session (25\u00d78 @ RPE 7-8, superset with Hammer Curl); promoted from a device-local custom definition to the library Oct 12 2026 so it survives a reinstall. Kept distinct from Hammer Curl and Zottman Curl \u2014 merging is the owner's call, not the app's." }
 ];
 
 // Movements the owner defines in-app (Phase 4 item 1). Persisted so a new
@@ -3566,6 +3567,48 @@ function isPlausibleDuration(entry) {
   );
 }
 
+// The timing fields a finished record should actually carry, given the clock's
+// banked lifting minutes and the minutes entered in the finisher.
+//
+// Sep 13 2026 stopped the clock at the cardio transition, which bounded the
+// CARDIO phase. The lifting phase is still unbounded: "start cardio" and
+// "finish" are both owner actions, and the cardio reminder goes quiet after
+// MAX_CARDIO_REMINDERS. So a session the owner walks away from without
+// pressing either banks wall time indefinitely — Sep 28 2026 went out with
+// liftingMin 1404 (23 hours), and Oct 4's note records the other half of the
+// same problem: "forgot to stop lifting time. subtract cardio time."
+//
+// A clock reading past MAX_PLAUSIBLE_SESSION_MIN is not a long session, it is
+// a forgotten one, and its real value is unknowable. So the record carries NO
+// lifting or total figure rather than a false one — the same choice
+// `cardioForRecord` makes for a skipped finisher, and the same reason
+// durationMin is omitted when the clock never ran: a record must not claim a
+// duration it does not have. The entered cardio minutes are kept, since those
+// are typed rather than timed and stay trustworthy.
+//
+// This is prevention at the write boundary; `isPlausibleDuration` stays as the
+// read-side guard for the records already written this way (Sep 28), and for
+// any that arrive from a device running an older build.
+function sessionTimingFor(liftingMin, cardioMin) {
+  const lifting = liftingMin > 0 ? liftingMin : 0;
+  const cardio = cardioMin > 0 ? cardioMin : 0;
+  if (lifting > MAX_PLAUSIBLE_SESSION_MIN) {
+    return {
+      durationMin: undefined,
+      liftingMin: undefined,
+      cardioMin: cardio > 0 ? cardio : undefined,
+      overran: true,
+    };
+  }
+  const total = lifting + cardio;
+  return {
+    durationMin: total > 0 ? total : undefined,
+    liftingMin: total > 0 ? lifting : undefined,
+    cardioMin: cardio > 0 ? cardio : undefined,
+    overran: false,
+  };
+}
+
 // One line of session duration for display sites that have a record, not a
 // live timer. Returns "" when the record predates the timer (Phase 5) — every
 // session logged before Sep 8 2026 does — so nothing renders a bare "0 min".
@@ -4063,6 +4106,9 @@ function SessionScreen({ history, setHistory, syncLast, onSynced }) {
     const liftingMin = durationMinutes(finalTimer.liftingMs);
     // Not a clock — the minutes the owner entered in the finisher.
     const cardioMin = cardioMinutesFrom(cardio);
+    // A runaway lifting clock is recorded as unknown, not as a number (see
+    // sessionTimingFor).
+    const timing = sessionTimingFor(liftingMin, cardioMin);
     const entry = {
       id: Date.now(),
       type: active,
@@ -4072,10 +4118,11 @@ function SessionScreen({ history, setHistory, syncLast, onSynced }) {
       cardio: hasCardioData(cardio) ? cardioForRecord(cardio) : undefined,
       // Session duration, split so the 45/15 budget is visible rather than
       // collapsed into one number. Omitted entirely (like `cardio`) when the
-      // clock never ran, so a record can't claim a bogus 0-minute session.
-      durationMin: liftingMin + cardioMin > 0 ? liftingMin + cardioMin : undefined,
-      liftingMin: liftingMin + cardioMin > 0 ? liftingMin : undefined,
-      cardioMin: cardioMin > 0 ? cardioMin : undefined,
+      // clock never ran, so a record can't claim a bogus 0-minute session —
+      // and omitted the same way when the clock overran (sessionTimingFor).
+      durationMin: timing.durationMin,
+      liftingMin: timing.liftingMin,
+      cardioMin: timing.cardioMin,
       movements,
     };
     const updated = [entry, ...history];
