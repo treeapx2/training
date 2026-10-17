@@ -1,5 +1,264 @@
 [
   {
+    "id": 1792268252117,
+    "type": "pull",
+    "label": "Pull",
+    "date": "Oct 15, 2026",
+    "note": "",
+    "cardio": {
+      "machine": "Stairmaster",
+      "duration": "13",
+      "level": "4",
+      "rpe": "5",
+      "skipped": false,
+      "skipReason": ""
+    },
+    "durationMin": 57,
+    "liftingMin": 44,
+    "cardioMin": 13,
+    "movements": [
+      {
+        "name": "Seated Row",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "135",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "135",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "150",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 4,
+            "weight": "150",
+            "reps": "10",
+            "rpe": "8",
+            "note": ""
+          },
+          {
+            "set": 5,
+            "weight": "150",
+            "reps": "10",
+            "rpe": "8",
+            "note": ""
+          }
+        ],
+        "note": "",
+        "order": 0,
+        "targetWeight": "150",
+        "chipChoice": "hold",
+        "suggested": "hold"
+      },
+      {
+        "name": "Lat Pulldown",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "135",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "135",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "150",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 4,
+            "weight": "150",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          }
+        ],
+        "note": "the goal should be five sets for all single exercises and four sets for any supersets",
+        "order": 1,
+        "targetWeight": "150",
+        "chipChoice": "hold",
+        "suggested": "hold"
+      },
+      {
+        "name": "Hammer Curl",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "25",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "25",
+            "reps": "10",
+            "rpe": "8",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "25",
+            "reps": "8",
+            "rpe": "8",
+            "note": ""
+          },
+          {
+            "set": 4,
+            "weight": "25",
+            "reps": "6",
+            "rpe": "8",
+            "note": ""
+          }
+        ],
+        "note": " ",
+        "order": 2,
+        "targetWeight": "25",
+        "chipChoice": "hold",
+        "suggested": "up",
+        "supersetId": "link_1792096150119"
+      },
+      {
+        "name": "Cable Curl",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "57.5",
+            "reps": "8",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "57.5",
+            "reps": "8",
+            "rpe": "8",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "57.5",
+            "reps": "6",
+            "rpe": "8",
+            "note": ""
+          },
+          {
+            "set": 4,
+            "weight": "57.5",
+            "reps": "4",
+            "rpe": "8",
+            "note": ""
+          }
+        ],
+        "note": "",
+        "order": 3,
+        "targetWeight": "57.5",
+        "chipChoice": "up",
+        "suggested": "up",
+        "supersetId": "link_1792096150119"
+      },
+      {
+        "name": "DB Row",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "45",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "45",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "45",
+            "reps": "8",
+            "rpe": "8",
+            "note": ""
+          },
+          {
+            "set": 4,
+            "weight": "45",
+            "reps": "8",
+            "rpe": "8",
+            "note": ""
+          }
+        ],
+        "note": "",
+        "order": 4,
+        "targetWeight": "45",
+        "chipChoice": "down",
+        "suggested": "hold",
+        "supersetId": "link_1792096854491"
+      },
+      {
+        "name": "Reverse Fly",
+        "sets": [
+          {
+            "set": 1,
+            "weight": "15",
+            "reps": "10",
+            "rpe": "6",
+            "note": ""
+          },
+          {
+            "set": 2,
+            "weight": "15",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 3,
+            "weight": "15",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          },
+          {
+            "set": 4,
+            "weight": "15",
+            "reps": "10",
+            "rpe": "7",
+            "note": ""
+          }
+        ],
+        "note": "fix to match actual pattern",
+        "order": 5,
+        "targetWeight": "45",
+        "chipChoice": "down",
+        "suggested": "hold",
+        "supersetId": "link_1792096854491"
+      }
+    ]
+  },
+  {
     "id": 1791845840382,
     "type": "push",
     "label": "Push",
