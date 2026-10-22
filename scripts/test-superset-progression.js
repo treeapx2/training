@@ -478,40 +478,94 @@ async function checkRepeatedlyRejectedUpGoesQuiet() {
   window.close();
 }
 
-// The live log: the movements the Oct 5/Oct 10 notes complained about.
+// The live log. Asserted as INVARIANTS rather than as a frozen list of which
+// movements are currently suppressed — the Sep 8 2026 lesson, relearned here:
+// check #18 originally snapshotted suggestions against the log and went red
+// the moment the owner progressed a lift. It did exactly that again on Oct 22,
+// when Pec Fly stopped registering as rejected because the owner accepted the
+// chip on Oct 12 and moved to 165. That is the guard working, not a
+// regression, so the test must not demand it stay suppressed.
 async function checkRejectedUpAgainstRealHistory() {
   const { window } = await mount();
   const hist = JSON.parse(fs.readFileSync(path.join(repoRoot, "sessions.json"), "utf8"));
   const rack = [5, 10, 12, 15, 20, 25, 30, 35, 40, 45, 50];
+  const src = fs.readFileSync(path.join(repoRoot, "src/app.jsx"), "utf8");
 
-  // Repeatedly rejected: these must no longer be starred up.
-  [
-    { name: "Leg Press", reps: 10, increment: 15 },
-    { name: "Leg Extension", reps: 10, increment: 15 },
-    { name: "Pec Fly", reps: 10, increment: 15 },
-  ].forEach((mov) => {
-    const sums = window.movementSessionSummaries(hist, mov.name, mov.reps);
-    if (!window.recentlyRejectedUp(sums)) {
-      throw new Error(`${mov.name} has repeated rejected up suggestions in the log and must register as such`);
-    }
-    const call = window.suggestChip(hist, mov.name, mov.reps);
-    if (call === "up") throw new Error(`${mov.name} must not be starred up after repeated rejections`);
-    console.log(`PASS: ${mov.name} suggests ${call}, not up (rejected repeatedly at this weight)`);
+  // Every default movement, read off the authored BLOCK lists.
+  const defaults = ["legs", "push", "pull"].flatMap((type) => {
+    const block = src.match(new RegExp(`\\b${type}: \\{[\\s\\S]*?movements: \\[([\\s\\S]*?)\\n      \\]`));
+    return [...block[1].matchAll(/\{([^}]*)\}/g)].map((m) => {
+      const body = m[1];
+      const mov = { name: /name: "([^"]+)"/.exec(body)[1] };
+      const reps = /\breps: (\d+)/.exec(body);
+      mov.reps = reps ? Number(reps[1]) : 10;
+      const inc = /\bincrement: (\d+)/.exec(body);
+      if (inc) mov.increment = Number(inc[1]);
+      if (/steps: DUMBBELL_STEPS/.test(body)) mov.steps = rack;
+      const cur = /\bcurrent: "([^"]*)"/.exec(body);
+      mov.current = cur ? cur[1] : "";
+      return mov;
+    });
   });
+  if (defaults.length !== 17) {
+    throw new Error(`expected the 17 default movements, parsed ${defaults.length}`);
+  }
 
-  // Still earned elsewhere — the guard must not flatten every suggestion to
-  // hold. Each of these matches its own authored coach target.
-  [
-    { name: "DB Bench Press", reps: 10, steps: rack, current: "40 lb/hand" },
-    { name: "Calf Raise", reps: 15, increment: 5, current: "45 lb" },
-  ].forEach((mov) => {
+  // THE invariant: a suppressed movement is never starred up. Everything else
+  // about which movements are suppressed is the owner's business, not the
+  // test's.
+  let suppressed = 0;
+  let starredUp = 0;
+  defaults.forEach((mov) => {
+    const sums = window.movementSessionSummaries(hist, mov.name, mov.reps);
     const derived = window.deriveCurrentWeight(hist, mov);
     const call = window.applyCeilingDowngrade(window.suggestChip(hist, mov.name, mov.reps), mov, derived);
-    if (call !== "up") {
-      throw new Error(`${mov.name} is genuinely ready to progress and must still be starred up, got ${call}`);
+    if (window.recentlyRejectedUp(sums)) {
+      suppressed++;
+      if (call === "up") {
+        throw new Error(`${mov.name} has repeated rejected up suggestions and must not be starred up`);
+      }
     }
-    console.log(`PASS: ${mov.name} is still starred up at ${derived} -> ${window.stepWeight(mov, derived, 1)}`);
+    if (call === "up") {
+      starredUp++;
+      // And an `up` that IS starred must be a real step, never a no-op.
+      if (window.stepWeight(mov, derived, 1) <= derived) {
+        throw new Error(`${mov.name} is starred up at ${derived} but has nothing heavier to step to`);
+      }
+    }
   });
+  console.log(`PASS: ${suppressed} of 17 defaults are suppressed, and none of them is starred up`);
+
+  // The guard must not have flattened every suggestion to hold — if it has,
+  // it is suppressing rather than filtering.
+  if (starredUp === 0) {
+    throw new Error("no default movement is starred up at all — the guard is over-firing");
+  }
+  if (starredUp === 17) {
+    throw new Error("every movement is starred up — the guard is not firing at all");
+  }
+  console.log(`PASS: ${starredUp} of 17 defaults are still starred up, so the guard filters rather than silences`);
+
+  // One real-log case pinned on FROZEN history rather than on today's call:
+  // Pec Fly was starred up at 150 and held on both Oct 4 and Oct 6, then
+  // accepted on Oct 12 and taken to 165. Those three records cannot change,
+  // and together they document the "accepting the chip clears it" path.
+  const pecFly = (date) => {
+    const sess = hist.find((e) => e.date === date);
+    return sess && (sess.movements || []).find((m) => m.name === "Pec Fly");
+  };
+  const rejections = ["Oct 4, 2026", "Oct 6, 2026"].map(pecFly);
+  if (!rejections.every((m) => m && m.suggested === "up" && m.chipChoice === "hold")) {
+    throw new Error("expected Pec Fly to record up->hold on both Oct 4 and Oct 6 2026");
+  }
+  const accepted = pecFly("Oct 12, 2026");
+  if (!accepted || accepted.suggested !== "up" || accepted.chipChoice !== "up") {
+    throw new Error("expected Pec Fly to record up->up on Oct 12 2026");
+  }
+  if (window.recentlyRejectedUp(window.movementSessionSummaries(hist, "Pec Fly", 10))) {
+    throw new Error("Pec Fly accepted the chip on Oct 12 and must no longer register as rejected");
+  }
+  console.log("PASS: Pec Fly's two rejections then an acceptance clears the suppression (real log)");
   window.close();
 }
 

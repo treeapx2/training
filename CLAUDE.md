@@ -192,9 +192,13 @@ subprocess:
   no-`down` guard, the RPE-8 plateau rule (the Seated Row fixture
   suggesting `up`) without misfiring on a fresh jump, and the rejection memory
   (`up` starred and turned down twice at one weight goes quiet, survives the
-  `hold` record it produces, and clears on acceptance or a weight change —
-  while DB Bench Press and Calf Raise stay starred `up`), see **Target
-  picker** → "Suggestion rules".
+  `hold` record it produces, and clears on acceptance or a weight change).
+  The real-log half is asserted as INVARIANTS, not as a frozen list of which
+  movements are currently suppressed — no suppressed movement is starred `up`,
+  a starred `up` always has a heavier step to go to, and the count sits
+  strictly between 0 and 17 so the guard filters rather than silences. Plus one
+  case pinned on frozen history: Pec Fly's `up`→`hold` on Oct 4 and Oct 6 then
+  `up`→`up` on Oct 12. See **Target picker** → "Suggestion rules".
 - **#19** `scripts/test-movement-library.js` — the library covering all 28
   movements ever logged (derived from `sessions.json` at test time, not
   hardcoded, so an in-app custom definition that reaches the log fails loudly
@@ -1947,9 +1951,24 @@ Pec Fly, which confirms it was never one movement.
   commit per session. **Always pull before reading the log or running the
   suite**: on Oct 12 2026 a pull brought in 12 sessions and turned two checks
   red on an otherwise clean tree (#19 on a movement name, #20 on a duration),
-  which is exactly what those checks are for. The committed log now runs
-  Feb 28 – Oct 10 2026, 100 sessions. Everything derives from live history at
-  runtime, so the lag has never blocked work.
+  which is exactly what those checks are for, and on Oct 22 a pull of 5 more
+  turned #18 red because the owner had **progressed** a lift. The committed log
+  runs Feb 28 – Oct 20 2026, 105 sessions.
+
+  **A real-log assertion about a suggestion will go stale, by design** — the
+  owner training is what changes it. Check #18 learned this on Sep 8 2026
+  (frozen suggestion snapshots replaced by derivation invariants) and relearned
+  it on Oct 22, when a hardcoded "Pec Fly is suppressed" assertion failed
+  because Pec Fly had accepted the chip and moved 150→165. Assert the
+  invariant, not the current call.
+
+  Everything derives from live history at runtime, so the lag has never blocked
+  work — but **an unpushed fix does**. The Oct 12 2026 commits sat unpushed for
+  ten days, so five sessions (Oct 12-20) ran on the old build and rejected 11
+  of 14 `up` suggestions, and the Sep 28 / Oct 4 corrections were absent from
+  `origin` that whole time. `git push` is in the **deny** permission tier, so
+  the owner has to run it; a session that ends with commits unpushed has not
+  shipped anything.
 - **Carried to the training project, not actioned here** (see **Scope
   boundary**) — the Oct 12 notes review surfaced these and they are the
   owner's call:
